@@ -1,9 +1,15 @@
-// app/login.tsx
 import React, { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity } from 'react-native'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native'
 import { auth } from '../../firebaseConfig' // Adjust the import path
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { router } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('')
@@ -26,37 +32,87 @@ const LoginScreen = () => {
   }
 
   return (
-    <View className="flex-1 justify-center items-center p-5">
-      <Text className="text-2xl font-bold mb-5">Login</Text>
-      <TextInput
-        className="w-full h-10 border border-gray-300 mb-2 px-2 rounded"
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        className="w-full h-10 border border-gray-300 mb-5 px-2 rounded"
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
-      <TouchableOpacity
-        className="bg-blue-500 w-full p-2.5 rounded items-center mb-2"
-        onPress={handleLogin}
-      >
-        <Text className="text-white text-xl">Login</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.replace('/register')}>
-        <Text className="text-blue-500 mt-2">
-          Don't have an account? Register
-        </Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <Text style={styles.title}>Login</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.replace('/register')}>
+          <Text style={styles.registerLink}>
+            Don't have an account? Register
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   )
 }
 
 export default LoginScreen
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f0f0', // Light gray background for a softer look
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#333', // Dark text color for contrast
+  },
+  input: {
+    width: '100%',
+    height: 45,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    backgroundColor: 'white',
+  },
+  errorText: {
+    color: '#FF0000',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  loginButton: {
+    backgroundColor: '#007BFF', // Bootstrap's primary blue
+    width: '100%',
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  registerLink: {
+    color: '#007BFF',
+    textDecorationLine: 'underline',
+    marginTop: 10,
+  },
+})

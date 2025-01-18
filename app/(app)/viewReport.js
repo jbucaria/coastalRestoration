@@ -1,5 +1,6 @@
 // ViewReport.js
 import React, { useState, useEffect } from 'react'
+import { useLocalSearchParams, router, Link } from 'expo-router'
 import {
   View,
   Text,
@@ -14,7 +15,6 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { doc, getDoc } from 'firebase/firestore'
-import { useLocalSearchParams, router } from 'expo-router'
 
 import { firestore } from '@/firebaseConfig'
 import { pdfGenerator } from '@/utils/pdfGenerator'
@@ -132,6 +132,15 @@ const ViewReport = () => {
     )
   }
 
+  const openChatRoom = () => {
+    // Assuming you have a chat room screen set up at /chat
+    // and it accepts a parameter for the project ID.
+    router.push({
+      pathname: '/ProjectChatRoom',
+      params: { projectId: project.id },
+    })
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <TouchableOpacity
@@ -149,7 +158,9 @@ const ViewReport = () => {
       <ScrollView style={styles.scrollView}>
         {/* Title */}
         <Text style={styles.reportTitle}>Inspection Report</Text>
-
+        <TouchableOpacity onPress={openChatRoom}>
+          <IconSymbol name="message.badge.waveform" size={40} color="#3498DB" />
+        </TouchableOpacity>
         {/* CARD: Address */}
         <View style={styles.card}>
           <Text style={styles.reportFieldLabel}>Address:</Text>

@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  FlatList,
 } from 'react-native'
 import {
   collection,
@@ -18,18 +21,63 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { auth, firestore } from '@/firebaseConfig'
-import useUserStore from '@/store/useUserStore' // If you want to grab current user info from your store
+import useUserStore from '@/store/useUserStore'
+import { useLocalSearchParams } from 'expo-router/build/hooks'
 
-const ProjectChatRoom = ({ projectId }) => {
+const MessageItem = React.memo(({ item }) => {
+  const initials = item.userName
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+  const isMyMessage = item.userId === auth.currentUser.uid
+
+  return (
+    <View
+      style={[
+        styles.messageContainer,
+        isMyMessage ? styles.myMessage : styles.otherMessage,
+      ]}
+    >
+      <View
+        style={[
+          styles.profileImage,
+          { backgroundColor: isMyMessage ? '#007AFF' : '#C7C7CC' },
+        ]}
+      >
+        <Text style={styles.initialsText}>{initials}</Text>
+      </View>
+      <View
+        style={[
+          styles.messageContent,
+          isMyMessage ? styles.myMessageContent : styles.otherMessageContent,
+        ]}
+      >
+        <Text style={styles.messageText}>{item.message}</Text>
+      </View>
+    </View>
+  )
+})
+
+const ProjectChatRoom = () => {
+  const params = useLocalSearchParams()
+  const { projectId } = params
+
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const flatListRef = useRef(null)
 
-  // Get user info from Zustand store (or you can also use auth.currentUser)
   const { user } = useUserStore()
 
   useEffect(() => {
-    // Create a query to listen for messages for the specific project, ordered by timestamp
+    if (!projectId) {
+      console.log('No projectId provided')
+      setLoading(false)
+      return
+    }
+
     const q = query(
       collection(firestore, 'projectChats'),
       where('projectId', '==', projectId),
@@ -41,6 +89,7 @@ const ProjectChatRoom = ({ projectId }) => {
         const chats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
         setMessages(chats)
         setLoading(false)
+        flatListRef.current?.scrollToEnd({ animated: true })
       },
       error => {
         console.error('Error fetching chat messages:', error)
@@ -51,60 +100,66 @@ const ProjectChatRoom = ({ projectId }) => {
     return () => unsubscribe()
   }, [projectId])
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (newMessage.trim() === '') return
 
     try {
       await addDoc(collection(firestore, 'projectChats'), {
         projectId: projectId,
         userId: auth.currentUser.uid,
-        userName: user
-          ? user.displayName || user.email
-          : auth.currentUser.email,
+        userName: user?.displayName || user?.email || auth.currentUser.email,
         message: newMessage,
         timestamp: serverTimestamp(),
       })
-      setNewMessage('') // Clear the input
+      setNewMessage('')
+      flatListRef.current?.scrollToEnd({ animated: true })
     } catch (error) {
       console.error('Error sending message:', error)
     }
-  }
-
-  const renderItem = ({ item }) => (
-    <View style={styles.messageContainer}>
-      <Text style={styles.userName}>{item.userName}</Text>
-      <Text style={styles.messageText}>{item.message}</Text>
-    </View>
-  )
+  }, [newMessage, projectId, user])
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </SafeAreaView>
     )
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={messages}
-        keyExtractor={item => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.chatList}
-      />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type your message..."
-          value={newMessage}
-          onChangeText={setNewMessage}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={({ item }) => <MessageItem item={item} />}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.chatList}
+          inverted={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type your message..."
+            value={newMessage}
+            onChangeText={setNewMessage}
+            multiline
+          />
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
@@ -115,40 +170,72 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  keyboardAvoidingContainer: {
+    flex: 1,
+  },
   chatList: {
-    padding: 16,
-    paddingBottom: 60, // Extra padding to prevent the input from overlapping messages
+    padding: 10,
   },
   messageContainer: {
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 8,
   },
-  userName: {
+  myMessage: {
+    alignSelf: 'flex-end',
+    flexDirection: 'row-reverse',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+  },
+  profileImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  initialsText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
-    marginBottom: 4,
+  },
+  messageContent: {
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: '80%',
+  },
+  myMessageContent: {
+    backgroundColor: '#007AFF',
+    borderBottomRightRadius: 0,
+  },
+  otherMessageContent: {
+    backgroundColor: '#E5E5EA',
+    borderBottomLeftRadius: 0,
   },
   messageText: {
     fontSize: 16,
+    color: '#000',
   },
   inputContainer: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderColor: '#ccc',
     padding: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#fff',
     alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
   },
   input: {
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ddd',
+    minHeight: 40,
   },
   sendButton: {
     marginLeft: 8,

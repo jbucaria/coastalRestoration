@@ -68,7 +68,7 @@ const Settings = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth)
-      router.replace('/loginScreen')
+      router.replace('/login')
     } catch (error) {
       console.error('Error signing out: ', error)
     }

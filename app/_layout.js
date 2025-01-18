@@ -43,17 +43,17 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === '(auth)'
 
     if (!auth.currentUser && !inAuthGroup) {
-      router.replace('/(auth)/login')
+      router.replace('/login')
       return
     }
 
     if (auth.currentUser) {
       if (!user || !user.onboarded) {
-        router.replace('/(auth)/onboarding')
+        router.replace('/onboarding')
         return
       }
       if (user.onboarded && inAuthGroup) {
-        router.replace('/')
+        router.replace('/(tabs)')
       }
     }
   }, [initializing, profileLoaded, segments, router, user])
