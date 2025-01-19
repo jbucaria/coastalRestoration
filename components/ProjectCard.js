@@ -2,10 +2,7 @@ import React, { useState } from 'react'
 import { router } from 'expo-router'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import {
-  KeyboardAwareScrollView,
-  KeyboardToolbar,
-} from 'react-native-keyboard-controller'
+import MessageIndicator from '@/components/MessageIndicator'
 
 const ProjectCard = ({ project, onPress }) => {
   // Determine background color based on project status
@@ -74,7 +71,12 @@ const ProjectCard = ({ project, onPress }) => {
         )}
         {project.messageCount > 0 && (
           <TouchableOpacity onPress={openChatRoom}>
-            <IconSymbol name="message" size={30} color="red" />
+            <MessageIndicator
+              count={project.messageCount}
+              name="bubble.left.and.exclamationmark.bubble.right"
+              size={33}
+              color="black"
+            />
           </TouchableOpacity>
         )}
       </View>
