@@ -24,7 +24,7 @@ const Settings = () => {
   const { user, setUser } = useUserStore()
 
   // Local state for editable fields:
-  const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState({
@@ -45,7 +45,7 @@ const Settings = () => {
         const userDoc = await getDoc(doc(firestore, 'users', currentUser.uid))
         if (userDoc.exists()) {
           const userData = userDoc.data()
-          setUsername(userData.username || '')
+          setName(userData.name || '')
           setEmail(userData.email || currentUser.email || '')
           setPhone(userData.phone || '')
           setAddress(
@@ -82,13 +82,13 @@ const Settings = () => {
           await authUpdateEmail(currentUser, email)
         }
         await updateDoc(doc(firestore, 'users', currentUser.uid), {
-          username: username,
+          name: name,
           email: email,
           phone: phone,
           address: address,
         })
         Alert.alert('Success', 'Your information has been updated.')
-        setUser({ ...user, username, email, phone, address })
+        setUser({ ...user, name, email, phone, address })
         setEditing(false)
       } catch (error) {
         console.error('Error updating user info:', error)
@@ -103,7 +103,7 @@ const Settings = () => {
   const handleCancel = () => {
     // Reset to previous values
     setEditing(false)
-    setUsername(user.username || '')
+    setName(user.name || '')
     setEmail(user.email || '')
     setPhone(user.phone || '')
     setAddress(
@@ -142,9 +142,9 @@ const Settings = () => {
                   <Text style={styles.label}>Name</Text>
                   <TextInput
                     style={styles.input}
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="Enter your username"
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter your Name"
                   />
                 </View>
 
@@ -245,9 +245,7 @@ const Settings = () => {
             ) : (
               <>
                 <View style={styles.infoDisplayContainer}>
-                  <Text style={styles.infoDisplayText}>
-                    Username: {username}
-                  </Text>
+                  <Text style={styles.infoDisplayText}>Name: {name}</Text>
                   <Text style={styles.infoDisplayText}>Email: {email}</Text>
                   <Text style={styles.infoDisplayText}>Phone: {phone}</Text>
                   {address.full ? (

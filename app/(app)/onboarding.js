@@ -143,7 +143,7 @@ const OnboardingScreen = () => {
       <Text style={styles.title}>Welcome! Complete Your Profile</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your display name"
+        placeholder="Enter full name"
         value={displayName}
         onChangeText={setDisplayName}
       />
@@ -162,7 +162,7 @@ const OnboardingScreen = () => {
         placeholder="Enter address"
         onPress={handleAutocompletePress}
         query={{
-          key: '', // Replace with your actual API key
+          key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your actual API key
           language: 'en',
           components: 'country:us',
         }}

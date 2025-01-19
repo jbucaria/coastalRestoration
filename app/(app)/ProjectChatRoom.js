@@ -10,6 +10,7 @@ import {
   Platform,
   SafeAreaView,
   FlatList,
+  Keyboard,
 } from 'react-native'
 import {
   collection,
@@ -104,6 +105,20 @@ const ProjectChatRoom = () => {
     return () => unsubscribe()
   }, [projectId])
 
+  useEffect(() => {
+    const handleKeyboardShow = () => {
+      flatListRef.current?.scrollToEnd({ animated: true })
+    }
+
+    const keyboardShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      handleKeyboardShow
+    )
+
+    return () => {
+      keyboardShowListener.remove() // Properly remove the listener
+    }
+  }, [])
   const handleSend = useCallback(async () => {
     if (newMessage.trim() === '') return
 
@@ -129,7 +144,7 @@ const ProjectChatRoom = () => {
   }, [newMessage, projectId, user])
 
   const handleBack = () => {
-    router.back() // Navigate back to the previous screen
+    router.back()
   }
 
   if (loading) {
@@ -144,33 +159,39 @@ const ProjectChatRoom = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notes</Text>
-      </View>
-      <FlatList
-        data={messages}
-        renderItem={({ item }) => <MessageItem item={item} />}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.chatList}
-        ref={flatListRef}
-        onContentSizeChange={() =>
-          flatListRef.current?.scrollToEnd({ animated: true })
-        }
-      />
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type your message..."
-          value={newMessage}
-          onChangeText={setNewMessage}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={10}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Chat Room</Text>
+        </View>
+        <FlatList
+          data={messages}
+          renderItem={({ item }) => <MessageItem item={item} />}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.chatList}
+          ref={flatListRef}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
         />
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type your message..."
+            value={newMessage}
+            onChangeText={setNewMessage}
+          />
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
