@@ -1,6 +1,6 @@
 // components/ProjectDetailsModal.js
 import React, { useEffect, useState } from 'react'
-import { router } from 'expo-router'
+import { useRouter } from 'expo-router'
 import {
   Modal,
   View,
@@ -13,7 +13,6 @@ import {
   Alert,
   Platform,
   Linking,
-  Switch,
 } from 'react-native'
 
 import { getTravelTime } from '@/utils/getTravelTime'
@@ -34,6 +33,7 @@ const ProjectDetailsModal = ({
   const [eta, setEta] = useState(null)
   const [displayText, setDisplayText] = useState('Fetching...')
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchTravelTime = async () => {
@@ -148,30 +148,38 @@ const ProjectDetailsModal = ({
     onClose()
   }
 
-  const handleSwitchChange = async (field, value) => {
-    if (project && setProject) {
-      setProject(prev => ({ ...prev, [field]: value }))
-      if (onUpdateProject) {
-        try {
-          await onUpdateProject(project.id, field, value)
-          console.log(`Firestore updated: ${field} set to ${value}`)
-        } catch (error) {
-          console.error('Error updating project in Firestore:', error)
-          Alert.alert(
-            'Error',
-            'Failed to update the project. Please try again.'
-          )
-          setProject(prev => ({ ...prev, [field]: !value }))
-        }
-      }
-    } else {
-      console.error(
-        'setProject function is undefined. Make sure it is passed from the parent.'
+  const handleRemediationToggle = value => {
+    onUpdateProject(project.id, 'remediationRequired', value) // Assuming
+    setProject(prev => ({ ...prev, remediationRequired: value })) // Update local state
+
+    if (value) {
+      Alert.alert(
+        'Input Measurements',
+        'Would you like to input measurements now?',
+        [
+          {
+            text: 'Yes',
+            onPress: () => {
+              router.push({
+                pathname: '/remediation',
+                params: { projectId: project.id },
+              })
+              onClose()
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              console.log('User chose to input measurements later.')
+            },
+            style: 'cancel',
+          },
+        ],
+        { cancelable: true }
       )
-      Alert.alert('Error', 'Project is undefined. Cannot update.')
     }
   }
-
+  console.log(project.remediationRequired)
   // New function to navigate to the chat room for this project
   const openChatRoom = () => {
     // Assuming you have a chat room screen set up at /chat
@@ -293,15 +301,23 @@ const ProjectDetailsModal = ({
                 label="On Site"
                 value={project?.onSite || false}
               />
-              <SwitchComponent
-                projectId={project.projectId}
-                field="remediationRequired"
-                label="Remediation Required"
-                value={project?.remediationRequired || false}
-              />
-              {project.remediationRequired && (
-                <Text style={styles.projectFieldLabel}>Remediation Notes:</Text>
-              )}
+              <TouchableOpacity
+                onPress={() => {
+                  const newValue = !project.remediationRequired
+                  handleRemediationToggle(newValue)
+                }}
+                style={styles.plusButton}
+              >
+                <Text style={styles.projectFieldLabel}>
+                  Remediation Required:
+                </Text>
+                <IconSymbol
+                  name="plus"
+                  size={30}
+                  color={project?.remediationRequired ? 'red' : 'green'}
+                />
+              </TouchableOpacity>
+
               <SwitchComponent
                 projectId={project.projectId}
                 field="equipmentOnSite"
