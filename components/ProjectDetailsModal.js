@@ -18,6 +18,8 @@ import {
 
 import { getTravelTime } from '@/utils/getTravelTime'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import SwitchComponent from './SwitchComponent'
+import EquipmentModal from './EquipmentModal'
 
 const ProjectDetailsModal = ({
   visible,
@@ -31,6 +33,7 @@ const ProjectDetailsModal = ({
 }) => {
   const [eta, setEta] = useState(null)
   const [displayText, setDisplayText] = useState('Fetching...')
+  const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
 
   useEffect(() => {
     const fetchTravelTime = async () => {
@@ -284,19 +287,43 @@ const ProjectDetailsModal = ({
                 </Text>
               </View>
 
-              {!project.inspectionComplete && (
-                <View style={styles.card}>
-                  <View style={styles.checkboxContainer}>
-                    <Switch
-                      value={project.onSite || false}
-                      onValueChange={value =>
-                        handleSwitchChange('onSite', value)
-                      }
-                    />
-                    <Text style={styles.checkboxLabel}>On Site</Text>
-                  </View>
-                </View>
+              <SwitchComponent
+                projectId={project.projectId}
+                field="onSite"
+                label="On Site"
+                value={project?.onSite || false}
+              />
+              <SwitchComponent
+                projectId={project.projectId}
+                field="remediationRequired"
+                label="Remediation Required"
+                value={project?.remediationRequired || false}
+              />
+              {project.remediationRequired && (
+                <Text style={styles.projectFieldLabel}>Remediation Notes:</Text>
               )}
+              <SwitchComponent
+                projectId={project.projectId}
+                field="equipmentOnSite"
+                label={
+                  project.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'
+                }
+                value={project?.equipmentOnSite || false}
+                onShowModal={() => setIsEquipmentModalVisible(true)}
+              />
+
+              <SwitchComponent
+                projectId={project.projectId}
+                field="siteComplete"
+                label="Site Complete"
+                value={project?.siteComplete || false}
+              />
+
+              <EquipmentModal
+                visible={isEquipmentModalVisible}
+                onClose={() => setIsEquipmentModalVisible(false)}
+                projectId={project.id}
+              />
 
               <View style={styles.card}>
                 <Text style={styles.projectFieldLabel}>Photos:</Text>

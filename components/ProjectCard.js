@@ -44,23 +44,9 @@ const ProjectCard = ({ project, onPress }) => {
           <Text style={styles.inspectorName}>
             {project.inspectorName || 'N/A'}
           </Text>
-          {project.remediationRequired && (
-            <Text style={styles.remediationIndicator}> R</Text>
-          )}
-          {project.equipmentOnSite && (
-            <Text style={styles.remediationIndicator}> E</Text>
-          )}
-          {project.siteComplete && (
-            <Text style={styles.remediationIndicator}> C</Text>
-          )}
         </View>
       </View>
       <View style={styles.iconContainer}>
-        {project.equipmentOnSite && (
-          <TouchableOpacity onPress={() => console.log('View report')}>
-            <IconSymbol name="fan" size={30} color="green" />
-          </TouchableOpacity>
-        )}
         {project.inspectionComplete && (
           <TouchableOpacity onPress={openReport}>
             <IconSymbol name="text.document" size={30} color="green" />
@@ -68,6 +54,16 @@ const ProjectCard = ({ project, onPress }) => {
         )}
         {project.onSite && (
           <IconSymbol name="person.crop.square" size={30} color="green" />
+        )}
+        {project.equipmentTotal > 0 && (
+          <TouchableOpacity onPress={openChatRoom}>
+            <MessageIndicator
+              count={project.equipmentTotal}
+              name="fan"
+              size={33}
+              color="black"
+            />
+          </TouchableOpacity>
         )}
         {project.messageCount > 0 && (
           <TouchableOpacity onPress={openChatRoom}>
