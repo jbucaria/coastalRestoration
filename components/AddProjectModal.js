@@ -34,6 +34,7 @@ const initialProjectState = {
   jobType: 'inspection',
   hours: '',
   recommendedActions: '',
+  messageCount: 0,
   photos: [],
   onSite: false,
   inspectionComplete: false,

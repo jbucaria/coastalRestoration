@@ -19,10 +19,13 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  updateDoc,
+  increment,
 } from 'firebase/firestore'
 import { auth, firestore } from '@/firebaseConfig'
 import useUserStore from '@/store/useUserStore'
-import { useLocalSearchParams } from 'expo-router/build/hooks'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 
 const MessageItem = React.memo(({ item }) => {
   const initials = item.userName
@@ -63,6 +66,7 @@ const MessageItem = React.memo(({ item }) => {
 const ProjectChatRoom = () => {
   const params = useLocalSearchParams()
   const { projectId } = params
+  const router = useRouter()
 
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
@@ -111,12 +115,22 @@ const ProjectChatRoom = () => {
         message: newMessage,
         timestamp: serverTimestamp(),
       })
+
+      const projectRef = doc(firestore, 'projects', projectId)
+      await updateDoc(projectRef, {
+        messageCount: increment(1),
+      })
+
       setNewMessage('')
       flatListRef.current?.scrollToEnd({ animated: true })
     } catch (error) {
       console.error('Error sending message:', error)
     }
   }, [newMessage, projectId, user])
+
+  const handleBack = () => {
+    router.back() // Navigate back to the previous screen
+  }
 
   if (loading) {
     return (
@@ -130,35 +144,33 @@ const ProjectChatRoom = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={({ item }) => <MessageItem item={item} />}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.chatList}
-          inverted={false}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notes</Text>
+      </View>
+      <FlatList
+        data={messages}
+        renderItem={({ item }) => <MessageItem item={item} />}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.chatList}
+        ref={flatListRef}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
+      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type your message..."
+          value={newMessage}
+          onChangeText={setNewMessage}
         />
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type your message..."
-            value={newMessage}
-            onChangeText={setNewMessage}
-            multiline
-          />
-          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   )
 }
@@ -170,11 +182,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  keyboardAvoidingContainer: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    backgroundColor: '#f5f5f5',
+  },
+  backButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#2C3E50',
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   chatList: {
     padding: 10,
+    paddingBottom: 80,
   },
   messageContainer: {
     flexDirection: 'row',
@@ -194,7 +227,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
   },
   initialsText: {
     color: 'white',
@@ -205,6 +237,8 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     maxWidth: '80%',
+    marginRight: 5,
+    marginBottom: 2,
   },
   myMessageContent: {
     backgroundColor: '#007AFF',
@@ -220,11 +254,11 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flexDirection: 'row',
-    padding: 8,
-    backgroundColor: '#fff',
     alignItems: 'center',
+    padding: 8,
     borderTopWidth: 1,
     borderTopColor: '#ccc',
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
@@ -235,7 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ddd',
-    minHeight: 40,
   },
   sendButton: {
     marginLeft: 8,

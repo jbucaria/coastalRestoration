@@ -1,6 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { router } from 'expo-router'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import {
+  KeyboardAwareScrollView,
+  KeyboardToolbar,
+} from 'react-native-keyboard-controller'
 
 const ProjectCard = ({ project, onPress }) => {
   // Determine background color based on project status
@@ -14,16 +19,33 @@ const ProjectCard = ({ project, onPress }) => {
     backgroundColor = '#007BFF' // Blue for equipment on site
   }
 
+  const openChatRoom = () => {
+    router.push({
+      pathname: '/ProjectChatRoom',
+      params: { projectId: project.id },
+    })
+  }
+
+  const openReport = () => {
+    router.push({
+      pathname: '/viewReport',
+      params: { projectId: project.id },
+    })
+  }
+
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[styles.projectCard, { backgroundColor: backgroundColor }]}
     >
       <View style={styles.cardContent}>
-        <Text style={styles.projectAddress}>{project.address}</Text>
+        <Text style={styles.projectAddress}>{project.street}</Text>
+        <Text style={styles.projectAddress}>
+          {project.city}, {project.state} {project.zip}
+        </Text>
         <View style={styles.inspectorRow}>
           <Text style={styles.inspectorName}>
-            Inspector: {project.inspectorName || 'N/A'}
+            {project.inspectorName || 'N/A'}
           </Text>
           {project.remediationRequired && (
             <Text style={styles.remediationIndicator}> R</Text>
@@ -34,23 +56,28 @@ const ProjectCard = ({ project, onPress }) => {
           {project.siteComplete && (
             <Text style={styles.remediationIndicator}> C</Text>
           )}
-          {/* {project.inspectionComplete && (
-            <Text style={styles.inspectionCompleteIndicator}> ✓</Text>
-          )} */}
         </View>
-        <Text style={styles.jobType}>Job Type: {project.jobType || 'N/A'}</Text>
-        <Text style={styles.jobType}>ID: {project.projectId || 'N/A'}</Text>
       </View>
-      {project.inspectionComplete && ( // Conditional rendering of the document icon
-        <View style={styles.documentIcon}>
-          <IconSymbol name="text.document" size={30} color="green" />
-        </View>
-      )}
-      {project.onSite && ( // Conditional rendering of the document icon
-        <View style={styles.documentIcon}>
+      <View style={styles.iconContainer}>
+        {project.equipmentOnSite && (
+          <TouchableOpacity onPress={() => console.log('View report')}>
+            <IconSymbol name="fan" size={30} color="green" />
+          </TouchableOpacity>
+        )}
+        {project.inspectionComplete && (
+          <TouchableOpacity onPress={openReport}>
+            <IconSymbol name="text.document" size={30} color="green" />
+          </TouchableOpacity>
+        )}
+        {project.onSite && (
           <IconSymbol name="person.crop.square" size={30} color="green" />
-        </View>
-      )}
+        )}
+        {project.messageCount > 0 && (
+          <TouchableOpacity onPress={openChatRoom}>
+            <IconSymbol name="message" size={30} color="red" />
+          </TouchableOpacity>
+        )}
+      </View>
     </TouchableOpacity>
   )
 }
@@ -61,11 +88,15 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 8,
     marginTop: 3,
-    position: 'relative', // Necessary for absolute positioning of child elements
   },
-  cardContent: {},
-  projectAddress: { color: 'black', fontSize: 16, fontWeight: 'bold' },
-  inspectorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  cardContent: {
+    flex: 1, // This ensures that content takes up the space above icons
+  },
+  inspectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   inspectorName: { color: 'black', fontSize: 14 },
   remediationIndicator: {
     color: 'red',
@@ -73,17 +104,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 4,
   },
-  inspectionCompleteIndicator: {
-    color: 'green',
+  jobType: { color: 'black', fontSize: 14, marginTop: 4 },
+  projectAddress: {
+    color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
-    marginLeft: 4,
+    marginBottom: 4,
   },
-  jobType: { color: 'black', fontSize: 14, marginTop: 4 },
-  documentIcon: {
+  iconContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end', // Aligns icons to the right
+    alignItems: 'flex-end', // Aligns icons to the bottom if they are of different heights
     position: 'absolute',
-    bottom: 10, // Adjust based on your design preference
-    right: 10, // Adjust based on your design preference
+    gap: 10,
+    bottom: 10,
+    right: 10,
   },
 })
 

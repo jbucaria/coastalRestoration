@@ -144,8 +144,12 @@ const ReportsPage = () => {
           )}
           <ThemedView style={styles.reportInfo}>
             <ThemedText type="subtitle">{item.address}</ThemedText>
-            <ThemedText style={styles.dateText}>{item.date}</ThemedText>
-            <ThemedText style={styles.dateText}>{item.projectId}</ThemedText>
+            <ThemedText style={styles.dateText}>
+              {item.date}{' '}
+              {item.messageCount > 0 && (
+                <IconSymbol name="message" size={20} color="red" />
+              )}
+            </ThemedText>
           </ThemedView>
         </ThemedView>
       </ThemedView>

@@ -234,8 +234,6 @@ const Index = () => {
           onClose={() => setSelectedPhoto(null)}
           setModalOptionsVisible={setModalOptionsVisible}
         />
-
-        <KeyboardToolbar />
       </SafeAreaView>
     </ImageBackground>
   )

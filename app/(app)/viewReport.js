@@ -133,8 +133,6 @@ const ViewReport = () => {
   }
 
   const openChatRoom = () => {
-    // Assuming you have a chat room screen set up at /chat
-    // and it accepts a parameter for the project ID.
     router.push({
       pathname: '/ProjectChatRoom',
       params: { projectId: project.id },
@@ -158,35 +156,42 @@ const ViewReport = () => {
       <ScrollView style={styles.scrollView}>
         {/* Title */}
         <Text style={styles.reportTitle}>Inspection Report</Text>
-        <TouchableOpacity onPress={openChatRoom}>
-          <IconSymbol name="message.badge.waveform" size={40} color="#3498DB" />
-        </TouchableOpacity>
+
         {/* CARD: Address */}
         <View style={styles.card}>
           <Text style={styles.reportFieldLabel}>Address:</Text>
-          <Text
-            style={[styles.reportFieldValue, styles.clickableText]}
-            onPress={() => openGoogleMaps(project.address)}
-          >
-            {project.address || 'N/A'}
-          </Text>
+          <View style={styles.addressContainer}>
+            <Text
+              style={[styles.reportFieldValue, styles.clickableText]}
+              onPress={() => openGoogleMaps(project.address)}
+            >
+              {project.address || 'N/A'}
+            </Text>
+            {project.messageCount > 0 && (
+              <TouchableOpacity
+                onPress={openChatRoom}
+                style={styles.messageIndicator}
+              >
+                <IconSymbol name="message" size={30} color="red" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* SECOND CARD - Contact Card */}
-        <View style={styles.card}>
-          {/* A Title at the top, similar to the first card’s style */}
+        <View style={[styles.card, styles.contactCard]}>
           <Text style={styles.cardTitle}>Contact Info</Text>
 
           <View style={styles.contactRow}>
             {/* LEFT COLUMN: Customer/Company Contact Info */}
             <View style={styles.contactColumn}>
               <Text style={styles.projectFieldLabel}>Customer:</Text>
-              <Text style={styles.projectFieldValue}>
+              <Text style={[styles.projectFieldValue, styles.lightText]}>
                 {project.customer || 'N/A'}
               </Text>
 
               <Text style={styles.projectFieldLabel}>Name:</Text>
-              <Text style={styles.projectFieldValue}>
+              <Text style={[styles.projectFieldValue, styles.lightText]}>
                 {project.customerName || 'N/A'}
               </Text>
 
@@ -201,12 +206,12 @@ const ViewReport = () => {
             </View>
 
             {/* RIGHT COLUMN: Homeowner Info (if available) */}
-            <View style={styles.contactColumn}>
+            <View style={[styles.contactColumn, styles.rightColumn]}>
               <Text style={styles.projectFieldLabel}>Homeowner:</Text>
-              <Text style={styles.projectFieldValue}></Text>
+              <Text style={[styles.projectFieldValue, styles.lightText]}></Text>
 
               <Text style={styles.projectFieldLabel}>Name:</Text>
-              <Text style={styles.projectFieldValue}>
+              <Text style={[styles.projectFieldValue, styles.lightText]}>
                 {project.homeOwnerName || 'N/A'}
               </Text>
 
@@ -305,7 +310,6 @@ const ViewReport = () => {
     </SafeAreaView>
   )
 }
-
 export default ViewReport
 
 // -------------------
@@ -324,8 +328,9 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 12,
     color: '#2C3E50',
+    textAlign: 'center',
   },
   contactRow: {
     flexDirection: 'row',
@@ -334,6 +339,11 @@ const styles = StyleSheet.create({
   contactColumn: {
     flex: 1,
     marginHorizontal: 8,
+  },
+  rightColumn: {
+    borderLeftWidth: 1,
+    borderLeftColor: '#d0e5f0',
+    paddingLeft: 12,
   },
 
   container: {
@@ -373,6 +383,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
+  contactCard: {
+    backgroundColor: '#e8f4f8',
+    borderWidth: 1,
+    borderColor: '#d0e5f0',
+  },
 
   // Labels and Values
   reportFieldLabel: {
@@ -399,10 +414,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 2,
   },
   projectFieldValue: {
     fontSize: 14,
     color: '#4A4A4A',
+    marginBottom: 12,
+  },
+  lightText: {
+    color: '#555',
   },
 
   // Photos
@@ -434,17 +454,11 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 8,
   },
-  projectActionsContainer: {
+  projectActionContainer: {
     marginHorizontal: 16,
     marginTop: 8,
   },
   // Bottom Button
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 8,
-    marginBottom: 16,
-  },
   actionButton: {
     backgroundColor: '#2C3E50',
     paddingVertical: 12,
@@ -481,18 +495,12 @@ const styles = StyleSheet.create({
     width: '90%',
     height: '90%',
   },
-  closeButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-    padding: 10,
-    borderRadius: 50,
-    borderColor: 'white',
-    borderWidth: 1,
+  addressContainer: {
+    position: 'relative',
   },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 16,
+  messageIndicator: {
+    position: 'absolute',
+    top: -10,
+    right: 0,
   },
 })
