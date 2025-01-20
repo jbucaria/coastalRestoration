@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { router } from 'expo-router'
+import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { router } from 'expo-router'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import MessageIndicator from '@/components/MessageIndicator'
 
@@ -30,6 +30,32 @@ const ProjectCard = ({ project, onPress }) => {
     })
   }
 
+  // Format date and time
+  const parseDateTime = dateString => {
+    try {
+      const dateTime = new Date(dateString)
+      const date = dateTime.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+      const time = dateTime.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+      return { date, time }
+    } catch (error) {
+      console.error('Error parsing date:', error)
+      return { date: 'Invalid Date', time: 'Invalid Time' }
+    }
+  }
+
+  // Parse date and time from startDate
+  const { date: startDate, time: startTime } = project.startDate
+    ? parseDateTime(project.startDate)
+    : { date: 'No Date', time: 'No Time' }
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -44,6 +70,10 @@ const ProjectCard = ({ project, onPress }) => {
           <Text style={styles.inspectorName}>
             {project.inspectorName || 'N/A'}
           </Text>
+        </View>
+        <View style={styles.timeContainer}>
+          <Text style={styles.timeText}>{startDate}</Text>
+          <Text style={styles.timeText}>Start: {startTime}</Text>
         </View>
       </View>
       <View style={styles.iconContainer}>
@@ -88,7 +118,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   cardContent: {
-    flex: 1, // This ensures that content takes up the space above icons
+    flex: 1, // Ensures content takes up the space above icons
   },
   inspectorRow: {
     flexDirection: 'row',
@@ -96,23 +126,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   inspectorName: { color: 'black', fontSize: 14 },
-  remediationIndicator: {
-    color: 'red',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-  jobType: { color: 'black', fontSize: 14, marginTop: 4 },
   projectAddress: {
     color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
+  timeContainer: {
+    marginTop: 8,
+  },
+  timeText: {
+    color: 'black',
+    fontSize: 14,
+  },
   iconContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end', // Aligns icons to the right
-    alignItems: 'flex-end', // Aligns icons to the bottom if they are of different heights
+    justifyContent: 'flex-end',
     position: 'absolute',
     gap: 10,
     bottom: 10,

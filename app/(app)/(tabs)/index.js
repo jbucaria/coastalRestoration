@@ -24,7 +24,6 @@ import ProjectCard from '@/components/ProjectCard'
 import AddProjectModal from '@/components/AddProjectModal'
 import ProjectDetailsModal from '@/components/ProjectDetailsModal'
 import PhotoModal from '@/components/PhotoModal'
-import { KeyboardToolbar } from 'react-native-keyboard-controller'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
 const Index = () => {
@@ -85,8 +84,8 @@ const Index = () => {
     endOfDay.setHours(23, 59, 59, 999)
 
     const filtered = projectsList.filter(project => {
-      if (!project.createdAt) return false
-      const projectDate = project.createdAt.toDate()
+      if (!project.startDate) return false
+      const projectDate = project.startDate.toDate()
       return projectDate >= startOfDay && projectDate <= endOfDay
     })
 

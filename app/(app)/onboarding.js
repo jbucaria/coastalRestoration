@@ -162,7 +162,7 @@ const OnboardingScreen = () => {
         placeholder="Enter address"
         onPress={handleAutocompletePress}
         query={{
-          key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your actual API key
+          key: '', // Replace with your actual API key
           language: 'en',
           components: 'country:us',
         }}

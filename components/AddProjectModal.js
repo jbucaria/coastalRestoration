@@ -10,11 +10,13 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
+  Platform,
 } from 'react-native'
 import { collection, addDoc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import * as ImagePicker from 'expo-image-picker'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import 'react-native-get-random-values'
 
@@ -24,6 +26,7 @@ const initialProjectState = {
   city: '',
   state: '',
   zip: '',
+  date: '',
   customer: 'DR Horton',
   customerName: 'John Doe',
   customerNumber: '727-555-1234',
@@ -46,7 +49,12 @@ const initialProjectState = {
 const AddProjectModal = ({ visible, onClose }) => {
   const [newProject, setNewProject] = useState(initialProjectState)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [startTime, setStartTime] = useState(new Date())
+  const [endTime, setEndTime] = useState(new Date())
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false)
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false)
   // Function to reset the form state
   const resetForm = () => {
     setNewProject(initialProjectState)
@@ -134,6 +142,9 @@ const AddProjectModal = ({ visible, onClose }) => {
         ...newProject,
         contactNumber: formattedNumber,
         address: composedAddress,
+        startDate: selectedDate,
+        startTime: startTime,
+        endTime: endTime,
         createdAt: new Date(),
       }
 
@@ -214,6 +225,40 @@ const AddProjectModal = ({ visible, onClose }) => {
     }
   }, [])
 
+  const setTimeToDate = (baseDate, timeDate) => {
+    const newDate = new Date(baseDate)
+    newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
+    return newDate
+  }
+
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios')
+    if (date) {
+      setSelectedDate(date)
+      // Optionally, update start and end time based on the selected date if needed
+      setStartTime(setTimeToDate(date, startTime))
+      setEndTime(setTimeToDate(date, endTime))
+    }
+  }
+
+  const handleStartTimeChange = (event, time) => {
+    setShowStartTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setStartTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
+  const handleEndTimeChange = (event, time) => {
+    setShowEndTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setEndTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
+  const formatTime = date => {
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+  }
+
   return (
     <Modal
       animationType="slide"
@@ -251,6 +296,63 @@ const AddProjectModal = ({ visible, onClose }) => {
                 },
               }}
             />
+            <View style={styles.dateTimeContainer}>
+              <Text>Date:</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={styles.dateTimeButton}
+              >
+                <Text>{selectedDate.toDateString()}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+            </View>
+            <View style={styles.dateTimeContainer}>
+              <Text>Start Time:</Text>
+              <TouchableOpacity
+                onPress={() => setShowStartTimePicker(true)}
+                style={styles.dateTimeButton}
+              >
+                <Text>{formatTime(startTime)}</Text>
+              </TouchableOpacity>
+              {showStartTimePicker && (
+                <DateTimePicker
+                  value={startTime}
+                  mode="time"
+                  is24Hour={false}
+                  display="default"
+                  onChange={handleStartTimeChange}
+                  minuteInterval={15}
+                />
+              )}
+            </View>
+
+            <View style={styles.dateTimeContainer}>
+              <Text>End Time:</Text>
+              <TouchableOpacity
+                onPress={() => setShowEndTimePicker(true)}
+                style={styles.dateTimeButton}
+              >
+                <Text>{formatTime(endTime)}</Text>
+              </TouchableOpacity>
+              {showEndTimePicker && (
+                <DateTimePicker
+                  value={endTime}
+                  mode="time"
+                  is24Hour={false}
+                  display="default"
+                  onChange={handleEndTimeChange}
+                  minuteInterval={15}
+                />
+              )}
+            </View>
+
             <Text style={styles.modalTitle}>Create New Project</Text>
 
             {/* SECTION: Address Fields */}
@@ -520,6 +622,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // New styles for date and time selection
+  dateTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  dateTimeButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    borderRadius: 5,
+    width: '60%', // Adjust as needed
+    alignItems: 'center',
+  },
+  dateTimeText: {
+    fontSize: 16,
+    color: '#333',
   },
 })
 
