@@ -21,7 +21,7 @@ import {
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import ProjectCard from '@/components/ProjectCard'
-import AddProjectModal from '@/components/AddProjectModal'
+import { Link } from 'expo-router'
 import ProjectDetailsModal from '@/components/ProjectDetailsModal'
 import PhotoModal from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
@@ -203,16 +203,14 @@ const Index = () => {
         </ScrollView>
 
         <View style={styles.floatingButtonContainer}>
-          <AddProjectModal
-            visible={modalVisible}
-            onClose={() => setModalVisible(false)}
-          />
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            style={styles.floatingButton}
-          >
-            <IconSymbol name="plus" size={30} color="white" />
-          </TouchableOpacity>
+          <Link href="/addProjectScreen" asChild>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              style={styles.floatingButton}
+            >
+              <IconSymbol name="plus" size={30} color="white" />
+            </TouchableOpacity>
+          </Link>
         </View>
 
         <ProjectDetailsModal
