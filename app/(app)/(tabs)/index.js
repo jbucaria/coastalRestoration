@@ -24,6 +24,7 @@ import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import { AnimatedIconLegend } from '@/components/IconLegend'
 
 const Index = () => {
   const [modalVisible, setModalVisible] = useState(false)
@@ -207,6 +208,7 @@ const Index = () => {
           >
             <IconSymbol name="plus" size={30} color="white" />
           </TouchableOpacity>
+          <AnimatedIconLegend />
         </View>
 
         <PhotoModal
