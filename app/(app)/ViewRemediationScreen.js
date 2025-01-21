@@ -1,3 +1,4 @@
+// ViewRemediationScreen.js
 import React, { useEffect, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import {
@@ -13,23 +14,22 @@ import {
 } from 'react-native'
 import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
+import { exportCSVReport } from '@/utils/createCSVReport' // Adjust the path as needed
 
-const ViewRemediationScreen = () => {
+export default function ViewRemediationScreen() {
   const { projectId } = useLocalSearchParams()
   const router = useRouter()
-
-  // Local state to hold the fetched remediation data
   const [remediationData, setRemediationData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch data from Firestore once the component mounts
+  // Fetch remediation data when the component mounts.
   useEffect(() => {
-    const fetchRemediationData = async () => {
+    const fetchData = async () => {
       try {
         const docRef = doc(firestore, 'tickets', projectId)
         const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          // Assuming that remediation data was stored under the key "remediationData"
+          // Assumes your remediation data is under key "remediationData"
           setRemediationData(docSnap.data().remediationData)
         } else {
           Alert.alert('Error', 'No remediation data found.')
@@ -41,8 +41,7 @@ const ViewRemediationScreen = () => {
         setLoading(false)
       }
     }
-
-    fetchRemediationData()
+    fetchData()
   }, [projectId])
 
   if (loading) {
@@ -69,24 +68,15 @@ const ViewRemediationScreen = () => {
         {remediationData.rooms &&
           remediationData.rooms.map(room => (
             <View key={room.id} style={styles.roomContainer}>
-              <View style={styles.roomHeader}>
-                <Text style={styles.roomTitle}>{room.name}</Text>
-              </View>
-
-              {/* Measurements */}
-              {room.measurements && room.measurements.length > 0 && (
-                <View style={styles.measurementsContainer}>
-                  {room.measurements.map(measurement => (
-                    <View key={measurement.id} style={styles.measurementRow}>
-                      <Text style={styles.measurementText}>
-                        {measurement.description}: {measurement.quantity}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Photos */}
+              <Text style={styles.roomTitle}>{room.name}</Text>
+              {room.measurements &&
+                room.measurements.map(measurement => (
+                  <View key={measurement.id} style={styles.measurementRow}>
+                    <Text style={styles.measurementText}>
+                      {measurement.description}: {measurement.quantity}
+                    </Text>
+                  </View>
+                ))}
               {room.photos && room.photos.length > 0 && (
                 <ScrollView horizontal style={styles.photoRow}>
                   {room.photos.map(uri => (
@@ -99,12 +89,12 @@ const ViewRemediationScreen = () => {
             </View>
           ))}
 
-        {/* Back Button */}
+        {/* Create CSV Report Button */}
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
+          onPress={() => exportCSVReport(remediationData, projectId)}
+          style={styles.exportButton}
         >
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.exportButtonText}>Create CSV Report</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -137,23 +127,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     marginVertical: 8,
-    // Optional shadow settings
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
     elevation: 2,
   },
-  roomHeader: {
-    marginBottom: 8,
-  },
   roomTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#2C3E50',
-  },
-  measurementsContainer: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
   measurementRow: {
     marginVertical: 4,
@@ -173,24 +157,22 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 6,
   },
-  errorText: {
-    textAlign: 'center',
-    fontSize: 16,
+  exportButton: {
     marginTop: 20,
-    color: 'red',
-  },
-  backButton: {
-    marginTop: 20,
-    backgroundColor: '#2C3E50',
-    paddingVertical: 12,
+    backgroundColor: '#2980B9',
     borderRadius: 8,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  backButtonText: {
+  exportButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
   },
+  errorText: {
+    textAlign: 'center',
+    color: 'red',
+    fontSize: 16,
+    marginTop: 20,
+  },
 })
-
-export default ViewRemediationScreen
