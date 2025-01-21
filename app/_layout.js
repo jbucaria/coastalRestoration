@@ -6,7 +6,7 @@ import { ThemeProvider, DefaultTheme } from '@react-navigation/native'
 
 import { auth, firestore } from '@/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import useUserStore from '@/store/useUserStore'
 
 export default function RootLayout() {
@@ -15,6 +15,20 @@ export default function RootLayout() {
   const router = useRouter()
   const segments = useSegments()
   const { setUser, user } = useUserStore()
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      const unsub = onSnapshot(
+        doc(firestore, 'users', auth.currentUser.uid),
+        snapshot => {
+          if (snapshot.exists()) {
+            setUser({ ...auth.currentUser, ...snapshot.data() })
+          }
+        }
+      )
+      return () => unsub()
+    }
+  }, [auth.currentUser])
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async firebaseUser => {

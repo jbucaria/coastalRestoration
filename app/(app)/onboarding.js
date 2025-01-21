@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { useRouter } from 'expo-router'
 import {
   View,
   Text,
@@ -8,7 +9,6 @@ import {
 } from 'react-native'
 import { auth, firestore } from '@/firebaseConfig'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { useRouter } from 'expo-router'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 
 // Helper function to format phone number as (222) 787-9282
@@ -36,7 +36,7 @@ const formatPhoneNumber = phone => {
 }
 
 const OnboardingScreen = () => {
-  const [displayName, setDisplayName] = useState('')
+  const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState({
     street: '',
@@ -106,22 +106,26 @@ const OnboardingScreen = () => {
   }
 
   const handleOnboarding = async () => {
+    console.log('handleOnboarding called, starting validations...')
     if (
-      displayName.trim() === '' ||
+      fullName.trim() === '' ||
       phone.trim() === '' ||
       address.full.trim() === ''
     ) {
+      console.log('Validation failed, missing required fields')
       setError('Display name, phone, and address are required.')
       return
     }
+
+    console.log('Passed validations, attempting setDoc...')
+
     try {
       const currentUser = auth.currentUser
       if (currentUser) {
-        // Create or update the user's Firestore profile
         await setDoc(
           doc(firestore, 'users', currentUser.uid),
           {
-            displayName,
+            fullName,
             phone,
             address,
             onboarded: true,
@@ -130,10 +134,11 @@ const OnboardingScreen = () => {
           },
           { merge: true }
         )
+
         router.replace('/(tabs)')
+      } else {
       }
     } catch (err) {
-      console.error('Error during onboarding:', err)
       setError('Failed to save your profile. Please try again.')
     }
   }
@@ -144,8 +149,8 @@ const OnboardingScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Enter full name"
-        value={displayName}
-        onChangeText={setDisplayName}
+        value={fullName}
+        onChangeText={setFullName}
       />
       <TextInput
         style={styles.input}
@@ -162,7 +167,7 @@ const OnboardingScreen = () => {
         placeholder="Enter address"
         onPress={handleAutocompletePress}
         query={{
-          key: '', // Replace with your actual API key
+          key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your actual API key
           language: 'en',
           components: 'country:us',
         }}

@@ -251,7 +251,7 @@ PODS:
   - ExpoMediaLibrary (17.0.4):
     - ExpoModulesCore
     - React-Core
-  - ExpoModulesCore (2.1.1):
+  - ExpoModulesCore (2.1.3):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2521,7 +2521,7 @@ SPEC CHECKSUMS:
   ExpoLinking: a8332a219379ba80f8e612d5a5de4a3da446886e
   ExpoLocation: a4b472b3cb2d42f1a3f3d7e2ec0e7a4db061ea22
   ExpoMediaLibrary: 634d8bc2ddb2f6e0f6fd2045ce5ebbc253007114
-  ExpoModulesCore: f7db8b4faee7e5b94ad55f2bf781781a0bcf934d
+  ExpoModulesCore: f9546265a5e1f1fd67473bb2f0463b28252cee49
   ExpoPrint: 3f9f5a5a19dbda5b30963d5bf078918f024aa29d
   ExpoSharing: 39a198e64bf522948fe60e270e49a0c7757912c1
   ExpoSplashScreen: 5818efe67bdbcc862b97fef589571c5b4d53fa7d
