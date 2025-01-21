@@ -178,6 +178,12 @@ const TicketDetailsScreen = () => {
       params: { projectId: ticket.id },
     })
   }
+  const openMeasurements = () => {
+    router.push({
+      pathname: '/ViewRemediationScreen',
+      params: { projectId: ticket.id },
+    })
+  }
 
   // Example function to handle photos
   const handlePhotoPress = uri => {
@@ -394,6 +400,13 @@ const TicketDetailsScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
+            onPress={openMeasurements}
+          >
+            <Text style={styles.actionButtonText}>View Measurements</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#7F8C8D' }]}
             onPress={() => router.back()}
           >
@@ -428,7 +441,7 @@ const styles = StyleSheet.create({
   },
 
   column: {
-    gap: 8, // New style for vertical spacing between eleme
+    gap: 8, // New style for vertical spacing between elements
     flex: 1, // Both columns will take up equal space
     marginRight: 10, // Adds space between columns, adjust or remove as needed
   },
