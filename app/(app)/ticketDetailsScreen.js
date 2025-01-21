@@ -13,10 +13,9 @@ import {
   Platform,
   Linking,
 } from 'react-native'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
-import { IconSymbol } from '@/components/ui/IconSymbol'
 import { SwitchComponent } from '@/components/SwitchComponent'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
@@ -221,77 +220,122 @@ const TicketDetailsScreen = () => {
     }
   }
 
+  const handleSiteComplete = () => {
+    Alert.alert(
+      'Confirm',
+      'Are you sure you want to mark this site as complete?',
+      [
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              // Update Firestore to mark the site as complete
+              const projectRef = doc(firestore, 'tickets', ticket.id)
+              await updateDoc(projectRef, { siteComplete: true })
+
+              console.log('Site marked as complete!')
+              Alert.alert('Success', 'The site has been marked as complete.')
+              router.push('/(tabs)')
+            } catch (error) {
+              console.error('Error marking site as complete:', error)
+              Alert.alert(
+                'Error',
+                'Failed to mark the site as complete. Please try again.'
+              )
+            }
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Title */}
-
-        {/* Address + ETA */}
-        <View style={styles.card}>
-          <Text style={styles.addressValue}>
-            {formatAddress(ticket.address) || 'N/A'}
+        {/* -- HEADER SECTION -- */}
+        <View style={styles.headerCard}>
+          <Text style={styles.ticketTitle}>
+            Ticket: {ticket.ticketNumber || 'N/A'}
           </Text>
+          <Text style={styles.addressValue}>
+            {formatAddress(ticket.address)}
+          </Text>
+
           <TouchableOpacity
             onPress={() => openGoogleMapsWithETA(ticket.address)}
             style={styles.etaContainer}
           >
-            <Text style={styles.etaLabel}>Estimated Arrival</Text>
-            <Text style={styles.etaValue}>{eta || 'Fetching...'}</Text>
+            <Text style={styles.etaLabel}>Estimated Arrival:</Text>
+            <Text style={styles.etaValue}>{eta}</Text>
           </TouchableOpacity>
-          <Text style={styles.projectFieldLabel}>
-            Ticket:{ticket.ticketNumber}
-          </Text>
         </View>
 
-        {/* Customer Info */}
-        <View style={styles.card}>
-          <Text style={styles.subTitle}>Customer Info</Text>
-          <Text style={styles.projectFieldLabel}>Customer:</Text>
-          <Text style={styles.projectFieldValue}>
-            {ticket.customer || 'N/A'}
-          </Text>
+        {/* -- CUSTOMER INFO -- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Customer Info</Text>
 
-          <Text style={styles.projectFieldLabel}>Contact Name:</Text>
-          <Text style={styles.projectFieldValue}>
-            {ticket.contactName || 'N/A'}
-          </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Customer</Text>
+            <Text style={styles.value}>{ticket.customer || 'N/A'}</Text>
+          </View>
 
-          <Text style={styles.projectFieldLabel}>Contact Number:</Text>
-          <TouchableOpacity onPress={() => handleCall(ticket.contactNumber)}>
-            <Text style={[styles.projectFieldValue, styles.clickable]}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Contact Name</Text>
+            <Text style={styles.value}>{ticket.contactName || 'N/A'}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Contact Number</Text>
+            <Text
+              onPress={() => handleCall(ticket.contactNumber)}
+              style={[styles.value, styles.link]}
+            >
               {ticket.contactNumber || 'N/A'}
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Homeowner Info */}
-        <View style={styles.card}>
-          <Text style={styles.subTitle}>Homeowner Info</Text>
-          <Text style={styles.projectFieldLabel}>Name:</Text>
-          <Text style={styles.projectFieldValue}>
-            {ticket.homeOwnerName || 'N/A'}
-          </Text>
+        {/* -- HOMEOWNER INFO -- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Homeowner Info</Text>
 
-          <Text style={styles.projectFieldLabel}>Number:</Text>
-          <TouchableOpacity onPress={() => handleCall(ticket.homeOwnerNumber)}>
-            <Text style={[styles.projectFieldValue, styles.clickable]}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Name</Text>
+            <Text style={styles.value}>{ticket.homeOwnerName || 'N/A'}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Number</Text>
+            <Text
+              onPress={() => handleCall(ticket.homeOwnerNumber)}
+              style={[styles.value, styles.link]}
+            >
               {ticket.homeOwnerNumber || 'N/A'}
             </Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Inspector & Reason */}
-        <View style={styles.card}>
-          <Text style={styles.projectFieldLabel}>Inspector:</Text>
-          <Text style={styles.projectFieldValue}>
-            {ticket.inspectorName || 'N/A'}
-          </Text>
-          <Text style={styles.projectFieldLabel}>Reason for Visit:</Text>
-          <Text style={styles.projectFieldValue}>{ticket.reason || 'N/A'}</Text>
+        {/* -- INSPECTOR & REASON -- */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Inspector</Text>
+            <Text style={styles.value}>{ticket.inspectorName || 'N/A'}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Reason for Visit</Text>
+            <Text style={styles.value}>{ticket.reason || 'N/A'}</Text>
+          </View>
         </View>
 
-        {/* Switches (On Site, Remediation, Equipment, Site Complete) */}
-        <View style={styles.card}>
+        {/* -- SWITCHES (WITHOUT siteComplete) -- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Status</Text>
+
           <SwitchComponent
             projectId={ticket.id}
             field="onSite"
@@ -302,7 +346,7 @@ const TicketDetailsScreen = () => {
           <SwitchComponent
             projectId={ticket.id}
             field="remediationRequired"
-            label=" Remeditation Required"
+            label="Remediation Required"
             value={ticket?.remediationRequired || false}
             onToggle={handleRemediationToggle}
           />
@@ -314,26 +358,18 @@ const TicketDetailsScreen = () => {
             value={ticket?.equipmentOnSite || false}
             onShowModal={() => setIsEquipmentModalVisible(true)}
           />
-
-          <SwitchComponent
-            projectId={ticket.id}
-            field="siteComplete"
-            label="Site Complete"
-            value={ticket?.siteComplete || false}
-          />
         </View>
 
-        {/* Equipment Modal */}
+        {/* -- EQUIPMENT MODAL -- */}
         <EquipmentModal
           visible={isEquipmentModalVisible}
           onClose={() => setIsEquipmentModalVisible(false)}
           projectId={ticket.id}
-          // other props like initialQuantities if you have them
         />
 
-        {/* Photos */}
-        <View style={styles.card}>
-          <Text style={styles.subTitle}>Photos</Text>
+        {/* -- PHOTOS -- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Photos</Text>
           {ticket.photos && ticket.photos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {ticket.photos.map((uri, index) => (
@@ -346,12 +382,12 @@ const TicketDetailsScreen = () => {
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.noPhotosText}>No photos available</Text>
+            <Text style={styles.placeholderText}>No photos available</Text>
           )}
         </View>
 
-        {/* Actions: Start/View Inspection, Chat, etc. */}
-        <View style={styles.actionContainer}>
+        {/* -- ACTION BUTTONS -- */}
+        <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={handleInspection}
@@ -362,13 +398,14 @@ const TicketDetailsScreen = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#2980B9' }]}
+            style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
             onPress={openNotes}
           >
             <Text style={styles.actionButtonText}>Notes</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#2980B9' }]}
+            style={[styles.actionButton, { backgroundColor: '#7F8C8D' }]}
             onPress={() => router.back()}
           >
             <Text style={styles.actionButtonText}>Back</Text>
@@ -376,6 +413,15 @@ const TicketDetailsScreen = () => {
         </View>
       </ScrollView>
 
+      {/* -- SITE COMPLETE BUTTON at the bottom -- */}
+      <TouchableOpacity
+        style={styles.siteCompleteButton}
+        onPress={handleSiteComplete}
+      >
+        <Text style={styles.siteCompleteButtonText}>Mark Site Complete</Text>
+      </TouchableOpacity>
+
+      {/* -- FULL PHOTO PREVIEW -- */}
       <PhotoModal
         visible={selectedPhoto !== null}
         photo={selectedPhoto}
@@ -385,114 +431,162 @@ const TicketDetailsScreen = () => {
   )
 }
 
-export default TicketDetailsScreen
-
 const styles = StyleSheet.create({
+  /* Container & Scroll */
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F3F5F7',
   },
-  loadingContainer: {
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100, // leave room for the bottom button
+  },
+  centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F3F5F7',
   },
   loadingText: {
     fontSize: 18,
     color: '#666',
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 60,
-  },
-  projectModalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginVertical: 15,
-    textAlign: 'center',
-    color: '#2C3E50',
-  },
-  card: {
-    backgroundColor: '#f7f7f7',
-    marginBottom: 12,
-    borderRadius: 8,
+
+  /* Header Card (Ticket & Address) */
+  headerCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
     padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  subTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+  ticketTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: '#2C3E50',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   addressValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
-    color: '#2C3E50',
+    marginBottom: 12,
+    color: '#34495E',
     textAlign: 'center',
   },
   etaContainer: {
-    backgroundColor: '#2ecc71',
-    borderRadius: 8,
-    padding: 8,
-    alignItems: 'center',
+    backgroundColor: '#2ECC71',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignSelf: 'center',
   },
   etaLabel: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontWeight: '600',
+    fontSize: 14,
   },
   etaValue: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  projectFieldLabel: {
+
+  /* Section Containers */
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  label: {
+    color: '#2C3E50',
     fontSize: 14,
     fontWeight: '600',
-    color: '#2C3E50',
-    marginTop: 4,
   },
-  projectFieldValue: {
+  value: {
+    color: '#34495E',
     fontSize: 14,
-    color: '#2C3E50',
-    marginVertical: 4,
   },
-  clickable: {
-    color: 'blue',
+  link: {
+    color: '#007BFF',
     textDecorationLine: 'underline',
   },
-  remediationButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 8,
-    backgroundColor: '#95a5a6',
-  },
+
+  /* Photos */
   projectPhoto: {
     width: 80,
     height: 80,
     borderRadius: 8,
     marginRight: 8,
+    marginVertical: 4,
   },
-  noPhotosText: {
+  placeholderText: {
     fontStyle: 'italic',
     color: '#888',
     marginVertical: 8,
+    textAlign: 'center',
   },
-  actionContainer: {
+
+  /* Action Buttons (Inspection, Notes, Back) */
+  actionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
+    marginTop: 12,
+    marginBottom: 24,
+    justifyContent: 'space-between',
   },
   actionButton: {
+    flex: 1,
     backgroundColor: '#2C3E50',
-    borderRadius: 8,
+    borderRadius: 6,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    marginHorizontal: 4,
+    alignItems: 'center',
   },
   actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '600',
   },
+
+  /* Bottom "Site Complete" Button */
+  siteCompleteButton: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: '#2ECC71',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  siteCompleteButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 })
+
+export default TicketDetailsScreen

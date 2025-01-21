@@ -204,7 +204,7 @@ const Index = () => {
 
         <View style={styles.floatingButtonContainer}>
           <TouchableOpacity
-            onPress={() => router.push('/createTicketScreen')}
+            onPress={() => router.push('/CreateTicketScreen')}
             style={styles.floatingButton}
           >
             <IconSymbol name="plus" size={30} color="white" />
