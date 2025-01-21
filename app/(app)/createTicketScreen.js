@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { useRouter } from 'expo-router' // For back navigation, if desired
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import {
   View,
   Text,
@@ -49,7 +49,8 @@ const initialTicketStatus = {
 }
 
 const CreateTicketScreen = () => {
-  const router = useRouter() // Allows navigation back, if desired
+  const router = useRouter()
+  const { projectId } = useLocalSearchParams()
 
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)

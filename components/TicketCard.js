@@ -87,6 +87,21 @@ const TicketCard = ({ project, onPress }) => {
       </TouchableOpacity>
     )
   }
+  if (project.remediationRequired) {
+    icons.push(
+      <TouchableOpacity
+        key="remediationRequired"
+        onPress={() => {
+          router.push({
+            pathname: '/RemediationScreen',
+            params: { projectId: project.id },
+          })
+        }}
+      >
+        <IconSymbol name="hammer" size={30} color="green" />
+      </TouchableOpacity>
+    )
+  }
 
   if (project.onSite) {
     icons.push(

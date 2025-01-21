@@ -22,8 +22,6 @@ import {
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
-
-import { ProjectDetailsModal } from '@/components/ProjectDetailsModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
@@ -210,18 +208,6 @@ const Index = () => {
             <IconSymbol name="plus" size={30} color="white" />
           </TouchableOpacity>
         </View>
-
-        <ProjectDetailsModal
-          visible={modalOptionsVisible}
-          project={selectedProject}
-          onClose={() => setModalOptionsVisible(false)}
-          onUpdateProject={updateProject}
-          onDeleteProject={handleDeleteProject}
-          setSelectedPhoto={setSelectedPhoto}
-          setModalOptionsVisible={setModalOptionsVisible}
-          setSelectedProject={setSelectedProject}
-          setProject={setSelectedProject}
-        />
 
         <PhotoModal
           visible={selectedPhoto !== null}
