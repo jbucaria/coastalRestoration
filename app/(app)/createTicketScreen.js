@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Platform,
+  CheckBox,
 } from 'react-native'
 import { collection, addDoc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
@@ -19,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import 'react-native-get-random-values'
+import { IconSymbol } from '@/components/ui/IconSymbol'
 
 const initialTicketStatus = {
   street: '',
@@ -46,14 +48,14 @@ const initialTicketStatus = {
   siteComplete: false,
 }
 
-const createTicketScreen = () => {
+const CreateTicketScreen = () => {
   const router = useRouter() // Allows navigation back, if desired
 
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [startTime, setStartTime] = useState(new Date())
-  const [endTime, setEndTime] = useState(new Date())
+  const [startTime, setStartTime] = useState(new Date(2023, 0, 1, 10, 0)) // January 1, 2023, 9:00 AM
+  const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0)) // January 1, 2023, 5:00 PM
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
@@ -262,28 +264,86 @@ const createTicketScreen = () => {
   }
 
   const formatTime = date => {
-    return `${date.getHours().toString().padStart(2, '0')}:${date
-      .getMinutes()
-      .toString()
-      .padStart(2, '0')}`
+    let hours = date.getHours()
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+
+    // Convert to 12-hour format
+    hours = hours % 12 || 12 // 0 should be 12
+
+    return `${hours}:${minutes} ${ampm}`
   }
 
   return (
-    <SafeAreaView style={styles.screenContainer}>
-      {/* Back Button */}
-      <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-        <Text style={styles.backButtonText}>Back</Text>
-      </TouchableOpacity>
-
+    <SafeAreaView style={styles.container}>
       <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.screenContent}
       >
+        {/* Title */}
+        <Text style={styles.title}>Create New Ticket</Text>
+        {/* Back Button */}
+        <View style={styles.floatingContainer}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.floatingBackButton}
+          >
+            <IconSymbol name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.label}>Date:</Text>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.selectorButton}
+          >
+            <IconSymbol name="calendar-outline" size={24} color="#2980b9" />
+          </TouchableOpacity>
+
+          <DateTimePicker
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        </View>
+
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.label}>Start Time:</Text>
+
+          <DateTimePicker
+            value={startTime}
+            mode="time"
+            is24Hour={false}
+            display="default"
+            onChange={handleStartTimeChange}
+            minuteInterval={15}
+          />
+        </View>
+
+        <View style={styles.dateTimeContainer}>
+          <Text style={styles.label}>End Time:</Text>
+
+          <DateTimePicker
+            value={endTime}
+            mode="time"
+            is24Hour={false}
+            display="default"
+            onChange={handleEndTimeChange}
+            minuteInterval={15}
+          />
+        </View>
+        {/* Address Fields */}
+        <Text style={styles.sectionTitle}>Address</Text>
+
+        {/* Google Places Autocomplete */}
         <GooglePlacesAutocomplete
           filterReverseGeocodingByTypes={['locality']}
           debounce={500}
           disableScroll={true}
-          placeholder="Enter address"
+          placeholder="Search address..."
           onPress={handleAutocompletePress}
           query={{
             key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your API key
@@ -293,7 +353,7 @@ const createTicketScreen = () => {
           fetchDetails={true}
           styles={{
             textInputContainer: styles.autocompleteContainer,
-            textInput: styles.modalInput,
+            textInput: styles.inputField,
             listView: {
               backgroundColor: 'white',
               maxHeight: 200,
@@ -303,176 +363,92 @@ const createTicketScreen = () => {
           }}
         />
 
-        {/* Date */}
-        <View style={styles.dateTimeContainer}>
-          <Text>Date:</Text>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.dateTimeButton}
-          >
-            <Text>{selectedDate.toDateString()}</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
+        {['Street', 'Apt # (optional)', 'City', 'State', 'ZIP'].map(
+          (placeholder, index) => (
+            <TextInput
+              key={index}
+              style={styles.inputField}
+              placeholder={placeholder}
+              value={newTicket[Object.keys(newTicket)[index]]}
+              onChangeText={text =>
+                setNewTicket({
+                  ...newTicket,
+                  [Object.keys(newTicket)[index]]: text,
+                })
+              }
+              keyboardType={placeholder === 'ZIP' ? 'numeric' : 'default'}
             />
-          )}
-        </View>
+          )
+        )}
 
-        {/* Start Time */}
-        <View style={styles.dateTimeContainer}>
-          <Text>Start Time:</Text>
-          <TouchableOpacity
-            onPress={() => setShowStartTimePicker(true)}
-            style={styles.dateTimeButton}
-          >
-            <Text>{formatTime(startTime)}</Text>
-          </TouchableOpacity>
-          {showStartTimePicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              is24Hour={false}
-              display="default"
-              onChange={handleStartTimeChange}
-              minuteInterval={15}
-            />
-          )}
-        </View>
-
-        {/* End Time */}
-        <View style={styles.dateTimeContainer}>
-          <Text>End Time:</Text>
-          <TouchableOpacity
-            onPress={() => setShowEndTimePicker(true)}
-            style={styles.dateTimeButton}
-          >
-            <Text>{formatTime(endTime)}</Text>
-          </TouchableOpacity>
-          {showEndTimePicker && (
-            <DateTimePicker
-              value={endTime}
-              mode="time"
-              is24Hour={false}
-              display="default"
-              onChange={handleEndTimeChange}
-              minuteInterval={15}
-            />
-          )}
-        </View>
-
-        <Text style={styles.modalTitle}>Create New Ticket</Text>
-
-        <Text style={styles.sectionTitle}>Address</Text>
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Street"
-          value={newTicket.street}
-          onChangeText={text => setNewTicket({ ...newTicket, street: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Apt # (optional)"
-          value={newTicket.apt}
-          onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="City"
-          value={newTicket.city}
-          onChangeText={text => setNewTicket({ ...newTicket, city: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="State"
-          value={newTicket.state}
-          onChangeText={text => setNewTicket({ ...newTicket, state: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="ZIP"
-          value={newTicket.zip}
-          onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
-          keyboardType="numeric"
-        />
-
+        {/* Customer Info */}
         <Text style={styles.sectionTitle}>Customer Info</Text>
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Company / Customer Name"
-          value={newTicket.customer}
-          onChangeText={text => setNewTicket({ ...newTicket, customer: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Customer Contact Name"
-          value={newTicket.customerName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, customerName: text })
-          }
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Customer Contact Number"
-          value={newTicket.customerNumber}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, customerNumber: text })
-          }
-          keyboardType="phone-pad"
-        />
+        {['Builder', 'Contact Name', 'Contact Number'].map(
+          (placeholder, index) => (
+            <TextInput
+              key={index}
+              style={styles.inputField}
+              placeholder={placeholder}
+              value={newTicket[Object.keys(newTicket)[index + 5]]}
+              onChangeText={text =>
+                setNewTicket({
+                  ...newTicket,
+                  [Object.keys(newTicket)[index + 5]]: text,
+                })
+              }
+              keyboardType={
+                placeholder === 'Customer Contact Number'
+                  ? 'phone-pad'
+                  : 'default'
+              }
+            />
+          )
+        )}
 
+        {/* Homeowner Info */}
         <Text style={styles.sectionTitle}>Homeowner Info</Text>
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Homeowner Name"
-          value={newTicket.homeOwnerName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, homeOwnerName: text })
-          }
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Homeowner Number"
-          value={newTicket.homeOwnerNumber}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, homeOwnerNumber: text })
-          }
-          keyboardType="phone-pad"
-        />
+        {['Homeowner Name', 'Homeowner Number'].map((placeholder, index) => (
+          <TextInput
+            key={index}
+            style={styles.inputField}
+            placeholder={placeholder}
+            value={newTicket[Object.keys(newTicket)[index + 8]]}
+            onChangeText={text =>
+              setNewTicket({
+                ...newTicket,
+                [Object.keys(newTicket)[index + 8]]: text,
+              })
+            }
+            keyboardType={
+              placeholder === 'Homeowner Number' ? 'phone-pad' : 'default'
+            }
+          />
+        ))}
 
+        {/* Ticket Details */}
         <Text style={styles.sectionTitle}>Ticket Details</Text>
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Inspector Name"
-          value={newTicket.inspectorName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, inspectorName: text })
-          }
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Reason for Inspection"
-          value={newTicket.reason}
-          onChangeText={text => setNewTicket({ ...newTicket, reason: text })}
-        />
-        <TextInput
-          style={styles.modalInput}
-          placeholder="Type of Job"
-          value={newTicket.jobType}
-          onChangeText={text => setNewTicket({ ...newTicket, jobType: text })}
-        />
+        {['Inspector Name', 'Reason for Inspection', 'Type of Job'].map(
+          (placeholder, index) => (
+            <TextInput
+              key={index}
+              style={styles.inputField}
+              placeholder={placeholder}
+              value={newTicket[Object.keys(newTicket)[index + 10]]}
+              onChangeText={text =>
+                setNewTicket({
+                  ...newTicket,
+                  [Object.keys(newTicket)[index + 10]]: text,
+                })
+              }
+            />
+          )
+        )}
 
+        {/* Photos */}
         {newTicket.photos.length > 0 && (
-          <View style={styles.photosPreview}>
+          <View style={styles.photosContainer}>
             {newTicket.photos.map((uri, index) => (
-              <Image
-                key={index}
-                source={{ uri }}
-                style={styles.photoThumbnail}
-              />
+              <Image key={index} source={{ uri }} style={styles.photo} />
             ))}
           </View>
         )}
@@ -484,26 +460,27 @@ const createTicketScreen = () => {
           <Text style={styles.addPhotoButtonText}>Add Photo</Text>
         </TouchableOpacity>
 
-        <View style={styles.modalButtonContainer}>
+        {/* Buttons: Create, Cancel */}
+        <View style={styles.actionButtons}>
           <TouchableOpacity
             onPress={handleCreateTicket}
             style={[
-              styles.modalButton,
+              styles.actionButton,
               styles.createButton,
               isSubmitting && styles.disabledButton,
             ]}
             disabled={isSubmitting}
           >
-            <Text style={styles.modalButtonText}>
+            <Text style={styles.actionButtonText}>
               {isSubmitting ? 'Creating...' : 'Create'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleBack}
-            style={[styles.modalButton, styles.cancelButton]}
+            style={[styles.actionButton, styles.cancelButton]}
             disabled={isSubmitting}
           >
-            <Text style={styles.modalButtonText}>Cancel</Text>
+            <Text style={styles.actionButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -511,117 +488,169 @@ const createTicketScreen = () => {
   )
 }
 
-export default createTicketScreen
+export default CreateTicketScreen
 
 const styles = StyleSheet.create({
-  screenContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#f0faff', // or white, up to you
+    backgroundColor: '#eceff1',
   },
-  screenContent: {
+  scrollView: {
     padding: 20,
   },
-  backButton: {
-    backgroundColor: '#95a5a6',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 10,
-    alignSelf: 'flex-start',
+  contentContainer: {
+    paddingBottom: 20,
   },
-  backButtonText: {
-    color: '#fff',
+  floatingContainer: {
+    position: 'absolute',
+    top: 0, // Adjust this to your preference
+    left: -10,
+    zIndex: 10, // Ensure it's above other content
+  },
+  floatingBackButton: {
+    backgroundColor: '#2980b9',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, // for android shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  label: {
     fontSize: 16,
+    color: '#34495e',
+    width: 100,
+  },
+  selectorButton: {
+    padding: 5,
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    color: '#34495e',
+    width: 100,
+  },
+  displaySelectorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  displayText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    marginRight: 10,
+    flex: 1,
+  },
+  selectorButton: {
+    padding: 5,
   },
   autocompleteContainer: {
-    width: '100%',
     paddingHorizontal: 0,
-    marginBottom: 12,
+    marginBottom: 20,
   },
-  modalTitle: {
-    fontSize: 20,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 12,
+    color: '#2c3e50',
     textAlign: 'center',
-    color: '#2C3E50',
+    marginBottom: 20,
   },
   sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginVertical: 10,
+  },
+  label: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginVertical: 8,
+    color: '#34495e',
+    marginRight: 10,
   },
-  modalInput: {
-    backgroundColor: '#f0f0f0',
-    borderColor: '#ccc',
+  dateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  dateTimeSelect: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderRadius: 5,
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
+    borderColor: '#bdc3c7',
+    padding: 10,
   },
-  photosPreview: {
+  inputField: {
+    backgroundColor: 'white',
+    borderColor: '#bdc3c7',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  photosContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginVertical: 8,
+    justifyContent: 'flex-start',
+    marginBottom: 10,
   },
-  photoThumbnail: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 8,
+  photo: {
+    width: 60,
+    height: 60,
+    marginRight: 10,
+    marginBottom: 10,
+    borderRadius: 5,
   },
   addPhotoButton: {
-    backgroundColor: '#1ABC9C',
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: '#2ecc71',
+    padding: 10,
+    borderRadius: 5,
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 10,
   },
   addPhotoButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
   },
-  modalButtonContainer: {
+  actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
   },
-  modalButton: {
+  actionButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 5,
     alignItems: 'center',
-    marginHorizontal: 4,
   },
   createButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#2c3e50',
+    marginRight: 5,
   },
   cancelButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: '#c0392b',
+    marginLeft: 5,
   },
   disabledButton: {
-    backgroundColor: '#95a5a6',
+    backgroundColor: '#bdc3c7',
   },
-  modalButtonText: {
+  actionButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  dateTimeButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 5,
-    width: '60%',
-    alignItems: 'center',
+    fontWeight: 'bold',
   },
 })
