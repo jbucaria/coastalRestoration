@@ -364,86 +364,116 @@ const CreateTicketScreen = () => {
           }}
         />
 
-        {['Street', 'Apt # (optional)', 'City', 'State', 'ZIP'].map(
-          (placeholder, index) => (
-            <TextInput
-              key={index}
-              style={styles.inputField}
-              placeholder={placeholder}
-              value={newTicket[Object.keys(newTicket)[index]]}
-              onChangeText={text =>
-                setNewTicket({
-                  ...newTicket,
-                  [Object.keys(newTicket)[index]]: text,
-                })
-              }
-              keyboardType={placeholder === 'ZIP' ? 'numeric' : 'default'}
-            />
-          )
-        )}
+        <TextInput
+          style={styles.inputField}
+          placeholder="Street"
+          value={newTicket.street}
+          onChangeText={text => setNewTicket({ ...newTicket, street: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Apt # (optional)"
+          value={newTicket.apt}
+          onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="City"
+          value={newTicket.city}
+          onChangeText={text => setNewTicket({ ...newTicket, city: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="State"
+          value={newTicket.state}
+          onChangeText={text => setNewTicket({ ...newTicket, state: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="ZIP"
+          value={newTicket.zip}
+          onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
+          keyboardType="numeric"
+        />
 
         {/* Customer Info */}
-        <Text style={styles.sectionTitle}>Customer Info</Text>
-        {['Builder', 'Contact Name', 'Contact Number'].map(
-          (placeholder, index) => (
-            <TextInput
-              key={index}
-              style={styles.inputField}
-              placeholder={placeholder}
-              value={newTicket[Object.keys(newTicket)[index + 5]]}
-              onChangeText={text =>
-                setNewTicket({
-                  ...newTicket,
-                  [Object.keys(newTicket)[index + 5]]: text,
-                })
-              }
-              keyboardType={
-                placeholder === 'Customer Contact Number'
-                  ? 'phone-pad'
-                  : 'default'
-              }
-            />
-          )
-        )}
+        <Text style={styles.sectionTitle}>Builder</Text>
+        <TextInput
+          style={styles.inputField}
+          placeholder="Builder"
+          value={newTicket.customer}
+          onChangeText={text => setNewTicket({ ...newTicket, customer: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Contact Name"
+          value={newTicket.customerName}
+          onChangeText={text =>
+            setNewTicket({ ...newTicket, customerName: text })
+          }
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Contact Number"
+          value={newTicket.customerNumber}
+          onChangeText={text =>
+            setNewTicket({ ...newTicket, customerNumber: text })
+          }
+          keyboardType="phone-pad"
+        />
 
         {/* Homeowner Info */}
-        <Text style={styles.sectionTitle}>Homeowner Info</Text>
-        {['Homeowner Name', 'Homeowner Number'].map((placeholder, index) => (
-          <TextInput
-            key={index}
-            style={styles.inputField}
-            placeholder={placeholder}
-            value={newTicket[Object.keys(newTicket)[index + 8]]}
-            onChangeText={text =>
-              setNewTicket({
-                ...newTicket,
-                [Object.keys(newTicket)[index + 8]]: text,
-              })
-            }
-            keyboardType={
-              placeholder === 'Homeowner Number' ? 'phone-pad' : 'default'
-            }
-          />
-        ))}
+        <Text style={styles.sectionTitle}>Homeowner</Text>
+        <TextInput
+          style={styles.inputField}
+          placeholder="Homeowner Name"
+          value={newTicket.homeOwnerName}
+          onChangeText={text =>
+            setNewTicket({ ...newTicket, homeOwnerName: text })
+          }
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Homeowner Number"
+          value={newTicket.homeOwnerNumber}
+          onChangeText={text =>
+            setNewTicket({ ...newTicket, homeOwnerNumber: text })
+          }
+          keyboardType="phone-pad"
+        />
 
         {/* Ticket Details */}
         <Text style={styles.sectionTitle}>Ticket Details</Text>
-        {['Inspector Name', 'Reason for Inspection', 'Type of Job'].map(
-          (placeholder, index) => (
-            <TextInput
-              key={index}
-              style={styles.inputField}
-              placeholder={placeholder}
-              value={newTicket[Object.keys(newTicket)[index + 10]]}
-              onChangeText={text =>
-                setNewTicket({
-                  ...newTicket,
-                  [Object.keys(newTicket)[index + 10]]: text,
-                })
-              }
-            />
-          )
-        )}
+        <TextInput
+          style={styles.inputField}
+          placeholder="Inspector Name"
+          value={newTicket.inspectorName}
+          onChangeText={text =>
+            setNewTicket({ ...newTicket, inspectorName: text })
+          }
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Reason for Inspection"
+          value={newTicket.reason}
+          onChangeText={text => setNewTicket({ ...newTicket, reason: text })}
+          keyboardType="default"
+        />
+        <TextInput
+          style={styles.inputField}
+          placeholder="Type of Job"
+          value={newTicket.jobType}
+          onChangeText={text => setNewTicket({ ...newTicket, jobType: text })}
+          keyboardType="default"
+        />
 
         {/* Photos */}
         {newTicket.photos.length > 0 && (

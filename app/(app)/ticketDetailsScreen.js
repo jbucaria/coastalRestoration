@@ -200,21 +200,11 @@ const TicketDetailsScreen = () => {
         [
           {
             text: 'Yes',
-            onPress: async () => {
-              try {
-                const projectRef = doc(firestore, 'tickets', ticket.id)
-                await updateDoc(projectRef, { remediationRequired: false })
-                router.push({
-                  pathname: '/RemediationScreen',
-                  params: { projectId: ticket.id },
-                })
-              } catch (error) {
-                console.error('Error updating remediation:', error)
-                Alert.alert(
-                  'Error',
-                  'Failed to update remediation. Please try again.'
-                )
-              }
+            onPress: () => {
+              router.push({
+                pathname: '/RemediationScreen',
+                params: { projectId: ticket.id },
+              })
             },
           },
           {
@@ -286,46 +276,29 @@ const TicketDetailsScreen = () => {
 
         {/* -- CUSTOMER INFO -- */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Customer Info</Text>
+          <View style={styles.sideBySideContainer}>
+            <View style={styles.column}>
+              <Text style={styles.sectionTitle}>Builder:</Text>
+              <Text style={styles.value}>{ticket.customer || 'N/A'}</Text>
+              <Text style={styles.value}>{ticket.customerName || 'N/A'}</Text>
+              <Text
+                onPress={() => handleCall(ticket.contactNumber)}
+                style={[styles.value, styles.link]}
+              >
+                {ticket.contactNumber || 'N/A'}
+              </Text>
+            </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Customer</Text>
-            <Text style={styles.value}>{ticket.customer || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Contact Name</Text>
-            <Text style={styles.value}>{ticket.contactName || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Contact Number</Text>
-            <Text
-              onPress={() => handleCall(ticket.contactNumber)}
-              style={[styles.value, styles.link]}
-            >
-              {ticket.contactNumber || 'N/A'}
-            </Text>
-          </View>
-        </View>
-
-        {/* -- HOMEOWNER INFO -- */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Homeowner Info</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Name</Text>
-            <Text style={styles.value}>{ticket.homeOwnerName || 'N/A'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Number</Text>
-            <Text
-              onPress={() => handleCall(ticket.homeOwnerNumber)}
-              style={[styles.value, styles.link]}
-            >
-              {ticket.homeOwnerNumber || 'N/A'}
-            </Text>
+            <View style={styles.column}>
+              <Text style={styles.sectionTitle}>Homeowner:</Text>
+              <Text style={styles.value}>{ticket.homeOwnerName || 'N/A'}</Text>
+              <Text
+                onPress={() => handleCall(ticket.homeOwnerNumber)}
+                style={[styles.value, styles.link]}
+              >
+                {ticket.homeOwnerNumber || 'N/A'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -449,6 +422,16 @@ const TicketDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   /* Container & Scroll */
+  sideBySideContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  column: {
+    gap: 8, // New style for vertical spacing between eleme
+    flex: 1, // Both columns will take up equal space
+    marginRight: 10, // Adds space between columns, adjust or remove as needed
+  },
   container: {
     flex: 1,
     backgroundColor: '#F3F5F7',
