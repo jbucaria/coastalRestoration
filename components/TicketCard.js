@@ -79,6 +79,9 @@ const TicketCard = ({ project, onPress }) => {
 
   // Build icon array to determine if tab is needed
   const icons = []
+  const isEmpty =
+    !project.remediationData ||
+    Object.keys(project.remediationData).length === 0
 
   if (project.inspectionComplete) {
     icons.push(
@@ -99,6 +102,21 @@ const TicketCard = ({ project, onPress }) => {
         }}
       >
         <IconSymbol name="hammer" size={30} color="green" />
+      </TouchableOpacity>
+    )
+  }
+  if (!isEmpty) {
+    icons.push(
+      <TouchableOpacity
+        key="remediationRequired"
+        onPress={() => {
+          router.push({
+            pathname: '/ViewRemediationScreen',
+            params: { projectId: project.id },
+          })
+        }}
+      >
+        <IconSymbol name="pencil.and.ruler" size={30} color="green" />
       </TouchableOpacity>
     )
   }
