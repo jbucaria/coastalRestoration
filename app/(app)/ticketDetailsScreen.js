@@ -200,11 +200,21 @@ const TicketDetailsScreen = () => {
         [
           {
             text: 'Yes',
-            onPress: () => {
-              router.push({
-                pathname: '/RemediationScreen',
-                params: { projectId: ticket.id },
-              })
+            onPress: async () => {
+              try {
+                const projectRef = doc(firestore, 'tickets', ticket.id)
+                await updateDoc(projectRef, { remediationRequired: false })
+                router.push({
+                  pathname: '/RemediationScreen',
+                  params: { projectId: ticket.id },
+                })
+              } catch (error) {
+                console.error('Error updating remediation:', error)
+                Alert.alert(
+                  'Error',
+                  'Failed to update remediation. Please try again.'
+                )
+              }
             },
           },
           {
