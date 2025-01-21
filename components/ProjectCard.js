@@ -1,21 +1,21 @@
 import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { router } from 'expo-router'
+import { format } from 'date-fns'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import MessageIndicator from '@/components/MessageIndicator'
+import { updateDoc, doc } from 'firebase/firestore'
+import { firestore } from '@/firebaseConfig'
 
 const ProjectCard = ({ project, onPress }) => {
-  // Determine background color based on project status
-  let backgroundColor = 'rgba(200, 200, 200, .9)' // Default translucent gray
-
+  // Background color logic
+  let backgroundColor = ''
   if (project.siteComplete) {
-    backgroundColor = '#8BC34A' // A finished type of green
-  } else if (project.remediationRequired) {
-    backgroundColor = '#FFD700' // Yellow for remediation required
-  } else if (project.equipmentOnSite) {
-    backgroundColor = '#007BFF' // Blue for equipment on site
+    backgroundColor = '#8BC34A'
+  } else {
+    backgroundColor = '#f0faff'
   }
-
+  // Navigation handlers
   const openChatRoom = () => {
     router.push({
       pathname: '/ProjectChatRoom',
@@ -24,128 +24,209 @@ const ProjectCard = ({ project, onPress }) => {
   }
 
   const openReport = () => {
-    router.push({
-      pathname: '/viewReport',
-      params: { projectId: project.id },
-    })
+    router.push({ pathname: '/viewReport', params: { projectId: project.id } })
   }
 
-  // Format date and time
-  const parseDateTime = dateString => {
+  // Convert Firestore Timestamps to JS Dates
+  const startAt = project.startTime?.toDate?.()
+  const endAt = project.endTime?.toDate?.()
+
+  let startTime = 'N/A'
+  let endTime = 'N/A'
+
+  if (startAt) {
+    startTime = format(startAt, 'h:mm a') // e.g., '9:05 AM' with no leading zero
+  }
+  if (endAt) {
+    endTime = format(endAt, 'h:mm a')
+  }
+
+  function handleLeaveSiteConfirmation(projectId) {
+    Alert.alert(
+      'Leaving the site?',
+      'Are you sure you want to confirm leaving the site?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => console.log('User canceled'),
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: () => {
+            // Call the separate function to update the DB
+            leaveSiteAndUpdateDB(projectId)
+          },
+        },
+      ]
+    )
+  }
+
+  async function leaveSiteAndUpdateDB(projectId) {
     try {
-      const dateTime = new Date(dateString)
-      const date = dateTime.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-      const time = dateTime.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      })
-      return { date, time }
+      const projectRef = doc(firestore, 'projects', projectId)
+      await updateDoc(projectRef, { id: projectId, onSite: false })
+
+      console.log(
+        `Updating database for project ${projectId} to onSite = false`
+      )
+
+      // If you need to handle success/failure, do so here.
     } catch (error) {
-      console.error('Error parsing date:', error)
-      return { date: 'Invalid Date', time: 'Invalid Time' }
+      console.error('Error updating the project in the database:', error)
     }
   }
 
-  // Parse date and time from startDate
-  const { date: startDate, time: startTime } = project.startDate
-    ? parseDateTime(project.startDate)
-    : { date: 'No Date', time: 'No Time' }
+  // Build icon array to determine if tab is needed
+  const icons = []
+
+  if (project.inspectionComplete) {
+    icons.push(
+      <TouchableOpacity key="inspectionComplete" onPress={openReport}>
+        <IconSymbol name="text.document" size={30} color="green" />
+      </TouchableOpacity>
+    )
+  }
+
+  if (project.onSite) {
+    icons.push(
+      <TouchableOpacity
+        key="onSite"
+        onPress={() => handleLeaveSiteConfirmation(project.id)}
+      >
+        <IconSymbol
+          key="onSite"
+          name="person.crop.square"
+          size={30}
+          color="green"
+        />
+      </TouchableOpacity>
+    )
+  }
+
+  if (project.equipmentTotal > 0) {
+    icons.push(
+      <TouchableOpacity key="equipment" onPress={openChatRoom}>
+        <MessageIndicator
+          count={project.equipmentTotal}
+          name="fan"
+          size={33}
+          color="black"
+        />
+      </TouchableOpacity>
+    )
+  }
+
+  if (project.messageCount > 0) {
+    icons.push(
+      <TouchableOpacity key="messages" onPress={openChatRoom}>
+        <MessageIndicator
+          count={project.messageCount}
+          name="bubble.left.and.exclamationmark.bubble.right"
+          size={33}
+          color="black"
+        />
+      </TouchableOpacity>
+    )
+  }
+
+  const hasIcons = icons.length > 0
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.projectCard, { backgroundColor: backgroundColor }]}
+      style={[styles.cardContainer, { backgroundColor }]}
     >
-      <View style={styles.cardContent}>
-        <Text style={styles.projectAddress}>{project.street}</Text>
-        <Text style={styles.projectAddress}>
-          {project.city}, {project.state} {project.zip}
+      {/* Header Row: Inspector + Time */}
+      <View style={styles.headerRow}>
+        <Text style={styles.inspectorName}>
+          {project.inspectorName || 'N/A'}
         </Text>
-        <View style={styles.inspectorRow}>
-          <Text style={styles.inspectorName}>
-            {project.inspectorName || 'N/A'}
-          </Text>
-        </View>
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>{startDate}</Text>
-          <Text style={styles.timeText}>Start: {startTime}</Text>
-        </View>
+        <Text style={styles.timeRange}>
+          {startTime} - {endTime}
+        </Text>
       </View>
-      <View style={styles.iconContainer}>
-        {project.inspectionComplete && (
-          <TouchableOpacity onPress={openReport}>
-            <IconSymbol name="text.document" size={30} color="green" />
-          </TouchableOpacity>
-        )}
-        {project.onSite && (
-          <IconSymbol name="person.crop.square" size={30} color="green" />
-        )}
-        {project.equipmentTotal > 0 && (
-          <TouchableOpacity onPress={openChatRoom}>
-            <MessageIndicator
-              count={project.equipmentTotal}
-              name="fan"
-              size={33}
-              color="black"
-            />
-          </TouchableOpacity>
-        )}
-        {project.messageCount > 0 && (
-          <TouchableOpacity onPress={openChatRoom}>
-            <MessageIndicator
-              count={project.messageCount}
-              name="bubble.left.and.exclamationmark.bubble.right"
-              size={33}
-              color="black"
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+
+      {/* Address */}
+      <Text style={styles.addressText}>{project.street}</Text>
+      <Text style={styles.addressSubText}>
+        {project.city}, {project.state} {project.zip}
+      </Text>
+
+      {/* If icons exist, show the tab container */}
+      {hasIcons && (
+        <View style={styles.tabContainer}>{icons.map(icon => icon)}</View>
+      )}
     </TouchableOpacity>
   )
 }
 
 const styles = StyleSheet.create({
-  projectCard: {
+  cardContainer: {
+    marginHorizontal: 8,
+    marginBottom: 12,
     borderRadius: 10,
     padding: 16,
-    marginBottom: 8,
-    marginTop: 3,
+    // Card shadow/elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    // Let the "tab" show beyond the card
+    overflow: 'visible',
+    position: 'relative',
   },
-  cardContent: {
-    flex: 1, // Ensures content takes up the space above icons
-  },
-  inspectorRow: {
+  headerRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
   },
-  inspectorName: { color: 'black', fontSize: 14 },
-  projectAddress: {
-    color: 'black',
+  inspectorName: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#2C3E50',
+    maxWidth: '70%',
   },
-  timeContainer: {
-    marginTop: 8,
-  },
-  timeText: {
-    color: 'black',
+  timeRange: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#555',
   },
-  iconContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  addressText: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  addressSubText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 8,
+  },
+
+  // The "tab" for icons
+  tabContainer: {
     position: 'absolute',
+    bottom: 0,
+    right: 0,
+    // visually extends outside the card
+    transform: [{ translateY: 15 }, { translateX: 15 }],
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
-    bottom: 10,
-    right: 10,
+    // Subtle shadow to differentiate the tab from the card
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    marginRight: 12,
   },
 })
 

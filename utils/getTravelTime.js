@@ -1,7 +1,7 @@
 // utils/getTravelTime.js
 import { getCurrentLocation } from './getCurrentLocation'
 
-const apiKey = ''
+const apiKey = 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs'
 
 export const getTravelTime = async destination => {
   try {

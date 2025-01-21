@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { router } from 'expo-router'
 import {
   View,
   ImageBackground,
@@ -101,8 +102,10 @@ const Index = () => {
   }
 
   const handleProjectPress = project => {
-    setSelectedProject(project)
-    setModalOptionsVisible(true)
+    router.push({
+      pathname: '/ticketDetailsScreen',
+      params: { projectId: project.id },
+    })
   }
 
   const updateProject = useCallback(async (projectId, field, value) => {

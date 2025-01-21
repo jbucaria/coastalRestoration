@@ -49,7 +49,7 @@ export default function TabLayout() {
         options={{
           title: 'Reports',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="hammer" color={color} />
+            <IconSymbol size={28} name="document" color={color} />
           ),
         }}
       />
