@@ -9,12 +9,12 @@ import { router } from 'expo-router'
 // Helper function to mark a report as complete in Firestore
 async function onReportComplete(projectId, field, value) {
   try {
-    const projectDocRef = doc(firestore, 'projects', projectId)
+    const projectDocRef = doc(firestore, 'tickets', projectId)
     await updateDoc(projectDocRef, { [field]: value })
-    console.log(`Project field ${field} updated to ${value}`)
+    console.log(`Ticket field ${field} updated to ${value}`)
   } catch (error) {
-    console.error('Error updating project:', error)
-    Alert.alert('Error', 'Failed to update the project. Please try again.')
+    console.error('Error updating ticket:', error)
+    Alert.alert('Error', 'Failed to update the ticket. Please try again.')
   }
 }
 
@@ -40,9 +40,7 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
         // Create a reference for this file in Firebase Storage
         const storageRef = ref(
           storage,
-          `projects/${projectId}/photos/${Date.now()}_${
-            photo.fileName || index
-          }`
+          `tickets/${projectId}/photos/${Date.now()}_${photo.fileName || index}`
         )
         // Upload the file as a blob
         await uploadBytes(storageRef, blob)
@@ -58,9 +56,9 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
     formData.timestamp = new Date()
 
     // 3. Update the project document in Firestore with the updated inspection report data.
-    const projectRef = doc(firestore, 'projects', projectId)
+    const projectRef = doc(firestore, 'tickets', projectId)
     await updateDoc(projectRef, formData)
-    console.log('Project (with inspection report info) updated successfully.')
+    console.log('Ticket (with inspection report info) updated successfully.')
 
     // 4. Mark the inspection as complete.
     await onReportComplete(projectId, 'inspectionComplete', true)

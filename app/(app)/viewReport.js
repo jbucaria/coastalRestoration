@@ -32,17 +32,17 @@ const ViewReport = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const projectRef = doc(firestore, 'projects', projectId)
+        const projectRef = doc(firestore, 'tickets', projectId)
         const projectSnap = await getDoc(projectRef)
         if (projectSnap.exists()) {
           setProject({ id: projectSnap.id, ...projectSnap.data() })
         } else {
-          console.log('No such project!')
-          Alert.alert('Error', 'Project not found')
+          console.log('No such ticket!')
+          Alert.alert('Error', 'Ticket not found')
         }
       } catch (error) {
-        console.error('Error fetching project:', error)
-        Alert.alert('Error', 'Could not fetch project. Please try again later.')
+        console.error('Error fetching ticket:', error)
+        Alert.alert('Error', 'Could not fetch Ticket. Please try again later.')
       }
     }
     fetchProject()

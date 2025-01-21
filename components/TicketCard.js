@@ -18,13 +18,13 @@ const TicketCard = ({ project, onPress }) => {
   // Navigation handlers
   const openChatRoom = () => {
     router.push({
-      pathname: '/ticketNotesScreen',
+      pathname: '/TicketNotesScreen',
       params: { projectId: project.id },
     })
   }
 
   const openReport = () => {
-    router.push({ pathname: '/viewReport', params: { projectId: project.id } })
+    router.push({ pathname: '/ViewReport', params: { projectId: project.id } })
   }
 
   // Convert Firestore Timestamps to JS Dates
@@ -64,7 +64,7 @@ const TicketCard = ({ project, onPress }) => {
 
   async function leaveSiteAndUpdateDB(projectId) {
     try {
-      const projectRef = doc(firestore, 'projects', projectId)
+      const projectRef = doc(firestore, 'tickets', projectId)
       await updateDoc(projectRef, { id: projectId, onSite: false })
 
       console.log(

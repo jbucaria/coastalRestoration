@@ -12,25 +12,37 @@ const _layout = () => {
         }}
       />
       <Stack.Screen
-        name="inspection"
+        name="TicketDetailsScreen"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="viewReport"
+        name="InspectionScreen"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="ProjectChatRoom"
+        name="CreateTicketScreen"
         options={{
           headerShown: false,
         }}
       />
       <Stack.Screen
-        name="editReportScreen"
+        name="ViewReport"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="TicketNotesScreen"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="EditReportScreen"
         options={{
           headerStyle: {
             backgroundColor: '#2C3E50',

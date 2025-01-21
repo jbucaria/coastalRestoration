@@ -57,7 +57,7 @@ const EquipmentModal = ({
       const total = Object.values(equipment).reduce((sum, qty) => sum + qty, 0)
 
       // Reference to the Firestore document
-      const projectRef = doc(firestore, 'projects', projectId)
+      const projectRef = doc(firestore, 'tickets', projectId)
 
       // Update Firestore with new equipment data
       await updateDoc(projectRef, {

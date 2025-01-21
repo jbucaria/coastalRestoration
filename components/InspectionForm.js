@@ -14,7 +14,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
@@ -161,9 +161,9 @@ const InspectionForm = ({ project, setProject, projectId }) => {
     }
   }
 
-  const updateProject = useCallback(async (projectId, field, value) => {
+  const updateTicket = useCallback(async (projectId, field, value) => {
     try {
-      await updateDoc(doc(firestore, 'projects', projectId), { [field]: value })
+      await updateDoc(doc(firestore, 'tickets', projectId), { [field]: value })
       console.log('Project updated successfully')
       // No need to manually update state; onSnapshot will handle it if you're using real-time listeners
     } catch (error) {
@@ -176,7 +176,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
     if (project && project.id) {
       // Update Firestore first
       try {
-        await updateProject(project.id, field, value)
+        await updateTicket(project.id, field, value)
         console.log(`Firestore updated: ${field} set to ${value}`)
 
         // Update local state without resetting other fields

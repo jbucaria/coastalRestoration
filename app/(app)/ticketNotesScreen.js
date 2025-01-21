@@ -64,7 +64,7 @@ const MessageItem = React.memo(({ item }) => {
   )
 })
 
-const ticketNotesScreen = () => {
+const TicketNotesScreen = () => {
   const params = useLocalSearchParams()
   const { projectId } = params
   const router = useRouter()
@@ -84,7 +84,7 @@ const ticketNotesScreen = () => {
     }
 
     const q = query(
-      collection(firestore, 'projectChats'),
+      collection(firestore, 'ticketNotes'),
       where('projectId', '==', projectId),
       orderBy('timestamp', 'asc')
     )
@@ -123,7 +123,7 @@ const ticketNotesScreen = () => {
     if (newMessage.trim() === '') return
 
     try {
-      await addDoc(collection(firestore, 'projectChats'), {
+      await addDoc(collection(firestore, 'ticketNotes'), {
         projectId: projectId,
         userId: auth.currentUser.uid,
         userName: user?.displayName || user?.email || auth.currentUser.email,
@@ -131,7 +131,7 @@ const ticketNotesScreen = () => {
         timestamp: serverTimestamp(),
       })
 
-      const projectRef = doc(firestore, 'projects', projectId)
+      const projectRef = doc(firestore, 'tickets', projectId)
       await updateDoc(projectRef, {
         messageCount: increment(1),
       })
@@ -168,7 +168,7 @@ const ticketNotesScreen = () => {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chat Room</Text>
+          <Text style={styles.headerTitle}>Notes</Text>
         </View>
         <FlatList
           data={messages}
@@ -196,7 +196,7 @@ const ticketNotesScreen = () => {
   )
 }
 
-export default ticketNotesScreen
+export default TicketNotesScreen
 
 const styles = StyleSheet.create({
   container: {

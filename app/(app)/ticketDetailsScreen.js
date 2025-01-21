@@ -24,42 +24,42 @@ import { PhotoModal } from '@/components/PhotoModal'
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
 
-const ticketDetailsScreen = () => {
+const TicketDetailsScreen = () => {
   const router = useRouter()
   const { projectId } = useLocalSearchParams()
 
-  const [project, setProject] = useState(null)
+  const [ticket, setTicket] = useState(null)
   const [eta, setEta] = useState(null)
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
-  // If you want a local approach to "homeowner" or "photos", you might store them in `project`.
+  // If you want a local approach to "homeowner" or "photos", you might store them in `ticket`.
 
   useEffect(() => {
     if (!projectId) return
 
-    const fetchProject = async () => {
+    const fetchTicket = async () => {
       try {
-        console.log('Fetching project with ID:', projectId)
-        const docRef = doc(firestore, 'projects', projectId)
+        console.log('Fetching ticket with ID:', projectId)
+        const docRef = doc(firestore, 'tickets', projectId)
         const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          setProject({ id: docSnap.id, ...docSnap.data() })
+          setTicket({ id: docSnap.id, ...docSnap.data() })
         } else {
-          Alert.alert('Not Found', 'Project does not exist.')
+          Alert.alert('Not Found', 'Ticket does not exist.')
           router.back()
         }
       } catch (error) {
-        console.error('Error fetching project data:', error)
-        Alert.alert('Error', 'Unable to fetch project data.')
+        console.error('Error fetching ticket data:', error)
+        Alert.alert('Error', 'Unable to fetch ticket data.')
       }
     }
 
-    fetchProject()
+    fetchTicket()
   }, [projectId])
 
   useEffect(() => {
-    if (project?.address) {
-      getTravelTime(project.address)
+    if (ticket?.address) {
+      getTravelTime(ticket.address)
         .then(info => setEta(info.durationText))
         .catch(error => {
           console.error('Error fetching travel time:', error)
@@ -68,12 +68,12 @@ const ticketDetailsScreen = () => {
     } else {
       setEta(null)
     }
-  }, [project])
+  }, [ticket])
 
-  if (!project) {
+  if (!ticket) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading project details...</Text>
+        <Text style={styles.loadingText}>Loading ticket details...</Text>
       </SafeAreaView>
     )
   }
@@ -159,22 +159,24 @@ const ticketDetailsScreen = () => {
 
   // Example placeholder for start inspection
   const handleInspection = () => {
-    if (!project) {
-      Alert.alert('Error', 'No project selected for inspection or viewing.')
+    if (!ticket) {
+      Alert.alert('Error', 'No ticket selected for inspection or viewing.')
       return
     }
-    const route = project.inspectionComplete ? '/viewReport' : '/inspection'
+    const route = ticket.inspectionComplete
+      ? '/ViewReport'
+      : '/InspectionScreen'
     router.push({
       pathname: route,
-      params: { projectId: project.id },
+      params: { projectId: ticket.projectId },
     })
   }
 
   // Example open Chat
-  const openChatRoom = () => {
+  const openNotes = () => {
     router.push({
-      pathname: '/ProjectChatRoom',
-      params: { projectId: project.id },
+      pathname: '/TicketNotesScreen',
+      params: { projectId: ticket.id },
     })
   }
 
@@ -191,7 +193,7 @@ const ticketDetailsScreen = () => {
 
   // If you want to do a "Remediation Toggle" logic, you can replicate from your old code
   const handleRemediationToggle = value => {
-    // e.g. setProject(prev => ({ ...prev, remediationRequired: value }))
+    // e.g. setTicket(prev => ({ ...prev, remediationRequired: value }))
     if (value) {
       Alert.alert(
         'Input Measurements',
@@ -201,8 +203,8 @@ const ticketDetailsScreen = () => {
             text: 'Yes',
             onPress: () => {
               router.push({
-                pathname: '/remediation',
-                params: { projectId: project.id },
+                pathname: '/RemediationScreen',
+                params: { projectId: ticket.id },
               })
             },
           },
@@ -223,22 +225,22 @@ const ticketDetailsScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Title */}
-        <Text style={styles.projectModalTitle}>
-          Ticket# {project.projectId}
-        </Text>
 
         {/* Address + ETA */}
         <View style={styles.card}>
           <Text style={styles.addressValue}>
-            {formatAddress(project.address) || 'N/A'}
+            {formatAddress(ticket.address) || 'N/A'}
           </Text>
           <TouchableOpacity
-            onPress={() => openGoogleMapsWithETA(project.address)}
+            onPress={() => openGoogleMapsWithETA(ticket.address)}
             style={styles.etaContainer}
           >
             <Text style={styles.etaLabel}>Estimated Arrival</Text>
             <Text style={styles.etaValue}>{eta || 'Fetching...'}</Text>
           </TouchableOpacity>
+          <Text style={styles.projectFieldLabel}>
+            Ticket:{ticket.ticketNumber}
+          </Text>
         </View>
 
         {/* Customer Info */}
@@ -246,18 +248,18 @@ const ticketDetailsScreen = () => {
           <Text style={styles.subTitle}>Customer Info</Text>
           <Text style={styles.projectFieldLabel}>Customer:</Text>
           <Text style={styles.projectFieldValue}>
-            {project.customer || 'N/A'}
+            {ticket.customer || 'N/A'}
           </Text>
 
           <Text style={styles.projectFieldLabel}>Contact Name:</Text>
           <Text style={styles.projectFieldValue}>
-            {project.contactName || 'N/A'}
+            {ticket.contactName || 'N/A'}
           </Text>
 
           <Text style={styles.projectFieldLabel}>Contact Number:</Text>
-          <TouchableOpacity onPress={() => handleCall(project.contactNumber)}>
+          <TouchableOpacity onPress={() => handleCall(ticket.contactNumber)}>
             <Text style={[styles.projectFieldValue, styles.clickable]}>
-              {project.contactNumber || 'N/A'}
+              {ticket.contactNumber || 'N/A'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -267,13 +269,13 @@ const ticketDetailsScreen = () => {
           <Text style={styles.subTitle}>Homeowner Info</Text>
           <Text style={styles.projectFieldLabel}>Name:</Text>
           <Text style={styles.projectFieldValue}>
-            {project.homeOwnerName || 'N/A'}
+            {ticket.homeOwnerName || 'N/A'}
           </Text>
 
           <Text style={styles.projectFieldLabel}>Number:</Text>
-          <TouchableOpacity onPress={() => handleCall(project.homeOwnerNumber)}>
+          <TouchableOpacity onPress={() => handleCall(ticket.homeOwnerNumber)}>
             <Text style={[styles.projectFieldValue, styles.clickable]}>
-              {project.homeOwnerNumber || 'N/A'}
+              {ticket.homeOwnerNumber || 'N/A'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -282,43 +284,42 @@ const ticketDetailsScreen = () => {
         <View style={styles.card}>
           <Text style={styles.projectFieldLabel}>Inspector:</Text>
           <Text style={styles.projectFieldValue}>
-            {project.inspectorName || 'N/A'}
+            {ticket.inspectorName || 'N/A'}
           </Text>
           <Text style={styles.projectFieldLabel}>Reason for Visit:</Text>
-          <Text style={styles.projectFieldValue}>
-            {project.reason || 'N/A'}
-          </Text>
+          <Text style={styles.projectFieldValue}>{ticket.reason || 'N/A'}</Text>
         </View>
 
         {/* Switches (On Site, Remediation, Equipment, Site Complete) */}
         <View style={styles.card}>
           <SwitchComponent
-            projectId={project.id}
+            projectId={ticket.id}
             field="onSite"
             label="On Site"
-            value={project?.onSite || false}
+            value={ticket?.onSite || false}
           />
 
           <SwitchComponent
-            projectId={project.id}
+            projectId={ticket.id}
             field="remediationRequired"
             label=" Remeditation Required"
-            value={project?.remediationRequired || false}
+            value={ticket?.remediationRequired || false}
+            onToggle={handleRemediationToggle}
           />
 
           <SwitchComponent
-            projectId={project.id}
+            projectId={ticket.id}
             field="equipmentOnSite"
-            label={project.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
-            value={project?.equipmentOnSite || false}
+            label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
+            value={ticket?.equipmentOnSite || false}
             onShowModal={() => setIsEquipmentModalVisible(true)}
           />
 
           <SwitchComponent
-            projectId={project.id}
+            projectId={ticket.id}
             field="siteComplete"
             label="Site Complete"
-            value={project?.siteComplete || false}
+            value={ticket?.siteComplete || false}
           />
         </View>
 
@@ -326,16 +327,16 @@ const ticketDetailsScreen = () => {
         <EquipmentModal
           visible={isEquipmentModalVisible}
           onClose={() => setIsEquipmentModalVisible(false)}
-          projectId={project.id}
+          projectId={ticket.id}
           // other props like initialQuantities if you have them
         />
 
         {/* Photos */}
         <View style={styles.card}>
           <Text style={styles.subTitle}>Photos</Text>
-          {project.photos && project.photos.length > 0 ? (
+          {ticket.photos && ticket.photos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {project.photos.map((uri, index) => (
+              {ticket.photos.map((uri, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePhotoPress(uri)}
@@ -356,15 +357,21 @@ const ticketDetailsScreen = () => {
             onPress={handleInspection}
           >
             <Text style={styles.actionButtonText}>
-              {project.inspectionComplete ? 'View Report' : 'Start Inspection'}
+              {ticket.inspectionComplete ? 'View Report' : 'Start Inspection'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#2980B9' }]}
-            onPress={openChatRoom}
+            onPress={openNotes}
           >
-            <Text style={styles.actionButtonText}>Chat</Text>
+            <Text style={styles.actionButtonText}>Notes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#2980B9' }]}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.actionButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -378,7 +385,7 @@ const ticketDetailsScreen = () => {
   )
 }
 
-export default ticketDetailsScreen
+export default TicketDetailsScreen
 
 const styles = StyleSheet.create({
   container: {

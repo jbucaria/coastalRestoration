@@ -3,22 +3,33 @@ import { View, Text, Switch, StyleSheet, Alert } from 'react-native'
 import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
-const SwitchComponent = ({ projectId, field, label, value, onShowModal }) => {
+const SwitchComponent = ({
+  projectId,
+  field,
+  label,
+  value,
+  onShowModal,
+  onToggle,
+}) => {
   const [switchValue, setSwitchValue] = useState(value)
 
   const handleToggle = async newValue => {
     setSwitchValue(newValue)
     try {
       // Update Firestore field
-      const projectRef = doc(firestore, 'projects', projectId)
+      const projectRef = doc(firestore, 'tickets', projectId)
       await updateDoc(projectRef, { [field]: newValue })
+
+      if (typeof onToggle === 'function') {
+        onToggle(newValue) // Call `onToggle` callback if provided
+      }
 
       if (onShowModal && newValue) {
         onShowModal() // Show modal when toggled on and `onShowModal` is provided
       }
     } catch (error) {
       console.error(`Failed to update ${field}:`, error)
-      Alert.alert('Error', 'Failed to update the project. Please try again.')
+      Alert.alert('Error', 'Failed to update the ticket. Please try again.')
     }
   }
 

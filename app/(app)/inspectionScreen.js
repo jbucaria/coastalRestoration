@@ -3,33 +3,17 @@ import { Alert } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import { onSnapshot, collection } from 'firebase/firestore'
 
-import InspectionForm from '@/components/InspectionForm'
+import { InspectionForm } from '@/components/InspectionForm'
 import { firestore } from '@/firebaseConfig'
 
-const inspectionScreen = () => {
+const InspectionScreen = () => {
   const params = useLocalSearchParams()
   const { projectId } = params
-
-  const [customer, setCustomer] = useState('')
-  const [address, setAddress] = useState('')
-  const [date, setDate] = useState(new Date())
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [reason, setReason] = useState('')
-  const [customerName, setCustomerName] = useState('')
-  const [customerNumber, setCustomerNumber] = useState('')
-  const [inspectorName, setInspectorName] = useState('')
-  const [hours, setHours] = useState('')
-  const [inspectionResults, setInspectionResults] = useState('')
-  const [recommendedActions, setRecommendedActions] = useState('')
-  const [photos, setPhotos] = useState([])
-  const [isSaving, setIsSaving] = useState(false)
   const [project, setProject] = useState({})
-  const [homeOwnerName, setHomeOwnerName] = useState('')
-  const [homeOwnerNumber, setHomeOwnerNumber] = useState('')
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      collection(firestore, 'projects'),
+      collection(firestore, 'tickets'),
       snapshot => {
         const projectsData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -58,13 +42,6 @@ const inspectionScreen = () => {
     return () => unsubscribe()
   }, [projectId]) // Ensure this runs when projectId changes
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false)
-    if (selectedDate) {
-      setDate(selectedDate)
-    }
-  }
-
   return (
     <InspectionForm
       project={project}
@@ -74,4 +51,4 @@ const inspectionScreen = () => {
   )
 }
 
-export default inspectionScreen
+export default InspectionScreen

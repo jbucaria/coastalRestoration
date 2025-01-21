@@ -196,4 +196,4 @@ const styles = {
   },
 }
 
-export default ReportModal
+export { ReportModal }

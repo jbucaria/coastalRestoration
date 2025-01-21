@@ -20,7 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import 'react-native-get-random-values'
 
-const initialProjectState = {
+const initialTicketStatus = {
   street: '',
   apt: '',
   city: '',
@@ -49,7 +49,7 @@ const initialProjectState = {
 const createTicketScreen = () => {
   const router = useRouter() // Allows navigation back, if desired
 
-  const [newProject, setNewProject] = useState(initialProjectState)
+  const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [startTime, setStartTime] = useState(new Date())
@@ -60,7 +60,7 @@ const createTicketScreen = () => {
 
   // Reset the form state
   const resetForm = () => {
-    setNewProject(initialProjectState)
+    setNewTicket(initialTicketStatus)
   }
 
   // Return to the previous screen
@@ -98,51 +98,54 @@ const createTicketScreen = () => {
     return components
   }
 
-  const createProject = async projectData => {
+  const createTicket = async ticketData => {
     try {
-      const docRef = await addDoc(collection(firestore, 'projects'), {
-        ...projectData,
+      const docRef = await addDoc(collection(firestore, 'tickets'), {
+        ...ticketData,
         createdAt: new Date(),
       })
 
-      await updateDoc(docRef, { projectId: docRef.id })
+      const docId = docRef.id
+      const lastSix = docId.slice(-6)
+      const ticketNumber = `CR-${lastSix}`
+      await updateDoc(docRef, { projectId: docId, ticketNumber })
 
-      Alert.alert('Success', 'Project created successfully.')
+      Alert.alert('Success', 'Ticket created successfully.')
       // Reset the form after a successful save
       resetForm()
     } catch (error) {
-      console.error('Error creating project:', error)
-      Alert.alert('Error', 'Failed to create the project. Please try again.')
+      console.error('Error creating ticket:', error)
+      Alert.alert('Error', 'Failed to create the ticket. Please try again.')
     }
   }
 
-  const handleCreateProject = async () => {
+  const handleCreateTicket = async () => {
     if (isSubmitting) return
     setIsSubmitting(true)
 
     try {
       if (
-        !newProject.street ||
-        !newProject.city ||
-        !newProject.state ||
-        !newProject.zip ||
-        !newProject.customer
+        !newTicket.street ||
+        !newTicket.city ||
+        !newTicket.state ||
+        !newTicket.zip ||
+        !newTicket.customer
       ) {
         Alert.alert('Validation Error', 'Please fill out all required fields.')
         setIsSubmitting(false)
         return
       }
 
-      const formattedNumber = newProject.customerNumber
+      const formattedNumber = newTicket.customerNumber
         .replace(/\D/g, '')
         .replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
 
-      const composedAddress = `${newProject.street}${
-        newProject.apt ? ' Apt ' + newProject.apt : ''
-      }, ${newProject.city}, ${newProject.state} ${newProject.zip}`
+      const composedAddress = `${newTicket.street}${
+        newTicket.apt ? ' Apt ' + newTicket.apt : ''
+      }, ${newTicket.city}, ${newTicket.state} ${newTicket.zip}`
 
-      const projectData = {
-        ...newProject,
+      const ticketData = {
+        ...newTicket,
         contactNumber: formattedNumber,
         address: composedAddress,
         startDate: selectedDate,
@@ -151,14 +154,14 @@ const createTicketScreen = () => {
         createdAt: new Date(),
       }
 
-      await createProject(projectData)
+      await createTicket(ticketData)
 
       // After successful save, reset the form and navigate back
       resetForm()
       router.back()
     } catch (error) {
-      console.error('Error creating project:', error)
-      Alert.alert('Error', 'Failed to create the project. Please try again.')
+      console.error('Error creating the ticket:', error)
+      Alert.alert('Error', 'Failed to create the ticket. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -167,7 +170,7 @@ const createTicketScreen = () => {
   const handleAutocompletePress = (data, details = null) => {
     if (details && details.address_components) {
       const parsed = parseAddressComponents(details.address_components)
-      setNewProject(prev => ({
+      setNewTicket(prev => ({
         ...prev,
         street: parsed.street,
         city: parsed.city,
@@ -176,7 +179,7 @@ const createTicketScreen = () => {
       }))
     } else {
       console.log('No details returned:', data)
-      setNewProject(prev => ({
+      setNewTicket(prev => ({
         ...prev,
         street: data.description,
       }))
@@ -206,7 +209,7 @@ const createTicketScreen = () => {
         const blob = await response.blob()
         const fileRef = ref(
           storage,
-          `projectPhotos/${Date.now()}_${asset.fileName}`
+          `ticketPhotos/${Date.now()}_${asset.fileName}`
         )
         await uploadBytes(fileRef, blob)
         const downloadURL = await getDownloadURL(fileRef)
@@ -215,7 +218,7 @@ const createTicketScreen = () => {
 
       try {
         const newPhotoURLs = await Promise.all(uploadPromises)
-        setNewProject(prev => ({
+        setNewTicket(prev => ({
           ...prev,
           photos: [...prev.photos, ...newPhotoURLs],
         }))
@@ -361,38 +364,38 @@ const createTicketScreen = () => {
           )}
         </View>
 
-        <Text style={styles.modalTitle}>Create New Project</Text>
+        <Text style={styles.modalTitle}>Create New Ticket</Text>
 
         <Text style={styles.sectionTitle}>Address</Text>
         <TextInput
           style={styles.modalInput}
           placeholder="Street"
-          value={newProject.street}
-          onChangeText={text => setNewProject({ ...newProject, street: text })}
+          value={newTicket.street}
+          onChangeText={text => setNewTicket({ ...newTicket, street: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Apt # (optional)"
-          value={newProject.apt}
-          onChangeText={text => setNewProject({ ...newProject, apt: text })}
+          value={newTicket.apt}
+          onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="City"
-          value={newProject.city}
-          onChangeText={text => setNewProject({ ...newProject, city: text })}
+          value={newTicket.city}
+          onChangeText={text => setNewTicket({ ...newTicket, city: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="State"
-          value={newProject.state}
-          onChangeText={text => setNewProject({ ...newProject, state: text })}
+          value={newTicket.state}
+          onChangeText={text => setNewTicket({ ...newTicket, state: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="ZIP"
-          value={newProject.zip}
-          onChangeText={text => setNewProject({ ...newProject, zip: text })}
+          value={newTicket.zip}
+          onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
           keyboardType="numeric"
         />
 
@@ -400,25 +403,23 @@ const createTicketScreen = () => {
         <TextInput
           style={styles.modalInput}
           placeholder="Company / Customer Name"
-          value={newProject.customer}
-          onChangeText={text =>
-            setNewProject({ ...newProject, customer: text })
-          }
+          value={newTicket.customer}
+          onChangeText={text => setNewTicket({ ...newTicket, customer: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Customer Contact Name"
-          value={newProject.customerName}
+          value={newTicket.customerName}
           onChangeText={text =>
-            setNewProject({ ...newProject, customerName: text })
+            setNewTicket({ ...newTicket, customerName: text })
           }
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Customer Contact Number"
-          value={newProject.customerNumber}
+          value={newTicket.customerNumber}
           onChangeText={text =>
-            setNewProject({ ...newProject, customerNumber: text })
+            setNewTicket({ ...newTicket, customerNumber: text })
           }
           keyboardType="phone-pad"
         />
@@ -427,46 +428,46 @@ const createTicketScreen = () => {
         <TextInput
           style={styles.modalInput}
           placeholder="Homeowner Name"
-          value={newProject.homeOwnerName}
+          value={newTicket.homeOwnerName}
           onChangeText={text =>
-            setNewProject({ ...newProject, homeOwnerName: text })
+            setNewTicket({ ...newTicket, homeOwnerName: text })
           }
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Homeowner Number"
-          value={newProject.homeOwnerNumber}
+          value={newTicket.homeOwnerNumber}
           onChangeText={text =>
-            setNewProject({ ...newProject, homeOwnerNumber: text })
+            setNewTicket({ ...newTicket, homeOwnerNumber: text })
           }
           keyboardType="phone-pad"
         />
 
-        <Text style={styles.sectionTitle}>Project Details</Text>
+        <Text style={styles.sectionTitle}>Ticket Details</Text>
         <TextInput
           style={styles.modalInput}
           placeholder="Inspector Name"
-          value={newProject.inspectorName}
+          value={newTicket.inspectorName}
           onChangeText={text =>
-            setNewProject({ ...newProject, inspectorName: text })
+            setNewTicket({ ...newTicket, inspectorName: text })
           }
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Reason for Inspection"
-          value={newProject.reason}
-          onChangeText={text => setNewProject({ ...newProject, reason: text })}
+          value={newTicket.reason}
+          onChangeText={text => setNewTicket({ ...newTicket, reason: text })}
         />
         <TextInput
           style={styles.modalInput}
           placeholder="Type of Job"
-          value={newProject.jobType}
-          onChangeText={text => setNewProject({ ...newProject, jobType: text })}
+          value={newTicket.jobType}
+          onChangeText={text => setNewTicket({ ...newTicket, jobType: text })}
         />
 
-        {newProject.photos.length > 0 && (
+        {newTicket.photos.length > 0 && (
           <View style={styles.photosPreview}>
-            {newProject.photos.map((uri, index) => (
+            {newTicket.photos.map((uri, index) => (
               <Image
                 key={index}
                 source={{ uri }}
@@ -485,7 +486,7 @@ const createTicketScreen = () => {
 
         <View style={styles.modalButtonContainer}>
           <TouchableOpacity
-            onPress={handleCreateProject}
+            onPress={handleCreateTicket}
             style={[
               styles.modalButton,
               styles.createButton,
@@ -515,7 +516,7 @@ export default createTicketScreen
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)', // or white, up to you
+    backgroundColor: '#f0faff', // or white, up to you
   },
   screenContent: {
     padding: 20,

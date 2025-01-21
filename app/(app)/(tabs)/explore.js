@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { router } from 'expo-router'
 import {
   FlatList,
   TouchableOpacity,
@@ -21,8 +20,6 @@ import {
   orderBy,
 } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
-import * as FileSystem from 'expo-file-system'
-import * as Sharing from 'expo-sharing'
 
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
@@ -31,7 +28,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 
 import { ReportModal } from '@/components/ReportModal'
 
-const ReportsPage = () => {
+const Reports = () => {
   // State for reports and filtering
   const [reports, setReports] = useState([])
   const textColor = useThemeColor({}, 'text')
@@ -83,7 +80,7 @@ const ReportsPage = () => {
 
   // Listen for Firestore updates with filters.
   useEffect(() => {
-    const projectsRef = collection(firestore, 'projects')
+    const projectsRef = collection(firestore, 'tickets')
     let q = query(
       projectsRef,
       where('inspectionComplete', '==', true),
@@ -221,7 +218,7 @@ const ReportsPage = () => {
   )
 }
 
-export default ReportsPage
+export default Reports
 
 const styles = StyleSheet.create({
   container: {

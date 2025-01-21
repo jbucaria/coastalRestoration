@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { router } from 'expo-router'
+import { router, Link } from 'expo-router'
 import {
   View,
   ImageBackground,
@@ -22,7 +22,7 @@ import {
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
-import { Link } from 'expo-router'
+
 import { ProjectDetailsModal } from '@/components/ProjectDetailsModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
@@ -52,7 +52,7 @@ const Index = () => {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
-      collection(firestore, 'projects'),
+      collection(firestore, 'tickets'),
       snapshot => {
         const projectsData = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -64,11 +64,8 @@ const Index = () => {
         filterProjectsByDate(projectsData)
       },
       error => {
-        console.error('Error fetching projects:', error)
-        Alert.alert(
-          'Error',
-          'Could not fetch projects. Please try again later.'
-        )
+        console.error('Error fetching tickets:', error)
+        Alert.alert('Error', 'Could not fetch tickets. Please try again later.')
       }
     )
 
@@ -103,7 +100,7 @@ const Index = () => {
 
   const handleProjectPress = project => {
     router.push({
-      pathname: '/ticketDetailsScreen',
+      pathname: '/TicketDetailsScreen',
       params: { projectId: project.id },
     })
   }
@@ -206,14 +203,12 @@ const Index = () => {
         </ScrollView>
 
         <View style={styles.floatingButtonContainer}>
-          <Link href="/addProjectScreen" asChild>
-            <TouchableOpacity
-              onPress={() => setModalVisible(true)}
-              style={styles.floatingButton}
-            >
-              <IconSymbol name="plus" size={30} color="white" />
-            </TouchableOpacity>
-          </Link>
+          <TouchableOpacity
+            onPress={() => router.push('/createTicketScreen')}
+            style={styles.floatingButton}
+          >
+            <IconSymbol name="plus" size={30} color="white" />
+          </TouchableOpacity>
         </View>
 
         <ProjectDetailsModal
