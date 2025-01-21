@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { useRouter } from 'expo-router' // For back navigation, if desired
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import { firestore } from '@/firebaseConfig'
 import * as ImagePicker from 'expo-image-picker'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import { useRouter } from 'expo-router' // For back navigation, if desired
+import 'react-native-get-random-values'
 
 const initialProjectState = {
   street: '',
