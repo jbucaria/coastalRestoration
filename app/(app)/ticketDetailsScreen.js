@@ -371,16 +371,22 @@ const TicketDetailsScreen = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Photos</Text>
           {ticket.photos && ticket.photos.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {ticket.photos.map((uri, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handlePhotoPress(uri)}
-                >
-                  <Image source={{ uri }} style={styles.projectPhoto} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            (console.log('ticket.photos', ticket.photos),
+            (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {ticket.photos.map((photo, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handlePhotoPress(photo.uri)}
+                  >
+                    <Image
+                      source={{ uri: photo.uri }}
+                      style={styles.projectPhoto}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ))
           ) : (
             <Text style={styles.placeholderText}>No photos available</Text>
           )}
@@ -411,15 +417,15 @@ const TicketDetailsScreen = () => {
             <Text style={styles.actionButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={styles.siteCompleteButton}
+          onPress={handleSiteComplete}
+        >
+          <Text style={styles.siteCompleteButtonText}>Mark Site Complete</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* -- SITE COMPLETE BUTTON at the bottom -- */}
-      <TouchableOpacity
-        style={styles.siteCompleteButton}
-        onPress={handleSiteComplete}
-      >
-        <Text style={styles.siteCompleteButtonText}>Mark Site Complete</Text>
-      </TouchableOpacity>
 
       {/* -- FULL PHOTO PREVIEW -- */}
       <PhotoModal
@@ -439,7 +445,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100, // leave room for the bottom button
+    paddingBottom: 16, // Reduced padding since buttons are at the bottom now
   },
   centeredContainer: {
     flex: 1,
@@ -480,20 +486,23 @@ const styles = StyleSheet.create({
   },
   etaContainer: {
     backgroundColor: '#2ECC71',
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     alignSelf: 'center',
+    marginBottom: 8,
   },
   etaLabel: {
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
+    textAlign: 'center',
   },
   etaValue: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 
   /* Section Containers */
@@ -548,44 +557,57 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* Action Buttons (Inspection, Notes, Back) */
-  actionsContainer: {
+  /* Action Buttons (including "Mark Site Complete") */
+
+  actionButtonRow: {
+    // New style for arranging buttons in rows
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  actionsContainer: {
     marginTop: 12,
     marginBottom: 24,
-    justifyContent: 'space-between',
   },
   actionButton: {
-    flex: 1,
     backgroundColor: '#2C3E50',
-    borderRadius: 6,
-    paddingVertical: 12,
-    marginHorizontal: 4,
+    borderRadius: 30, // More rounded for a modern look
+    paddingVertical: 14, // Increased vertical padding for larger tap area
+    paddingHorizontal: 20,
+    marginVertical: 8, // Vertical spacing between buttons
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
+    textTransform: 'uppercase', // Uppercase for emphasis
   },
-
-  /* Bottom "Site Complete" Button */
   siteCompleteButton: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
     backgroundColor: '#2ECC71',
-    borderRadius: 10,
+    borderRadius: 30, // Match the style of other buttons
     paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   siteCompleteButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
 })
 
