@@ -6,7 +6,7 @@ import { onSnapshot, collection } from 'firebase/firestore'
 import InspectionForm from '@/components/InspectionForm'
 import { firestore } from '@/firebaseConfig'
 
-export default function App() {
+const inspectionScreen = () => {
   const params = useLocalSearchParams()
   const { projectId } = params
 
@@ -73,3 +73,5 @@ export default function App() {
     />
   )
 }
+
+export default inspectionScreen

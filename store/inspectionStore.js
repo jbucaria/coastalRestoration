@@ -52,4 +52,4 @@ const useInspectionStore = create(set => ({
     })),
 }))
 
-export default useInspectionStore
+export { useInspectionStore }

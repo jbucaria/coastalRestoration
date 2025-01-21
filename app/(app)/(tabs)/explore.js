@@ -29,7 +29,7 @@ import { ThemedView } from '@/components/ThemedView'
 import { useThemeColor } from '@/hooks/useThemeColor'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
-import ReportModal from '@/components/ReportModal'
+import { ReportModal } from '@/components/ReportModal'
 
 const ReportsPage = () => {
   // State for reports and filtering

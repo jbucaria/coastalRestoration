@@ -21,10 +21,10 @@ import {
 } from 'firebase/firestore'
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
-import ProjectCard from '@/components/ProjectCard'
+import { TicketCard } from '@/components/TicketCard'
 import { Link } from 'expo-router'
-import ProjectDetailsModal from '@/components/ProjectDetailsModal'
-import PhotoModal from '@/components/PhotoModal'
+import { ProjectDetailsModal } from '@/components/ProjectDetailsModal'
+import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
 const Index = () => {
@@ -197,7 +197,7 @@ const Index = () => {
 
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           {filteredProjects.map(project => (
-            <ProjectCard
+            <TicketCard
               key={project.id}
               project={project}
               onPress={() => handleProjectPress(project)}

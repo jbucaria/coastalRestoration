@@ -67,6 +67,8 @@ const PhotoModal = ({ visible, photo, onClose }) => {
   )
 }
 
+export { PhotoModal }
+
 const styles = StyleSheet.create({
   photoModalBackground: {
     flex: 1,
@@ -98,5 +100,3 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 })
-
-export default PhotoModal

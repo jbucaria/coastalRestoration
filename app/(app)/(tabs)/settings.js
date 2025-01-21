@@ -17,7 +17,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore'
 import { auth, firestore } from '@/firebaseConfig'
 import { KeyboardToolbar } from 'react-native-keyboard-controller'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import useUserStore from '@/store/useUserStore'
+import { useUserStore } from '@/store/useUserStore'
 
 const Settings = () => {
   const router = useRouter()
@@ -258,7 +258,7 @@ const Settings = () => {
                   onPress={() => setEditing(true)}
                   style={styles.editButton}
                 >
-                  <Text style={styles.editButtonText}>Edit</Text>
+                  <Text style={styles.editButtonText}>Update Profile</Text>
                 </TouchableOpacity>
               </>
             )}

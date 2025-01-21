@@ -17,8 +17,8 @@ import {
 
 import { getTravelTime } from '@/utils/getTravelTime'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import SwitchComponent from './SwitchComponent'
-import EquipmentModal from './EquipmentModal'
+import { SwitchComponent } from './SwitchComponent'
+import { EquipmentModal } from './EquipmentModal'
 
 const ProjectDetailsModal = ({
   visible,
@@ -404,6 +404,8 @@ const ProjectDetailsModal = ({
   )
 }
 
+export { ProjectDetailsModal }
+
 const styles = StyleSheet.create({
   addressValue: {
     fontSize: 24,
@@ -576,5 +578,3 @@ const styles = StyleSheet.create({
     backgroundColor: '#7f8c8d',
   },
 })
-
-export default ProjectDetailsModal

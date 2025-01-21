@@ -17,14 +17,14 @@ import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import SwitchComponent from '@/components/SwitchComponent'
-import EquipmentModal from '@/components/EquipmentModal'
-import PhotoModal from '@/components/PhotoModal'
+import { SwitchComponent } from '@/components/SwitchComponent'
+import { EquipmentModal } from '@/components/EquipmentModal'
+import { PhotoModal } from '@/components/PhotoModal'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
 
-export default function TicketDetailsScreen() {
+const ticketDetailsScreen = () => {
   const router = useRouter()
   const { projectId } = useLocalSearchParams()
 
@@ -223,7 +223,9 @@ export default function TicketDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Title */}
-        <Text style={styles.projectModalTitle}>Project Details</Text>
+        <Text style={styles.projectModalTitle}>
+          Ticket# {project.projectId}
+        </Text>
 
         {/* Address + ETA */}
         <View style={styles.card}>
@@ -375,6 +377,8 @@ export default function TicketDetailsScreen() {
     </SafeAreaView>
   )
 }
+
+export default ticketDetailsScreen
 
 const styles = StyleSheet.create({
   container: {

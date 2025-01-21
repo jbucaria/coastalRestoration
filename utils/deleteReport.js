@@ -1,4 +1,4 @@
-import { doc, deleteDoc, updateDoc } from 'firebase/firestore'
+import { doc, deleteDoc } from 'firebase/firestore'
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import { Alert } from 'react-native'

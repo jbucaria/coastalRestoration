@@ -8,4 +8,4 @@ const useUserStore = create(set => ({
   // You could add additional actions (updateProfile, etc.) as needed
 }))
 
-export default useUserStore
+export { useUserStore }

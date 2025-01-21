@@ -18,7 +18,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
-import { doc, updateDoc, collection } from 'firebase/firestore'
+import { doc, updateDoc } from 'firebase/firestore'
 
 import { firestore } from '@/firebaseConfig'
 import { ThemedView } from '@/components/ThemedView'
@@ -381,7 +381,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   )
 }
 
-export default InspectionForm
+export { InspectionForm }
 
 const styles = StyleSheet.create({
   safeArea: {

@@ -46,7 +46,7 @@ const initialProjectState = {
   siteComplete: false,
 }
 
-export default function AddProjectScreen() {
+const createTicketScreen = () => {
   const router = useRouter() // Allows navigation back, if desired
 
   const [newProject, setNewProject] = useState(initialProjectState)
@@ -509,6 +509,8 @@ export default function AddProjectScreen() {
     </SafeAreaView>
   )
 }
+
+export default createTicketScreen
 
 const styles = StyleSheet.create({
   screenContainer: {

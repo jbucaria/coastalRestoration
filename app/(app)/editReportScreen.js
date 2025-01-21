@@ -346,6 +346,8 @@ const EditReportPage = () => {
   )
 }
 
+export default EditReportPage
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -455,5 +457,3 @@ const styles = StyleSheet.create({
     height: 100,
   },
 })
-
-export default EditReportPage

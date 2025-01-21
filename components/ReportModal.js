@@ -1,12 +1,18 @@
 import React, { useState } from 'react'
-import { Modal, View, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { router } from 'expo-router'
+import {
+  Modal,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from 'react-native'
+import * as FileSystem from 'expo-file-system'
+import * as Sharing from 'expo-sharing'
+
 import { ThemedText } from '@/components/ThemedText'
 import { ThemedView } from '@/components/ThemedView'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import { router } from 'expo-router'
-import * as FileSystem from 'expo-file-system'
-import * as Sharing from 'expo-sharing'
-import { Alert } from 'react-native'
 
 const ReportModal = ({
   modalVisible,

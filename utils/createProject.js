@@ -1,5 +1,4 @@
 // creaeteProject.js
-import { Alert } from 'react-native'
 import { addDoc, updateDoc, collection } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'

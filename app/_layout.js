@@ -7,7 +7,7 @@ import { ThemeProvider, DefaultTheme } from '@react-navigation/native'
 import { auth, firestore } from '@/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
-import useUserStore from '@/store/useUserStore'
+import { useUserStore } from '@/store/useUserStore'
 
 export default function RootLayout() {
   const [initializing, setInitializing] = useState(true)

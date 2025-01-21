@@ -35,7 +35,7 @@ const formatPhoneNumber = phone => {
   return formatted
 }
 
-const OnboardingScreen = () => {
+const onboardingScreen = () => {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState({
@@ -197,6 +197,8 @@ const OnboardingScreen = () => {
   )
 }
 
+export default onboardingScreen
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -242,5 +244,3 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 })
-
-export default OnboardingScreen

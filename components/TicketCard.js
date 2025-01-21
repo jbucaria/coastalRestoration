@@ -3,11 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { router } from 'expo-router'
 import { format } from 'date-fns'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import MessageIndicator from '@/components/MessageIndicator'
+import { MessageIndicator } from '@/components/MessageIndicator'
 import { updateDoc, doc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
-const ProjectCard = ({ project, onPress }) => {
+const TicketCard = ({ project, onPress }) => {
   // Background color logic
   let backgroundColor = ''
   if (project.siteComplete) {
@@ -18,7 +18,7 @@ const ProjectCard = ({ project, onPress }) => {
   // Navigation handlers
   const openChatRoom = () => {
     router.push({
-      pathname: '/ProjectChatRoom',
+      pathname: '/ticketNotesScreen',
       params: { projectId: project.id },
     })
   }
@@ -230,4 +230,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default ProjectCard
+export { TicketCard }

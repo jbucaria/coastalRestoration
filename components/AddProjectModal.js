@@ -521,6 +521,8 @@ const AddProjectModal = ({ visible, onClose }) => {
   )
 }
 
+export { AddProjectModal }
+
 const styles = StyleSheet.create({
   autocompleteContainer: {
     width: '100%',
@@ -643,5 +645,3 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 })
-
-export default AddProjectModal

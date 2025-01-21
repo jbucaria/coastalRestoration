@@ -19,4 +19,4 @@ const useProjectStore = create(set => ({
   setProjects: projects => set({ projects }), // To set all projects (useful for syncing with Firestore)
 }))
 
-export default useProjectStore
+export { useProjectStore }

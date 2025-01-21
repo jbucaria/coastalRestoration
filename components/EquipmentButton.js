@@ -20,4 +20,4 @@ const EquipmentButton = ({ onPress }) => {
   )
 }
 
-export default EquipmentButton
+export { EquipmentButton }

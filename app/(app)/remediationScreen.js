@@ -2,7 +2,7 @@ import React from 'react'
 import { View, Text } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 
-const remediation = () => {
+const remediationScreen = () => {
   const params = useLocalSearchParams()
   const projectId = params.projectId
   return (
@@ -12,4 +12,4 @@ const remediation = () => {
   )
 }
 
-export default remediation
+export default remediationScreen

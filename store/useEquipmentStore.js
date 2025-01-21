@@ -19,4 +19,4 @@ const useEquipmentStore = create(set => ({
       equipmentOnSite: status,
     })),
 }))
-export default useEquipmentStore
+export { useEquipmentStore }

@@ -25,7 +25,7 @@ import {
   increment,
 } from 'firebase/firestore'
 import { auth, firestore } from '@/firebaseConfig'
-import useUserStore from '@/store/useUserStore'
+import { useUserStore } from '@/store/useUserStore'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 
 const MessageItem = React.memo(({ item }) => {
@@ -64,7 +64,7 @@ const MessageItem = React.memo(({ item }) => {
   )
 })
 
-const ProjectChatRoom = () => {
+const ticketNotesScreen = () => {
   const params = useLocalSearchParams()
   const { projectId } = params
   const router = useRouter()
@@ -196,7 +196,7 @@ const ProjectChatRoom = () => {
   )
 }
 
-export default ProjectChatRoom
+export default ticketNotesScreen
 
 const styles = StyleSheet.create({
   container: {

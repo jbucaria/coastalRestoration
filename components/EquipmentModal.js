@@ -177,7 +177,7 @@ const EquipmentModal = ({
   )
 }
 
-export default EquipmentModal
+export { EquipmentModal }
 
 const styles = StyleSheet.create({
   overlay: {

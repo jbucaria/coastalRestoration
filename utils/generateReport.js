@@ -5,8 +5,6 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { storage, firestore } from '@/firebaseConfig'
 import { Alert } from 'react-native'
 import { router } from 'expo-router'
-// Optionally import atob if needed:
-import { atob } from 'abab' // if atob is not defined in your environment
 
 // Helper function to mark a report as complete in Firestore
 async function onReportComplete(projectId, field, value) {
