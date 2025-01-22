@@ -5,11 +5,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Switch,
-  TextInput,
-  Platform,
+  ScrollView,
 } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
+import CheckBox from '@react-native-community/checkbox'
+import { Picker } from '@react-native-picker/picker'
 
 const FilterModal = ({
   visible,
@@ -17,45 +16,40 @@ const FilterModal = ({
   onApplyFilters,
   initialFilters = {},
 }) => {
-  const [startDate, setStartDate] = useState(
-    initialFilters.startDate ? new Date(initialFilters.startDate) : new Date()
-  )
-  const [sortField, setSortField] = useState(
-    initialFilters.sortField || 'siteComplete'
-  )
-  const [sortDirection, setSortDirection] = useState(
-    initialFilters.sortDirection || 'asc'
-  )
-  const [searchQuery, setSearchQuery] = useState(
-    initialFilters.searchQuery || ''
-  )
-  const [showDatePicker, setShowDatePicker] = useState(false)
+  // Sorting options state
+  const [sortOptions, setSortOptions] = useState({
+    siteComplete: false,
+    remediationRequired: false,
+    equipmentOnSite: false,
+    inspectorName: false,
+  })
 
-  const resetFilters = () => {
-    setStartDate(new Date())
-    setSortField('siteComplete')
-    setSortDirection('asc')
-    setSearchQuery('')
+  const [inspectorName, setInspectorName] = useState('') // For inspector selection
+  const [showInspectorPicker, setShowInspectorPicker] = useState(false) // Show/hide inspector picker
+
+  const toggleSortOption = option => {
+    setSortOptions(prev => ({
+      ...prev,
+      [option]: !prev[option],
+      inspectorName: option === 'inspectorName' ? !prev[option] : false, // Reset inspectorName if not selected
+    }))
+    if (option !== 'inspectorName') setInspectorName('') // Clear inspector name if not inspectorName option
+    setShowInspectorPicker(option === 'inspectorName')
   }
 
   const applyFilters = () => {
-    onApplyFilters({
-      startDate: startDate ? startDate.toISOString() : '',
-      sortField,
-      sortDirection,
-      searchQuery,
-    })
-  }
-
-  const toggleSortField = field => {
-    setSortField(field)
-  }
-
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (selectedDate) {
-      setStartDate(selectedDate)
+    if (sortOptions.inspectorName && !inspectorName) {
+      alert('Please select an inspector.')
+      return
     }
+    const sortField =
+      Object.keys(sortOptions).find(key => sortOptions[key]) || 'siteComplete' // Default to siteComplete
+    onApplyFilters({
+      sortField,
+      sortDirection: 'asc', // Default to ascending
+      inspectorName: sortField === 'inspectorName' ? inspectorName : undefined,
+    })
+    onClose()
   }
 
   return (
@@ -71,75 +65,64 @@ const FilterModal = ({
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.title}>Filters</Text>
-            <TouchableOpacity onPress={resetFilters}>
+            <Text style={styles.title}>Sort Options</Text>
+            <TouchableOpacity
+              onPress={() =>
+                setSortOptions({
+                  siteComplete: false,
+                  remediationRequired: false,
+                  equipmentOnSite: false,
+                  inspectorName: false,
+                })
+              }
+            >
               <Text style={styles.resetButton}>Reset</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Start Date</Text>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.optionText}>
-                {startDate ? startDate.toDateString() : 'Select Date'}
-              </Text>
-            </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                value={startDate || new Date()}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
-            )}
-          </View>
+          <ScrollView>
+            <View style={styles.section}>
+              {[
+                'siteComplete',
+                'remediationRequired',
+                'equipmentOnSite',
+                'inspectorName',
+              ].map(option => (
+                <View key={option} style={styles.sortOption}>
+                  <CheckBox
+                    value={sortOptions[option]}
+                    onValueChange={() => toggleSortOption(option)}
+                    disabled={
+                      sortOptions.inspectorName && option !== 'inspectorName'
+                    } // Disable other options if inspectorName is selected
+                  />
+                  <Text style={styles.sortLabel}>
+                    {option
+                      .replace(/([A-Z])/g, ' $1')
+                      .replace(/^./, str => str.toUpperCase())}
+                  </Text>
+                </View>
+              ))}
+            </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sort By</Text>
-            {[
-              'siteComplete',
-              'remediationRequired',
-              'equipmentOnSite',
-              'inspectorName',
-            ].map(field => (
-              <View key={field} style={styles.sortOption}>
-                <Switch
-                  value={sortField === field}
-                  onValueChange={() => toggleSortField(field)}
-                  trackColor={{ false: '#767577', true: '#81b0ff' }}
-                  thumbColor={sortField === field ? '#f5dd4b' : '#f4f3f4'}
-                />
-                <Text style={styles.sortLabel}>
-                  {field
-                    .replace(/([A-Z])/g, ' $1')
-                    .replace(/^./, str => str.toUpperCase())}
-                </Text>
+            {showInspectorPicker && (
+              <View style={styles.inspectorPickerContainer}>
+                <Text style={styles.sectionTitle}>Select Inspector</Text>
+                <Picker
+                  selectedValue={inspectorName}
+                  onValueChange={itemValue => setInspectorName(itemValue)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Select an inspector" value="" />
+                  <Picker.Item label="John Bucaria" value="John Bucaria" />
+                  <Picker.Item label="Dave Sprott" value="Dave Sprott" />
+                </Picker>
               </View>
-            ))}
-            <TouchableOpacity
-              onPress={() =>
-                setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'))
-              }
-              style={styles.sortDirection}
-            >
-              <Text>
-                Order: {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Search Address</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Enter address"
-              onChangeText={setSearchQuery}
-              value={searchQuery}
-            />
-          </View>
+            )}
+          </ScrollView>
 
           <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
+            <Text style={styles.applyButtonText}>Apply Sort</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -180,15 +163,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#333',
-  },
   sortOption: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -198,21 +172,23 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
   },
-  sortDirection: {
-    marginTop: 10,
+  inspectorPickerContainer: {
+    marginBottom: 20,
   },
-  searchInput: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    paddingHorizontal: 10,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
   },
   applyButton: {
     backgroundColor: '#3498db',
     padding: 12,
     alignItems: 'center',
     borderRadius: 8,
-    marginTop: 20,
   },
   applyButtonText: {
     color: 'white',

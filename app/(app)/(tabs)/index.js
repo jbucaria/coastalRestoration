@@ -37,6 +37,7 @@ const TicketsScreen = () => {
   const [filters, setFilters] = useState({
     sortField: 'siteComplete',
     sortDirection: 'asc',
+    inspectorName: '',
   })
 
   // Modal visibility
@@ -78,7 +79,6 @@ const TicketsScreen = () => {
           id: doc.id,
           ...doc.data(),
         }))
-        console.log('Fetched projects:', projectsData) // Check if data is received
         setProjects(projectsData)
         setIsLoading(false)
       },
@@ -96,10 +96,17 @@ const TicketsScreen = () => {
 
   // Apply filters and sorting
   useEffect(() => {
-    let sortedProjects = [...projects]
+    let filtered = [...projects]
+
+    // Apply inspectorName filter if selected
+    if (filters.sortField === 'inspectorName' && filters.inspectorName) {
+      filtered = filtered.filter(
+        project => project.inspectorName === filters.inspectorName
+      )
+    }
 
     // Apply sorting
-    sortedProjects.sort((a, b) => {
+    filtered.sort((a, b) => {
       const fieldA = a[filters.sortField]?.toString().toLowerCase() || ''
       const fieldB = b[filters.sortField]?.toString().toLowerCase() || ''
       if (fieldA < fieldB) return filters.sortDirection === 'asc' ? -1 : 1
@@ -107,8 +114,8 @@ const TicketsScreen = () => {
       return 0
     })
 
-    setFilteredProjects(sortedProjects)
-  }, [projects, filters.sortField, filters.sortDirection])
+    setFilteredProjects(filtered)
+  }, [projects, filters, searchQuery])
 
   // Handle opening and applying filters
   const openFilterModal = () => setFilterModalVisible(true)
@@ -258,12 +265,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#777',
     fontStyle: 'italic',
-    marginRight: 5, // Add some space between text and date picker
+    marginRight: 5,
   },
   datePicker: {
     width: 150,
     marginLeft: 5,
-    marginRight: 5, // Add some space before the Today button
+    marginRight: 5,
   },
   todayButton: {
     padding: 5,
@@ -321,23 +328,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
   },
-  scrollViewContent: {
-    paddingBottom: 100,
-  },
-  noResultsText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#888',
-    marginTop: 20,
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 160,
+    right: 24,
   },
   iconContainer: {
     position: 'absolute',
     bottom: 90,
-    right: 24,
-  },
-  floatingButtonContainer: {
-    position: 'absolute',
-    bottom: 160,
     right: 24,
   },
   floatingButton: {
