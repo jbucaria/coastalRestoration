@@ -9,9 +9,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Platform,
+  ActivityIndicator,
 } from 'react-native'
-import { collection, onSnapshot } from 'firebase/firestore'
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+  Timestamp,
+} from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
 import { FilterModal } from '@/components/FilterModal'
@@ -23,34 +29,58 @@ const TicketsScreen = () => {
   const [projects, setProjects] = useState([])
   const [filteredProjects, setFilteredProjects] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [isLoading, setIsLoading] = useState(true)
 
   // Filter state
   const [filters, setFilters] = useState({
-    startDate: new Date(), // Changed to Date object for easier manipulation
     sortField: 'siteComplete',
     sortDirection: 'asc',
-    searchQuery: '',
   })
 
   // Modal visibility
   const [isFilterModalVisible, setFilterModalVisible] = useState(false)
-  const [showDatePicker, setShowDatePicker] = useState(false)
 
   // Animated values for opacity
   const scrollY = useRef(new Animated.Value(0)).current
 
-  // Fetch all tickets from Firestore
   useEffect(() => {
-    const projectsRef = collection(firestore, 'tickets')
+    let baseQuery = collection(firestore, 'tickets')
+    let constructedQuery = baseQuery
+
+    if (searchQuery) {
+      // Prioritize search query over date filtering
+      constructedQuery = query(
+        constructedQuery,
+        where('address', '>=', searchQuery),
+        where('address', '<=', searchQuery + '\uf8ff')
+      )
+    } else if (selectedDate) {
+      // Apply date filter if no search query is present
+      const startOfDay = Timestamp.fromDate(
+        new Date(selectedDate.setHours(0, 0, 0, 0))
+      )
+      const endOfDay = Timestamp.fromDate(
+        new Date(selectedDate.setHours(23, 59, 59, 999))
+      )
+      constructedQuery = query(
+        constructedQuery,
+        where('startDate', '>=', startOfDay),
+        where('startDate', '<=', endOfDay)
+      )
+    }
 
     const unsubscribe = onSnapshot(
-      projectsRef,
+      constructedQuery,
       snapshot => {
         const projectsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }))
+        console.log('Fetched projects:', projectsData) // Check if data is received
         setProjects(projectsData)
+        setIsLoading(false)
       },
       error => {
         console.error('Error fetching projects:', error)
@@ -62,37 +92,14 @@ const TicketsScreen = () => {
     )
 
     return () => unsubscribe()
-  }, [])
+  }, [searchQuery, selectedDate])
 
   // Apply filters and sorting
   useEffect(() => {
-    let filtered = [...projects]
-
-    // Apply search query
-    if (searchQuery) {
-      filtered = filtered.filter(
-        project =>
-          project.address &&
-          project.address.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    // Apply date filter
-    if (filters.startDate) {
-      const filterDate = filters.startDate
-      filtered = filtered.filter(project => {
-        const projectDate = project.startDate
-          ? project.startDate.toDate()
-          : null
-        return (
-          projectDate &&
-          projectDate.toDateString() === filterDate.toDateString()
-        )
-      })
-    }
+    let sortedProjects = [...projects]
 
     // Apply sorting
-    filtered.sort((a, b) => {
+    sortedProjects.sort((a, b) => {
       const fieldA = a[filters.sortField]?.toString().toLowerCase() || ''
       const fieldB = b[filters.sortField]?.toString().toLowerCase() || ''
       if (fieldA < fieldB) return filters.sortDirection === 'asc' ? -1 : 1
@@ -100,8 +107,8 @@ const TicketsScreen = () => {
       return 0
     })
 
-    setFilteredProjects(filtered)
-  }, [projects, searchQuery, filters])
+    setFilteredProjects(sortedProjects)
+  }, [projects, filters.sortField, filters.sortDirection])
 
   // Handle opening and applying filters
   const openFilterModal = () => setFilterModalVisible(true)
@@ -112,10 +119,10 @@ const TicketsScreen = () => {
     closeFilterModal()
   }
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (selectedDate) {
-      setFilters(prev => ({ ...prev, startDate: selectedDate }))
+  const handleDateChange = (event, date) => {
+    if (date) {
+      setSelectedDate(date)
+      setSearchQuery('') // Clear search when selecting a new date
     }
   }
 
@@ -134,7 +141,10 @@ const TicketsScreen = () => {
           style={styles.searchInput}
           placeholder="Search by address..."
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={text => {
+            setSearchQuery(text)
+            setSelectedDate(null) // Clear selected date when typing a search query
+          }}
         />
         <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
           <Text style={styles.filterButtonText}>Filter</Text>
@@ -142,17 +152,30 @@ const TicketsScreen = () => {
       </View>
 
       {/* Display current filter date */}
-      <TouchableOpacity onPress={() => {}} style={styles.dateIndicator}>
-        <Text style={styles.dateText}>Showing tickets for: </Text>
-        <DateTimePicker
-          value={filters.startDate}
-          mode="date"
-          display="compact"
-          onChange={handleDateChange}
-          style={styles.datePicker}
-        />
-      </TouchableOpacity>
-
+      {!searchQuery && (
+        <View style={styles.dateIndicator}>
+          <Text style={styles.dateText}>Showing tickets for: </Text>
+          <DateTimePicker
+            value={selectedDate || new Date()} // Use new Date() as fallback when selectedDate is null
+            mode="date"
+            display="compact"
+            onChange={(event, date) => {
+              if (date) {
+                setSelectedDate(date) // Update selectedDate if a valid date is selected
+              } else {
+                setSelectedDate(null) // Clear selectedDate if needed
+              }
+            }}
+            style={styles.datePicker}
+          />
+          <TouchableOpacity
+            onPress={() => setSelectedDate(new Date())}
+            style={styles.todayButton}
+          >
+            <Text style={styles.todayButtonText}>Today</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {/* Tickets List */}
       <Animated.ScrollView
         contentContainerStyle={styles.scrollViewContent}
@@ -162,13 +185,19 @@ const TicketsScreen = () => {
         )}
         scrollEventThrottle={16}
       >
-        {filteredProjects.length > 0 ? (
+        {isLoading ? (
+          <ActivityIndicator
+            size="large"
+            color="#0000ff"
+            style={styles.loadingIndicator}
+          />
+        ) : filteredProjects.length > 0 ? (
           filteredProjects.map((project, index) => (
             <View
               key={project.id}
               style={[
                 styles.ticketContainer,
-                { backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#eaeaea' }, // Alternating shades
+                { backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#eaeaea' },
               ]}
             >
               <TicketCard
@@ -222,17 +251,28 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 5,
     marginBottom: 10,
-    flexDirection: 'row', // Align children horizontally
-    alignItems: 'center', // Center align items vertically
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dateText: {
     fontSize: 12,
     color: '#777',
     fontStyle: 'italic',
+    marginRight: 5, // Add some space between text and date picker
   },
   datePicker: {
-    width: 150, // Adjust width as needed
-    marginLeft: 5, // Space from text
+    width: 150,
+    marginLeft: 5,
+    marginRight: 5, // Add some space before the Today button
+  },
+  todayButton: {
+    padding: 5,
+    backgroundColor: '#3498db',
+    borderRadius: 5,
+  },
+  todayButtonText: {
+    color: 'white',
+    fontSize: 12,
   },
   scrollViewContent: {
     paddingBottom: 100,
