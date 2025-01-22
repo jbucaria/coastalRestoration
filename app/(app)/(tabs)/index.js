@@ -96,6 +96,7 @@ const TicketsScreen = () => {
 
   // Apply filters and sorting
   useEffect(() => {
+    console.log('Applying sort and filters:', filters)
     let filtered = [...projects]
 
     // Apply inspectorName filter if selected
@@ -111,9 +112,13 @@ const TicketsScreen = () => {
       const fieldB = b[filters.sortField]?.toString().toLowerCase() || ''
       if (fieldA < fieldB) return filters.sortDirection === 'asc' ? -1 : 1
       if (fieldA > fieldB) return filters.sortDirection === 'asc' ? 1 : -1
-      return 0
+      return a.id < b.id ? -1 : 1 // Secondary sort by ID if necessary
     })
 
+    console.log(
+      'Sorted projects:',
+      filtered.map(p => p.id)
+    )
     setFilteredProjects(filtered)
   }, [projects, filters, searchQuery])
 
@@ -122,6 +127,7 @@ const TicketsScreen = () => {
   const closeFilterModal = () => setFilterModalVisible(false)
 
   const applyFilters = newFilters => {
+    console.log('New filters applied:', newFilters)
     setFilters(prevFilters => ({ ...prevFilters, ...newFilters }))
     closeFilterModal()
   }
