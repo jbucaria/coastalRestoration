@@ -1,277 +1,226 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { router, Link } from 'expo-router'
+import React, { useState, useEffect } from 'react'
+import { router } from 'expo-router'
 import {
   View,
-  ImageBackground,
   SafeAreaView,
   ScrollView,
   Alert,
   StyleSheet,
   TouchableOpacity,
   Text,
-  Platform,
+  TextInput,
 } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import {
-  collection,
-  onSnapshot,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from 'firebase/firestore'
-import { getStorage, ref, deleteObject } from 'firebase/storage'
+import { collection, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
-import { PhotoModal } from '@/components/PhotoModal'
+import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { AnimatedIconLegend } from '@/components/IconLegend'
 
-const Index = () => {
-  const [modalVisible, setModalVisible] = useState(false)
-  const [modalOptionsVisible, setModalOptionsVisible] = useState(false)
-  const [selectedProject, setSelectedProject] = useState(null)
-  const [selectedPhoto, setSelectedPhoto] = useState(null)
+const TicketsScreen = () => {
   const [projects, setProjects] = useState([])
-  const [showDatePicker, setShowDatePicker] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date())
   const [filteredProjects, setFilteredProjects] = useState([])
-  const storage = getStorage()
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Helper function to convert a Firebase download URL into a Storage path.
-  const getFirebasePathFromUrl = downloadURL => {
-    try {
-      const pathSegment = downloadURL.split('/o/')[1]
-      const noQuery = pathSegment.split('?')[0]
-      return decodeURIComponent(noQuery)
-    } catch (error) {
-      console.error('Error parsing Storage path from URL:', downloadURL, error)
-      return null
-    }
-  }
+  // Filter state
+  const [filters, setFilters] = useState({
+    taskType: '',
+    showWorkOrders: false,
+    priority: '',
+    status: '',
+    sortField: 'inspectorName',
+    sortDirection: 'asc',
+  })
 
+  // Modal visibility
+  const [isFilterModalVisible, setFilterModalVisible] = useState(false)
+
+  // Fetch all tickets from Firestore
   useEffect(() => {
+    const projectsRef = collection(firestore, 'tickets')
+
     const unsubscribe = onSnapshot(
-      collection(firestore, 'tickets'),
+      projectsRef,
       snapshot => {
         const projectsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          // Assuming 'date' is stored as a Firebase Timestamp
-          date: doc.data().date ? new Date(doc.data().date) : null,
         }))
         setProjects(projectsData)
-        filterProjectsByDate(projectsData)
       },
       error => {
-        console.error('Error fetching tickets:', error)
-        Alert.alert('Error', 'Could not fetch tickets. Please try again later.')
+        console.error('Error fetching projects:', error)
+        Alert.alert(
+          'Error',
+          'Could not fetch projects. Please try again later.'
+        )
       }
     )
 
     return () => unsubscribe()
   }, [])
 
-  const filterProjectsByDate = projectsList => {
-    if (!selectedDate) return setFilteredProjects(projectsList)
+  // Apply filters and sorting
+  useEffect(() => {
+    let filtered = [...projects]
 
-    const startOfDay = new Date(selectedDate)
-    startOfDay.setHours(0, 0, 0, 0)
+    // Apply search query
+    if (searchQuery) {
+      filtered = filtered.filter(project => {
+        if (!project.address) return false
+        return project.address.toLowerCase().includes(searchQuery.toLowerCase())
+      })
+    }
 
-    const endOfDay = new Date(selectedDate)
-    endOfDay.setHours(23, 59, 59, 999)
+    // Apply task type filter
+    if (filters.taskType) {
+      filtered = filtered.filter(
+        project => project.taskType === filters.taskType
+      )
+    }
 
-    const filtered = projectsList.filter(project => {
-      if (!project.startDate) return false
-      const projectDate = project.startDate.toDate()
-      return projectDate >= startOfDay && projectDate <= endOfDay
+    // Apply show work orders filter
+    if (filters.showWorkOrders) {
+      filtered = filtered.filter(project => project.showWorkOrders === true)
+    }
+
+    // Apply priority filter
+    if (filters.priority) {
+      filtered = filtered.filter(
+        project => project.priority === filters.priority
+      )
+    }
+
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(project => project.status === filters.status)
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const fieldA = a[filters.sortField]?.toString().toLowerCase() || ''
+      const fieldB = b[filters.sortField]?.toString().toLowerCase() || ''
+      if (fieldA < fieldB) return filters.sortDirection === 'asc' ? -1 : 1
+      if (fieldA > fieldB) return filters.sortDirection === 'asc' ? 1 : -1
+      return 0
     })
 
     setFilteredProjects(filtered)
-  }
+  }, [projects, searchQuery, filters])
 
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (date) {
-      setSelectedDate(date)
-      filterProjectsByDate(projects)
-    }
-  }
+  // Handle opening and applying filters
+  const openFilterModal = () => setFilterModalVisible(true)
+  const closeFilterModal = () => setFilterModalVisible(false)
 
-  const handleProjectPress = project => {
-    router.push({
-      pathname: '/TicketDetailsScreen',
-      params: { projectId: project.id },
-    })
-  }
-
-  const updateProject = useCallback(async (projectId, field, value) => {
-    try {
-      await updateDoc(doc(firestore, 'projects', projectId), { [field]: value })
-      console.log('Project updated successfully')
-    } catch (error) {
-      console.error('Error updating project:', error)
-      Alert.alert('Error', 'Failed to update the project. Please try again.')
-    }
-  }, [])
-
-  const handleDeleteProject = async () => {
-    if (!selectedProject) return
-
-    Alert.alert(
-      'Confirm Deletion',
-      'Are you sure you want to delete this project and all its photos?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'OK',
-          onPress: async () => {
-            try {
-              if (selectedProject.photos && selectedProject.photos.length > 0) {
-                const deletePromises = selectedProject.photos.map(
-                  async photoURL => {
-                    try {
-                      const path = getFirebasePathFromUrl(photoURL)
-                      if (path) {
-                        const fileRef = ref(storage, path)
-                        await deleteObject(fileRef)
-                        console.log('Photo deleted:', photoURL)
-                      }
-                    } catch (err) {
-                      console.error('Error deleting photo from Storage:', err)
-                    }
-                  }
-                )
-                await Promise.all(deletePromises)
-              }
-              await deleteDoc(doc(firestore, 'projects', selectedProject.id))
-              Alert.alert(
-                'Success',
-                'Project and its photos have been deleted.'
-              )
-              setModalOptionsVisible(false)
-              setSelectedProject(null)
-            } catch (error) {
-              Alert.alert(
-                'Error',
-                'Failed to delete the project: ' + error.message
-              )
-              console.error('Deletion error:', error)
-            }
-          },
-        },
-      ],
-      { cancelable: false }
-    )
+  const applyFilters = newFilters => {
+    setFilters(newFilters)
+    closeFilterModal()
   }
 
   return (
-    <ImageBackground
-      source={require('../../../assets/images/logo.png')}
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.datePickerContainer}>
-          <Text style={styles.dateLabel}>Select Date</Text>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.dateButton}
-          >
-            <Text style={styles.dateButtonText}>
-              {selectedDate ? selectedDate.toDateString() : 'Select Date'}
-            </Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate || new Date()}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-            />
-          )}
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {filteredProjects.map(project => (
-            <TicketCard
-              key={project.id}
-              project={project}
-              onPress={() => handleProjectPress(project)}
-            />
-          ))}
-        </ScrollView>
-
-        <View style={styles.floatingButtonContainer}>
-          <TouchableOpacity
-            onPress={() => router.push('/CreateTicketScreen')}
-            style={styles.floatingButton}
-          >
-            <IconSymbol name="plus" size={30} color="white" />
-          </TouchableOpacity>
-          <AnimatedIconLegend />
-        </View>
-
-        <PhotoModal
-          visible={selectedPhoto !== null}
-          photo={selectedPhoto}
-          onClose={() => setSelectedPhoto(null)}
-          setModalOptionsVisible={setModalOptionsVisible}
+    <SafeAreaView style={styles.safeArea}>
+      {/* Header Actions */}
+      <View style={styles.header}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by address..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      </SafeAreaView>
-    </ImageBackground>
+        <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>Filter</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tickets List */}
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {filteredProjects.map(project => (
+          <TicketCard
+            key={project.id}
+            project={project}
+            onPress={() =>
+              router.push({
+                pathname: '/TicketDetailsScreen',
+                params: { projectId: project.id },
+              })
+            }
+          />
+        ))}
+      </ScrollView>
+      <View style={styles.floatingButtonContainer}>
+        <TouchableOpacity
+          onPress={() => router.push('/CreateTicketScreen')}
+          style={styles.floatingButton}
+        >
+          <IconSymbol name="plus" size={30} color="white" />
+          <Text>Create Ticket</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.iconContainer}>
+        <AnimatedIconLegend />
+      </View>
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={isFilterModalVisible}
+        onClose={closeFilterModal}
+        onApplyFilters={applyFilters}
+        initialFilters={filters}
+      />
+    </SafeAreaView>
   )
 }
 
-export default Index
+export default TicketsScreen
 
 const styles = StyleSheet.create({
-  background: { flex: 1 },
   safeArea: {
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Slight overlay for readability
+    backgroundColor: 'white',
   },
   header: {
-    paddingVertical: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomColor: '#ccc',
-    borderBottomWidth: 1,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+  searchInput: {
+    flex: 1,
+    backgroundColor: '#f2f2f2',
+    padding: 8,
+    borderRadius: 8,
+
+    marginHorizontal: 8,
   },
-  datePickerContainer: {
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  dateLabel: {
-    fontSize: 16,
-    marginBottom: 4,
-    color: '#555',
-  },
-  dateButton: {
+  filterButton: {
+    marginRight: 8,
     backgroundColor: '#3498db',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    padding: 10,
     borderRadius: 8,
   },
-  dateButtonText: {
+  filterButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
   },
   scrollViewContent: {
-    paddingBottom: 100, // Ensure content doesn't hide behind floating button
+    paddingBottom: 100,
   },
-  floatingButtonContainer: {
+  iconContainer: {
     position: 'absolute',
     bottom: 90,
     right: 24,
   },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 160,
+    right: 24,
+  },
   floatingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    gap: 10,
     backgroundColor: '#F39C12',
     borderRadius: 30,
     padding: 16,

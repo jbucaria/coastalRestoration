@@ -31,7 +31,7 @@ const AnimatedIconLegend = () => {
     <View style={styles.container}>
       <TouchableOpacity onPress={toggleExpand} style={styles.header}>
         <Text style={styles.headerText}>
-          {expanded ? 'Hide Icon Legend' : 'Show Icon Legend'}
+          {expanded ? 'Hide' : 'Show Icon Legend'}
         </Text>
       </TouchableOpacity>
       {expanded && (
@@ -57,16 +57,16 @@ const AnimatedIconLegend = () => {
             <Text style={styles.legendText}>On Site (Leave Site)</Text>
           </View>
           <View style={styles.legendItem}>
-            <IconSymbol name="fan" size={33} color="black" />
-            <Text style={styles.legendText}>Equipment Chat / Count</Text>
+            <IconSymbol name="fan" size={33} color="green" />
+            <Text style={styles.legendText}>Equipment Count</Text>
           </View>
           <View style={styles.legendItem}>
             <IconSymbol
               name="bubble.left.and.exclamationmark.bubble.right"
               size={33}
-              color="black"
+              color="green"
             />
-            <Text style={styles.legendText}>Messages</Text>
+            <Text style={styles.legendText}>Notes</Text>
           </View>
         </View>
       )}
@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    backgroundColor: '#fff',
   },
   header: {
     paddingVertical: 8,
