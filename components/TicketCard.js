@@ -33,9 +33,10 @@ const TicketCard = ({ project, onPress }) => {
 
   let startTime = 'N/A'
   let endTime = 'N/A'
+  let dateDisplay = 'N/A'
 
   if (startAt) {
-    startTime = format(startAt, 'h:mm a') // e.g., '9:05 AM' with no leading zero
+    startTime = format(startAt, 'h:mm a')
   }
   if (endAt) {
     endTime = format(endAt, 'h:mm a')

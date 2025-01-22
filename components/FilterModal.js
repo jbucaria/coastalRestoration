@@ -9,7 +9,6 @@ import {
   TextInput,
   Platform,
 } from 'react-native'
-import { Alert } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 const FilterModal = ({
@@ -46,7 +45,6 @@ const FilterModal = ({
       sortDirection,
       searchQuery,
     })
-    onClose()
   }
 
   const toggleSortField = field => {

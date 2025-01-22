@@ -9,6 +9,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  Platform,
 } from 'react-native'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
@@ -16,6 +17,7 @@ import { TicketCard } from '@/components/TicketCard'
 import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { AnimatedIconLegend } from '@/components/IconLegend'
+import DateTimePicker from '@react-native-community/datetimepicker'
 
 const TicketsScreen = () => {
   const [projects, setProjects] = useState([])
@@ -24,16 +26,15 @@ const TicketsScreen = () => {
 
   // Filter state
   const [filters, setFilters] = useState({
-    taskType: '',
-    showWorkOrders: false,
-    priority: '',
-    status: '',
-    sortField: 'inspectorName',
+    startDate: new Date(), // Changed to Date object for easier manipulation
+    sortField: 'siteComplete',
     sortDirection: 'asc',
+    searchQuery: '',
   })
 
   // Modal visibility
   const [isFilterModalVisible, setFilterModalVisible] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
   // Animated values for opacity
   const scrollY = useRef(new Animated.Value(0)).current
@@ -69,34 +70,25 @@ const TicketsScreen = () => {
 
     // Apply search query
     if (searchQuery) {
+      filtered = filtered.filter(
+        project =>
+          project.address &&
+          project.address.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    // Apply date filter
+    if (filters.startDate) {
+      const filterDate = filters.startDate
       filtered = filtered.filter(project => {
-        if (!project.address) return false
-        return project.address.toLowerCase().includes(searchQuery.toLowerCase())
+        const projectDate = project.startDate
+          ? project.startDate.toDate()
+          : null
+        return (
+          projectDate &&
+          projectDate.toDateString() === filterDate.toDateString()
+        )
       })
-    }
-
-    // Apply task type filter
-    if (filters.taskType) {
-      filtered = filtered.filter(
-        project => project.taskType === filters.taskType
-      )
-    }
-
-    // Apply show work orders filter
-    if (filters.showWorkOrders) {
-      filtered = filtered.filter(project => project.showWorkOrders === true)
-    }
-
-    // Apply priority filter
-    if (filters.priority) {
-      filtered = filtered.filter(
-        project => project.priority === filters.priority
-      )
-    }
-
-    // Apply status filter
-    if (filters.status) {
-      filtered = filtered.filter(project => project.status === filters.status)
     }
 
     // Apply sorting
@@ -116,8 +108,15 @@ const TicketsScreen = () => {
   const closeFilterModal = () => setFilterModalVisible(false)
 
   const applyFilters = newFilters => {
-    setFilters(newFilters)
+    setFilters(prevFilters => ({ ...prevFilters, ...newFilters }))
     closeFilterModal()
+  }
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(Platform.OS === 'ios')
+    if (selectedDate) {
+      setFilters(prev => ({ ...prev, startDate: selectedDate }))
+    }
   }
 
   // Interpolate opacity from scrollY
@@ -142,6 +141,18 @@ const TicketsScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* Display current filter date */}
+      <TouchableOpacity onPress={() => {}} style={styles.dateIndicator}>
+        <Text style={styles.dateText}>Showing tickets for: </Text>
+        <DateTimePicker
+          value={filters.startDate}
+          mode="date"
+          display="compact"
+          onChange={handleDateChange}
+          style={styles.datePicker}
+        />
+      </TouchableOpacity>
+
       {/* Tickets List */}
       <Animated.ScrollView
         contentContainerStyle={styles.scrollViewContent}
@@ -152,17 +163,24 @@ const TicketsScreen = () => {
         scrollEventThrottle={16}
       >
         {filteredProjects.length > 0 ? (
-          filteredProjects.map(project => (
-            <TicketCard
+          filteredProjects.map((project, index) => (
+            <View
               key={project.id}
-              project={project}
-              onPress={() =>
-                router.push({
-                  pathname: '/TicketDetailsScreen',
-                  params: { projectId: project.id },
-                })
-              }
-            />
+              style={[
+                styles.ticketContainer,
+                { backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#eaeaea' }, // Alternating shades
+              ]}
+            >
+              <TicketCard
+                project={project}
+                onPress={() =>
+                  router.push({
+                    pathname: '/TicketDetailsScreen',
+                    params: { projectId: project.id },
+                  })
+                }
+              />
+            </View>
           ))
         ) : (
           <Text style={styles.noResultsText}>No tickets found.</Text>
@@ -199,6 +217,42 @@ const TicketsScreen = () => {
 export default TicketsScreen
 
 const styles = StyleSheet.create({
+  // ... other styles
+  dateIndicator: {
+    alignSelf: 'center',
+    marginTop: 5,
+    marginBottom: 10,
+    flexDirection: 'row', // Align children horizontally
+    alignItems: 'center', // Center align items vertically
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#777',
+    fontStyle: 'italic',
+  },
+  datePicker: {
+    width: 150, // Adjust width as needed
+    marginLeft: 5, // Space from text
+  },
+  scrollViewContent: {
+    paddingBottom: 100,
+  },
+  ticketContainer: {
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  noResultsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#888',
+    marginTop: 20,
+  },
   safeArea: {
     flex: 1,
     paddingHorizontal: 16,
