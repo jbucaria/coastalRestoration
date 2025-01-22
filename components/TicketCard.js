@@ -197,7 +197,7 @@ const TicketCard = ({ project, onPress }) => {
 const styles = StyleSheet.create({
   cardContainer: {
     marginHorizontal: 8,
-    marginBottom: 12,
+    marginBottom: 20,
     borderRadius: 10,
     padding: 16,
     // Card shadow/elevation

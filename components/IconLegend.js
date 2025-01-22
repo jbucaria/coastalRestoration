@@ -28,7 +28,12 @@ const AnimatedIconLegend = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: expanded ? '#fff' : 'transparent' },
+      ]}
+    >
       <TouchableOpacity onPress={toggleExpand} style={styles.header}>
         <Text style={styles.headerText}>
           {expanded ? 'Hide' : 'Show Icon Legend'}

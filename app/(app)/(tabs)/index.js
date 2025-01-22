@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { router } from 'expo-router'
 import {
   View,
   SafeAreaView,
-  ScrollView,
+  Text,
+  TextInput,
   Alert,
   StyleSheet,
   TouchableOpacity,
-  Text,
-  TextInput,
+  Animated,
 } from 'react-native'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
@@ -34,6 +34,9 @@ const TicketsScreen = () => {
 
   // Modal visibility
   const [isFilterModalVisible, setFilterModalVisible] = useState(false)
+
+  // Animated values for opacity
+  const scrollY = useRef(new Animated.Value(0)).current
 
   // Fetch all tickets from Firestore
   useEffect(() => {
@@ -117,6 +120,13 @@ const TicketsScreen = () => {
     closeFilterModal()
   }
 
+  // Interpolate opacity from scrollY
+  const opacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  })
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header Actions */}
@@ -133,32 +143,47 @@ const TicketsScreen = () => {
       </View>
 
       {/* Tickets List */}
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        {filteredProjects.map(project => (
-          <TicketCard
-            key={project.id}
-            project={project}
-            onPress={() =>
-              router.push({
-                pathname: '/TicketDetailsScreen',
-                params: { projectId: project.id },
-              })
-            }
-          />
-        ))}
-      </ScrollView>
-      <View style={styles.floatingButtonContainer}>
+      <Animated.ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
+        {filteredProjects.length > 0 ? (
+          filteredProjects.map(project => (
+            <TicketCard
+              key={project.id}
+              project={project}
+              onPress={() =>
+                router.push({
+                  pathname: '/TicketDetailsScreen',
+                  params: { projectId: project.id },
+                })
+              }
+            />
+          ))
+        ) : (
+          <Text style={styles.noResultsText}>No tickets found.</Text>
+        )}
+      </Animated.ScrollView>
+
+      {/* Floating Button */}
+      <Animated.View style={[styles.floatingButtonContainer, { opacity }]}>
         <TouchableOpacity
           onPress={() => router.push('/CreateTicketScreen')}
           style={styles.floatingButton}
         >
           <IconSymbol name="plus" size={30} color="white" />
-          <Text>Create Ticket</Text>
+          <Text style={styles.floatingButtonText}>Create Ticket</Text>
         </TouchableOpacity>
-      </View>
-      <View style={styles.iconContainer}>
+      </Animated.View>
+
+      {/* Icon Legend */}
+      <Animated.View style={[styles.iconContainer, { opacity }]}>
         <AnimatedIconLegend />
-      </View>
+      </Animated.View>
 
       {/* Filter Modal */}
       <FilterModal
@@ -190,7 +215,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f2f2f2',
     padding: 8,
     borderRadius: 8,
-
     marginHorizontal: 8,
   },
   filterButton: {
@@ -206,6 +230,12 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingBottom: 100,
   },
+  noResultsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#888',
+    marginTop: 20,
+  },
   iconContainer: {
     position: 'absolute',
     bottom: 90,
@@ -220,7 +250,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    gap: 10,
     backgroundColor: '#F39C12',
     borderRadius: 30,
     padding: 16,
@@ -229,5 +258,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  floatingButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginLeft: 10,
   },
 })
