@@ -96,31 +96,19 @@ const TicketsScreen = () => {
 
   // Apply filters and sorting
   useEffect(() => {
-    console.log('Applying sort and filters:', filters)
-    let filtered = [...projects]
+    let sortedProjects = [...projects]
 
-    // Apply inspectorName filter if selected
-    if (filters.sortField === 'inspectorName' && filters.inspectorName) {
-      filtered = filtered.filter(
-        project => project.inspectorName === filters.inspectorName
-      )
-    }
+    sortedProjects.sort((a, b) => {
+      // Convert Firestore Timestamps to JavaScript Date objects for comparison
+      const timeA = a.startTime ? a.startTime.toDate() : new Date(0)
+      const timeB = b.startTime ? b.startTime.toDate() : new Date(0)
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const fieldA = a[filters.sortField]?.toString().toLowerCase() || ''
-      const fieldB = b[filters.sortField]?.toString().toLowerCase() || ''
-      if (fieldA < fieldB) return filters.sortDirection === 'asc' ? -1 : 1
-      if (fieldA > fieldB) return filters.sortDirection === 'asc' ? 1 : -1
-      return a.id < b.id ? -1 : 1 // Secondary sort by ID if necessary
+      // Compare timestamps
+      return timeB - timeA // Sort in ascending order by time
     })
 
-    console.log(
-      'Sorted projects:',
-      filtered.map(p => p.id)
-    )
-    setFilteredProjects(filtered)
-  }, [projects, filters, searchQuery])
+    setFilteredProjects(sortedProjects)
+  }, [projects])
 
   // Handle opening and applying filters
   const openFilterModal = () => setFilterModalVisible(true)
