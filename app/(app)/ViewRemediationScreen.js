@@ -96,6 +96,17 @@ export default function ViewRemediationScreen() {
         >
           <Text style={styles.exportButtonText}>Create CSV Report</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            router.push({
+              pathname: '/EditRemediationScreen',
+              params: { projectId: projectId },
+            })
+          }}
+          style={styles.exportButton}
+        >
+          <Text style={styles.exportButtonText}>Edit</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   )
