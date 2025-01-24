@@ -335,36 +335,6 @@ const TicketDetailsScreen = () => {
           </View>
         </View>
 
-        {/* -- SWITCHES (WITHOUT siteComplete) -- */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Status</Text>
-
-          <SwitchComponent
-            projectId={ticket.id}
-            field="onSite"
-            label="On Site"
-            value={ticket?.onSite || false}
-          />
-
-          {!ticket.remediationComplete && (
-            <SwitchComponent
-              projectId={ticket.id}
-              field="remediationRequired"
-              label="Remediation Required"
-              value={ticket?.remediationRequired || false}
-              onToggle={handleRemediationToggle}
-            />
-          )}
-
-          <SwitchComponent
-            projectId={ticket.id}
-            field="equipmentOnSite"
-            label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
-            value={ticket?.equipmentOnSite || false}
-            onShowModal={() => setIsEquipmentModalVisible(true)}
-          />
-        </View>
-
         {/* -- EQUIPMENT MODAL -- */}
         <EquipmentModal
           visible={isEquipmentModalVisible}
@@ -377,17 +347,22 @@ const TicketDetailsScreen = () => {
           <Text style={styles.sectionTitle}>Photos</Text>
           {ticket.photos && ticket.photos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {ticket.photos.map((photo, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handlePhotoPress(photo.uri)}
-                >
-                  <Image
-                    source={{ uri: photo.uri }}
-                    style={styles.projectPhoto}
-                  />
-                </TouchableOpacity>
-              ))}
+              {ticket.photos.map((photoUri, index) => {
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handlePhotoPress(photoUri)}
+                  >
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={styles.projectPhoto}
+                      onError={e =>
+                        console.log('Image loading error:', e.nativeEvent.error)
+                      }
+                    />
+                  </TouchableOpacity>
+                )
+              })}
             </ScrollView>
           ) : (
             <Text style={styles.placeholderText}>No photos available</Text>
@@ -436,6 +411,35 @@ const TicketDetailsScreen = () => {
         >
           <Text style={styles.siteCompleteButtonText}>Mark Site Complete</Text>
         </TouchableOpacity>
+        {/* -- SWITCHES (WITHOUT siteComplete) -- */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Status</Text>
+
+          <SwitchComponent
+            projectId={ticket.id}
+            field="onSite"
+            label="On Site"
+            value={ticket?.onSite || false}
+          />
+
+          {!ticket.remediationComplete && (
+            <SwitchComponent
+              projectId={ticket.id}
+              field="remediationRequired"
+              label="Remediation Required"
+              value={ticket?.remediationRequired || false}
+              onToggle={handleRemediationToggle}
+            />
+          )}
+
+          <SwitchComponent
+            projectId={ticket.id}
+            field="equipmentOnSite"
+            label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
+            value={ticket?.equipmentOnSite || false}
+            onShowModal={() => setIsEquipmentModalVisible(true)}
+          />
+        </View>
       </ScrollView>
 
       {/* -- SITE COMPLETE BUTTON at the bottom -- */}
