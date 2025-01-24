@@ -19,8 +19,6 @@ async function onReportComplete(projectId, field, value) {
 }
 
 export const handleGenerateReport = async (formData, setIsSaving) => {
-  setIsSaving(true)
-
   try {
     const { projectId } = formData
     if (!projectId) {

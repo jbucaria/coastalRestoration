@@ -23,6 +23,13 @@ const TicketCard = ({ project, onPress }) => {
     })
   }
 
+  const openEquipmentModal = () => {
+    router.push({
+      pathname: '/TicketNotesScreen',
+      params: { projectId: project.id },
+    })
+  }
+
   const openReport = () => {
     router.push({ pathname: '/ViewReport', params: { projectId: project.id } })
   }
@@ -109,7 +116,7 @@ const TicketCard = ({ project, onPress }) => {
   if (!isEmpty) {
     icons.push(
       <TouchableOpacity
-        key="remediationRequired"
+        key="remediation"
         onPress={() => {
           router.push({
             pathname: '/ViewRemediationScreen',
@@ -140,7 +147,7 @@ const TicketCard = ({ project, onPress }) => {
 
   if (project.equipmentTotal > 0) {
     icons.push(
-      <TouchableOpacity key="equipment" onPress={openChatRoom}>
+      <TouchableOpacity key="equipment" onPress={openEquipmentModal}>
         <MessageIndicator
           count={project.equipmentTotal}
           name="fan"
@@ -173,14 +180,16 @@ const TicketCard = ({ project, onPress }) => {
     >
       {/* Header Row: Inspector + Time */}
       <View style={styles.headerRow}>
-        <Text style={styles.inspectorName}>
-          {project.inspectorName || 'N/A'}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.inspectorName}>
+            {project.inspectorName || 'N/A'}
+          </Text>
+          <Text style={styles.addressSubText}>{project.ticketNumber}</Text>
+        </View>
         <Text style={styles.timeRange}>
           {startTime} - {endTime}
         </Text>
       </View>
-
       {/* Address */}
       <Text style={styles.addressText}>{project.street}</Text>
       <Text style={styles.addressSubText}>
@@ -214,13 +223,16 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Align items to start to accommodate multiline text on the left
   },
   inspectorName: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#2C3E50',
-    maxWidth: '70%',
+  },
+  addressSubText: {
+    fontSize: 14,
+    color: '#333',
   },
   timeRange: {
     fontSize: 14,
@@ -232,11 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
-  },
-  addressSubText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
   },
 
   // The "tab" for icons

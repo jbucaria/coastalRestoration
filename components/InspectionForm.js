@@ -26,6 +26,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { rephraseText } from '@/utils/rephraseText' // Import the function that calls OpenAI
 import { ThemedText } from '@/components/ThemedText'
 import { handleGenerateReport } from '@/utils/generateReport'
+import { SwitchComponent } from '@/components/SwitchComponent'
 
 const InspectionForm = ({ project, setProject, projectId }) => {
   const [customer, setCustomer] = useState(project.customer || '')
@@ -63,8 +64,47 @@ const InspectionForm = ({ project, setProject, projectId }) => {
     project?.siteComplete || false
   )
 
+  const handleRemediationToggle = value => {
+    // e.g. setTicket(prev => ({ ...prev, remediationRequired: value }))
+    if (value) {
+      Alert.alert(
+        'Input Measurements',
+        'Would you like to input measurements now?',
+        [
+          {
+            text: 'Yes',
+            onPress: () => {
+              router.push({
+                pathname: '/RemediationScreen',
+                params: { projectId: project.id },
+              })
+            },
+          },
+          {
+            text: 'No',
+            onPress: () => {
+              updateProjectRemediationRequired(true)
+            },
+            style: 'cancel',
+          },
+        ],
+        { cancelable: true }
+      )
+    } else {
+      updateProjectRemediationRequired(false)
+    }
+  }
+
+  const updateProjectRemediationRequired = value => {
+    // Here you would update the state and potentially update Firestore
+    setProject(prev => ({ ...prev, remediationRequired: value }))
+    // Assuming you have a function to update Firestore
+    updateTicket(project.id, 'remediationRequired', value)
+  }
+
   useEffect(() => {
     if (project) {
+      setIsSaving(true)
       setCustomer(project.customer || '')
       setCustomerName(project.customerName || '')
       setCustomerNumber(project.customerNumber || '')
@@ -79,6 +119,10 @@ const InspectionForm = ({ project, setProject, projectId }) => {
       setLocalRemediationRequired(project.remediationRequired || false)
       setLocalEquipmentOnSite(project.equipmentOnSite || false)
       setLocalSiteComplete(project.siteComplete || false)
+
+      setTimeout(() => {
+        setIsSaving(false)
+      }, 1000)
     }
   }, [project]) // Run whenever project prop changes
 
@@ -164,8 +208,6 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   const updateTicket = useCallback(async (projectId, field, value) => {
     try {
       await updateDoc(doc(firestore, 'tickets', projectId), { [field]: value })
-      console.log('Project updated successfully')
-      // No need to manually update state; onSnapshot will handle it if you're using real-time listeners
     } catch (error) {
       console.error('Error updating project:', error)
       Alert.alert('Error', 'Failed to update the project. Please try again.')
@@ -177,7 +219,6 @@ const InspectionForm = ({ project, setProject, projectId }) => {
       // Update Firestore first
       try {
         await updateTicket(project.id, field, value)
-        console.log(`Firestore updated: ${field} set to ${value}`)
 
         // Update local state without resetting other fields
         setProject(prev => ({ ...prev, [field]: value }))
@@ -304,15 +345,34 @@ const InspectionForm = ({ project, setProject, projectId }) => {
           </TouchableOpacity>
 
           {/* Project-level Switches */}
+
           <View style={styles.checkboxContainer}>
-            <Switch
-              value={project?.remediationRequired || false}
-              onValueChange={value =>
-                handleSwitchChange('remediationRequired', value)
-              }
-            />
-            <Text style={styles.checkboxLabel}>Remediation Required</Text>
+            {project.remediationComplete ? (
+              <>
+                <Text style={styles.checkboxLabel}>Remediation Complete</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: '/ViewRemediationScreen',
+                      params: { projectId: project.projectId },
+                    })
+                  }
+                  style={styles.viewButton}
+                >
+                  <Text style={styles.viewButtonText}>View Details</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Switch
+                  value={project?.remediationRequired || false}
+                  onValueChange={handleRemediationToggle}
+                />
+                <Text style={styles.checkboxLabel}>Remediation Required</Text>
+              </>
+            )}
           </View>
+
           <View style={styles.checkboxContainer}>
             <Switch
               value={project?.equipmentOnSite || false}
@@ -333,7 +393,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
           <ThemedView style={styles.photoSection}>
             <View style={styles.photosHeader}>
               <ThemedText style={styles.subtitle} type="subtitle">
-                Photos
+                Inspection Photos
               </ThemedText>
               <TouchableOpacity onPress={pickImageAsync}>
                 <IconSymbol name="photo.badge.plus" size={30} color="#008000" />
@@ -409,7 +469,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     marginBottom: 20,
-    // Optional shadow for iOS / elevation for Android
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
@@ -423,36 +482,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2C3E50',
   },
-  /* If you want a slightly distinct style for the address */
   addressText: {
     fontSize: 18,
     color: '#555',
     textAlign: 'center',
     marginBottom: 12,
-  },
-  label: {
-    fontSize: 16,
-    color: '#2C3E50',
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: 'white',
-    fontSize: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  projectIdText: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
   },
   label: {
     fontSize: 16,

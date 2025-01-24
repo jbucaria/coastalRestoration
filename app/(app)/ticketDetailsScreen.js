@@ -171,6 +171,20 @@ const TicketDetailsScreen = () => {
     })
   }
 
+  const handleRemediation = () => {
+    if (!ticket) {
+      Alert.alert('Error', 'No ticket selected for inspection or viewing.')
+      return
+    }
+    const route = ticket.remeditionComplete
+      ? '/ViewRemediationScreen'
+      : '/RemediationScreen'
+    router.push({
+      pathname: route,
+      params: { projectId: ticket.projectId },
+    })
+  }
+
   // Example open Chat
   const openNotes = () => {
     router.push({
@@ -332,13 +346,15 @@ const TicketDetailsScreen = () => {
             value={ticket?.onSite || false}
           />
 
-          <SwitchComponent
-            projectId={ticket.id}
-            field="remediationRequired"
-            label="Remediation Required"
-            value={ticket?.remediationRequired || false}
-            onToggle={handleRemediationToggle}
-          />
+          {!ticket.remediationComplete && (
+            <SwitchComponent
+              projectId={ticket.id}
+              field="remediationRequired"
+              label="Remediation Required"
+              value={ticket?.remediationRequired || false}
+              onToggle={handleRemediationToggle}
+            />
+          )}
 
           <SwitchComponent
             projectId={ticket.id}
@@ -399,12 +415,16 @@ const TicketDetailsScreen = () => {
             <Text style={styles.actionButtonText}>Notes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
-            onPress={openMeasurements}
-          >
-            <Text style={styles.actionButtonText}>View Measurements</Text>
-          </TouchableOpacity>
+          {(ticket.remediationRequired || ticket.remediationComplete) && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
+              onPress={handleRemediation}
+            >
+              <Text style={styles.actionButtonText}>
+                {ticket.remediationComplete ? 'View' : 'Input'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#7F8C8D' }]}

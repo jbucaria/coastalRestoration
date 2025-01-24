@@ -48,36 +48,6 @@ const Reports = () => {
     siteComplete: false,
   })
 
-  // Update filters when activeFilter changes.
-  useEffect(() => {
-    if (activeFilter === 'Remediation') {
-      setFilters({
-        remediationRequired: true,
-        equipmentOnSite: false,
-        siteComplete: false,
-      })
-    } else if (activeFilter === 'Equipment') {
-      setFilters({
-        remediationRequired: false,
-        equipmentOnSite: true,
-        siteComplete: false,
-      })
-    } else if (activeFilter === 'Complete') {
-      setFilters({
-        remediationRequired: false,
-        equipmentOnSite: false,
-        siteComplete: true,
-      })
-    } else {
-      // "All": no extra filters
-      setFilters({
-        remediationRequired: false,
-        equipmentOnSite: false,
-        siteComplete: false,
-      })
-    }
-  }, [activeFilter])
-
   // Listen for Firestore updates with filters.
   useEffect(() => {
     const projectsRef = collection(firestore, 'tickets')
@@ -165,33 +135,6 @@ const Reports = () => {
           placeholderTextColor={textColor}
         />
         {/* FILTER BUTTONS */}
-        <View style={{ height: 40, marginBottom: 20 }}>
-          <ScrollView
-            horizontal={true}
-            contentContainerStyle={styles.filterButtonRow}
-            style={{ marginBottom: 0 }}
-          >
-            {filterOptions.map(option => (
-              <TouchableOpacity
-                key={option}
-                onPress={() => setActiveFilter(option)}
-                style={[
-                  styles.filterButton,
-                  activeFilter === option && styles.activeFilterButton,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    activeFilter === option && styles.activeFilterButtonText,
-                  ]}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
         {/* List of Reports */}
         <View style={styles.listContainer}>

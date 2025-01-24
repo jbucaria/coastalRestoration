@@ -44,6 +44,7 @@ const initialTicketStatus = {
   onSite: false,
   inspectionComplete: false,
   remediationRequired: false,
+  remediationComplete: false,
   equipmentOnSite: false,
   siteComplete: false,
 }

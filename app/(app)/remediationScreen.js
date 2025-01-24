@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from 'uuid' // npm install uuid (or your preferred uniqu
 // If using Firestore:
 import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
+import { rem } from 'nativewind'
 
 export default function RemediationScreen({ route }) {
   const router = useRouter()
@@ -148,10 +149,11 @@ export default function RemediationScreen({ route }) {
       await updateDoc(doc(firestore, 'tickets', projectId), {
         remediationData,
         remediationRequired: false,
+        remediationComplete: true,
       })
 
       Alert.alert('Success', 'Remediation data saved successfully.')
-      router.push('/(tabs)')
+      router.back()
     } catch (error) {
       console.error('Error saving remediation data:', error)
       Alert.alert('Error', 'Failed to save data. Please try again.')
