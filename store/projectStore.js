@@ -1,22 +1,15 @@
-// store/projectStore.js
-
+// stores/projectStore.js
 import { create } from 'zustand'
 
 const useProjectStore = create(set => ({
-  projects: [], // Array to hold project objects
-  addProject: project =>
-    set(state => ({ projects: [...state.projects, project] })),
-  removeProject: projectId =>
+  projects: [],
+  setProjects: newProjects => set({ projects: newProjects }),
+  updateProject: (projectId, update) =>
     set(state => ({
-      projects: state.projects.filter(p => p.id !== projectId),
-    })),
-  updateProject: (projectId, updatedData) =>
-    set(state => ({
-      projects: state.projects.map(p =>
-        p.id === projectId ? { ...p, ...updatedData } : p
+      projects: state.projects.map(project =>
+        project.id === projectId ? { ...project, ...update } : project
       ),
     })),
-  setProjects: projects => set({ projects }), // To set all projects (useful for syncing with Firestore)
 }))
 
 export { useProjectStore }

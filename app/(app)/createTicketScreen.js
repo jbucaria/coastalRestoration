@@ -35,7 +35,7 @@ const initialTicketStatus = {
   customerNumber: '727-555-1234',
   homeOwnerName: 'Jane Doe',
   homeOwnerNumber: '727-555-5678',
-  inspectorName: 'John N. Doe',
+  inspectorName: 'John Bucaria',
   reason: 'leak in garage',
   jobType: 'inspection',
   hours: '',
@@ -500,6 +500,7 @@ const CreateTicketScreen = () => {
                 >
                   <Picker.Item label="Select job type" value="" />
                   <Picker.Item label="Leak Detection" value="leak detection" />
+                  <Picker.Item label="Inspection" value="inspection" />
                   <Picker.Item label="Containment" value="containment" />
                   <Picker.Item label="Flood" value="flood" />
                   <Picker.Item label="Mold Job" value="mold job" />

@@ -62,6 +62,40 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
       ]
     )
   }
+  function handleArrivingOnSite(projectId, currentOnSiteStatus) {
+    let alertMessage = currentOnSiteStatus
+      ? 'Do you want to mark the site complett?'
+      : 'Do you want to start the clock?'
+    let alertAction = currentOnSiteStatus ? 'Stop' : 'Start'
+
+    Alert.alert(`${alertAction} Work`, alertMessage, [
+      {
+        text: 'Cancel',
+        onPress: () => console.log('User canceled'),
+        style: 'cancel',
+      },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            const projectRef = doc(firestore, 'tickets', projectId)
+            await updateDoc(projectRef, { onSite: !currentOnSiteStatus })
+
+            console.log(
+              `Updating database for project ${projectId} to onSite = ${!currentOnSiteStatus}`
+            )
+
+            // If stopping the clock and user confirms, navigate to home
+            if (currentOnSiteStatus) {
+              router.push('/(tabs)')
+            }
+          } catch (error) {
+            console.error('Error updating the project in the database:', error)
+          }
+        },
+      },
+    ])
+  }
 
   async function leaveSiteAndUpdateDB(projectId) {
     try {
@@ -122,21 +156,21 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
     )
   }
 
-  if (project.onSite) {
-    icons.push(
-      <TouchableOpacity
-        key="onSite"
-        onPress={() => handleLeaveSiteConfirmation(project.id)}
-      >
-        <IconSymbol
-          key="onSite"
-          name="person.crop.square"
-          size={30}
-          color="green"
-        />
-      </TouchableOpacity>
-    )
-  }
+  // if (project.onSite) {
+  //   icons.push(
+  //     <TouchableOpacity
+  //       key="onSite"
+  //       onPress={() => handleLeaveSiteConfirmation(project.id)}
+  //     >
+  //       <IconSymbol
+  //         key="onSite"
+  //         name="person.crop.square"
+  //         size={30}
+  //         color="green"
+  //       />
+  //     </TouchableOpacity>
+  //   )
+  // }
 
   if (project.equipmentTotal > 0) {
     icons.push(
@@ -174,9 +208,24 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
       {/* Header Row: Inspector + Time + Job Type */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.inspectorName}>
-            {project.inspectorName || 'N/A'}
-          </Text>
+          <TouchableOpacity
+            onPress={() => handleArrivingOnSite(project.id, project.onSite)}
+          >
+            <Text style={styles.inspectorName}>
+              {project.inspectorName || 'N/A'}
+              <View>
+                {project.onSite && (
+                  <IconSymbol
+                    style={{ marginLeft: 5 }}
+                    key="onSite"
+                    name="person.crop.square"
+                    size={15}
+                    color="green"
+                  />
+                )}
+              </View>
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.addressSubText}>{project.ticketNumber}</Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
@@ -202,7 +251,7 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginHorizontal: 8,
+    marginHorizontal: 2,
     marginBottom: 20,
     borderRadius: 10,
     padding: 16,
@@ -234,6 +283,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#555',
+    letterSpacing: -0.5,
   },
   jobType: {
     fontSize: 14,
@@ -241,14 +291,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   addressText: {
-    marginTop: 8,
+    marginTop: 20,
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
   },
   tabContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: -10,
     right: 0,
     // visually extends outside the card
     transform: [{ translateY: 15 }, { translateX: 15 }],
@@ -263,7 +313,7 @@ const styles = StyleSheet.create({
     // Subtle shadow to differentiate the tab from the card
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
     marginRight: 12,
