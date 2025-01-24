@@ -19,6 +19,7 @@ import { getTravelTime } from '@/utils/getTravelTime'
 import { SwitchComponent } from '@/components/SwitchComponent'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
+import { IconSymbol } from '@/components/ui/IconSymbol'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
@@ -241,26 +242,31 @@ const TicketDetailsScreen = () => {
   }
 
   const handleSiteComplete = () => {
+    const newStatus = !ticket.siteComplete
+    const actionText = newStatus ? 'complete' : 'incomplete'
     Alert.alert(
       'Confirm',
-      'Are you sure you want to mark this site as complete?',
+      `Are you sure you want to mark this site as ${actionText}?`,
       [
         {
           text: 'Yes',
           onPress: async () => {
             try {
-              // Update Firestore to mark the site as complete
+              // Update Firestore to toggle the site complete status
               const projectRef = doc(firestore, 'tickets', ticket.id)
-              await updateDoc(projectRef, { siteComplete: true })
+              await updateDoc(projectRef, { siteComplete: newStatus })
 
-              console.log('Site marked as complete!')
-              Alert.alert('Success', 'The site has been marked as complete.')
-              router.push('/(tabs)')
+              console.log(`Site marked as ${actionText}!`)
+              Alert.alert(
+                'Success',
+                `The site has been marked as ${actionText}.`
+              )
+              router.push('/(tabs)') // Assuming '/(tabs)' is the home route
             } catch (error) {
-              console.error('Error marking site as complete:', error)
+              console.error(`Error marking site as ${actionText}:`, error)
               Alert.alert(
                 'Error',
-                'Failed to mark the site as complete. Please try again.'
+                `Failed to mark the site as ${actionText}. Please try again.`
               )
             }
           },
@@ -268,6 +274,7 @@ const TicketDetailsScreen = () => {
         {
           text: 'Cancel',
           style: 'cancel',
+          onPress: () => router.push('/(tabs)'), // Also go home on cancel if needed
         },
       ]
     )
@@ -275,7 +282,14 @@ const TicketDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity
+        style={styles.floatingBackButton}
+        onPress={() => router.back()}
+      >
+        <IconSymbol name="arrow.backward.square" size={24} color="white" />
+      </TouchableOpacity>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Floating Back Button */}
         {/* -- HEADER SECTION -- */}
         <View style={styles.headerCard}>
           <Text style={styles.ticketTitle}>
@@ -397,20 +411,8 @@ const TicketDetailsScreen = () => {
               </Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#7F8C8D' }]}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.actionButtonText}>Back</Text>
-          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.siteCompleteButton}
-          onPress={handleSiteComplete}
-        >
-          <Text style={styles.siteCompleteButtonText}>Mark Site Complete</Text>
-        </TouchableOpacity>
+
         {/* -- SWITCHES (WITHOUT siteComplete) -- */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Status</Text>
@@ -440,9 +442,20 @@ const TicketDetailsScreen = () => {
             onShowModal={() => setIsEquipmentModalVisible(true)}
           />
         </View>
+        <TouchableOpacity
+          style={[
+            styles.siteCompleteButton,
+            ticket.siteComplete ? styles.siteIncompleteButton : null,
+          ]}
+          onPress={handleSiteComplete}
+        >
+          <Text style={styles.siteCompleteButtonText}>
+            {ticket.siteComplete
+              ? 'Mark Site Incomplete'
+              : 'Mark Site Complete'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
-
-      {/* -- SITE COMPLETE BUTTON at the bottom -- */}
 
       {/* -- FULL PHOTO PREVIEW -- */}
       <PhotoModal
@@ -462,9 +475,9 @@ const styles = StyleSheet.create({
   },
 
   column: {
-    gap: 8, // New style for vertical spacing between elements
-    flex: 1, // Both columns will take up equal space
-    marginRight: 10, // Adds space between columns, adjust or remove as needed
+    gap: 8,
+    flex: 1,
+    marginRight: 10,
   },
   container: {
     flex: 1,
@@ -472,7 +485,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 16, // Reduced padding since buttons are at the bottom now
   },
   centeredContainer: {
     flex: 1,
@@ -484,9 +496,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
   },
-
-  /* Header Card (Ticket & Address) */
+  floatingBackButton: {
+    position: 'absolute',
+    top: 40, // Adjust based on your status bar and header height
+    left: 10,
+    backgroundColor: '#007bff', // Theme color for visibility
+    padding: 10,
+    borderRadius: 30, // Fully rounded corners for a modern, pill-like shape
+    zIndex: 100, // Ensures the button is above all other content
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5, // For Android shadow
+  },
   headerCard: {
+    marginTop: 60, // Give space for the floating button
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 16,
@@ -598,8 +623,8 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     backgroundColor: '#2C3E50',
-    borderRadius: 30, // More rounded for a modern look
-    paddingVertical: 14, // Increased vertical padding for larger tap area
+    borderRadius: 30,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     marginVertical: 8, // Vertical spacing between buttons
     alignItems: 'center',
@@ -617,8 +642,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', // Uppercase for emphasis
   },
   siteCompleteButton: {
-    backgroundColor: '#2ECC71',
-    borderRadius: 30, // Match the style of other buttons
+    backgroundColor: '#2ECC71', // Green for "Complete"
+    borderRadius: 30,
     paddingVertical: 14,
     paddingHorizontal: 20,
     marginVertical: 8,
@@ -629,6 +654,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  siteIncompleteButton: {
+    backgroundColor: 'red', // Red for "Incomplete"
   },
   siteCompleteButtonText: {
     color: '#FFFFFF',
