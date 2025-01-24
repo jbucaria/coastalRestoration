@@ -24,6 +24,7 @@ import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { AnimatedIconLegend } from '@/components/IconLegend'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { EquipmentModal } from '@/components/EquipmentModal'
 
 const TicketsScreen = () => {
   const [projects, setProjects] = useState([])
@@ -32,6 +33,18 @@ const TicketsScreen = () => {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false)
+  const [currentProject, setCurrentProject] = useState(null)
+
+  const openEquipmentModal = project => {
+    setCurrentProject(project)
+    setShowEquipmentModal(true)
+  }
+
+  const closeEquipmentModal = () => {
+    setShowEquipmentModal(false)
+    setCurrentProject(null) // Clear the current project when closing the modal
+  }
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -209,6 +222,7 @@ const TicketsScreen = () => {
                     params: { projectId: project.id },
                   })
                 }
+                openEquipmentModal={() => openEquipmentModal(project)}
               />
             </View>
           ))
@@ -239,6 +253,13 @@ const TicketsScreen = () => {
         onClose={closeFilterModal}
         onApplyFilters={applyFilters}
         initialFilters={filters}
+      />
+      <EquipmentModal
+        visible={showEquipmentModal}
+        onClose={closeEquipmentModal}
+        projectId={currentProject?.id}
+        initialQuantities={currentProject?.equipment}
+        equipmentOnSite={currentProject?.equipmentTotal > 0}
       />
     </SafeAreaView>
   )

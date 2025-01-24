@@ -92,7 +92,7 @@ const EquipmentModal = ({
                 {}
               )
 
-              const projectRef = doc(firestore, 'projects', projectId)
+              const projectRef = doc(firestore, 'tickets', projectId)
               await updateDoc(projectRef, {
                 equipment: zeroedEquipment,
                 equipmentTotal: 0,

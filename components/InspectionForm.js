@@ -26,9 +26,13 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { rephraseText } from '@/utils/rephraseText' // Import the function that calls OpenAI
 import { ThemedText } from '@/components/ThemedText'
 import { handleGenerateReport } from '@/utils/generateReport'
-import { SwitchComponent } from '@/components/SwitchComponent'
+import { EquipmentModal } from './EquipmentModal'
 
 const InspectionForm = ({ project, setProject, projectId }) => {
+  const [equipmentOnSite, setEquipmentOnSite] = useState(
+    project.equipmentOnSite || false
+  )
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false)
   const [customer, setCustomer] = useState(project.customer || '')
   const [customerName, setCustomerName] = useState(project.customerName || '')
   const [customerNumber, setCustomerNumber] = useState(
@@ -214,24 +218,33 @@ const InspectionForm = ({ project, setProject, projectId }) => {
     }
   }, [])
 
-  const handleSwitchChange = async (field, value) => {
-    if (project && project.id) {
-      // Update Firestore first
+  const handleSwitchChange = async value => {
+    setEquipmentOnSite(value)
+    if (!value) {
+      // If turning off, clear equipment
       try {
-        await updateTicket(project.id, field, value)
-
-        // Update local state without resetting other fields
-        setProject(prev => ({ ...prev, [field]: value }))
+        await updateDoc(doc(firestore, 'tickets', project.id), {
+          equipmentTotal: 0,
+          equipmentOnSite: false,
+          equipment: {}, // Assuming you store equipment this way
+        })
+        Alert.alert(
+          'Equipment cleared',
+          'All equipment has been cleared from the site.'
+        )
       } catch (error) {
-        console.error('Error updating project in Firestore:', error)
+        console.error('Error clearing equipment:', error)
         Alert.alert('Error', 'Failed to update the project. Please try again.')
       }
     } else {
-      Alert.alert(
-        'Error',
-        'Project or project data is incomplete. Cannot update.'
-      )
+      // Open modal to add equipment
+      setShowEquipmentModal(true)
     }
+  }
+
+  const handleEquipmentSave = equipment => {
+    setShowEquipmentModal(false)
+    // Optionally handle equipment data here or in the modal
   }
 
   const handlePhotoLabelChange = (text, index) => {
@@ -372,15 +385,26 @@ const InspectionForm = ({ project, setProject, projectId }) => {
               </>
             )}
           </View>
-
-          <View style={styles.checkboxContainer}>
+          <View style={styles.container}>
+            <Text>Equipment</Text>
             <Switch
-              value={project?.equipmentOnSite || false}
-              onValueChange={value =>
-                handleSwitchChange('equipmentOnSite', value)
-              }
+              value={equipmentOnSite}
+              onValueChange={handleSwitchChange}
             />
-            <Text style={styles.checkboxLabel}>Equipment On Site</Text>
+            {equipmentOnSite && (
+              <TouchableOpacity onPress={() => setShowEquipmentModal(true)}>
+                <Text>View/Edit Equipment</Text>
+              </TouchableOpacity>
+            )}
+
+            <EquipmentModal
+              visible={showEquipmentModal}
+              onClose={() => setShowEquipmentModal(false)}
+              projectId={project.id}
+              initialQuantities={project.equipment}
+              equipmentOnSite={equipmentOnSite}
+              onSave={handleEquipmentSave}
+            />
           </View>
           <View style={styles.checkboxContainer}>
             <Switch

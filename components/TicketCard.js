@@ -7,7 +7,7 @@ import { MessageIndicator } from '@/components/MessageIndicator'
 import { updateDoc, doc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
-const TicketCard = ({ project, onPress }) => {
+const TicketCard = ({ project, onPress, openEquipmentModal }) => {
   // Background color logic
   let backgroundColor = ''
   if (project.siteComplete) {
@@ -17,13 +17,6 @@ const TicketCard = ({ project, onPress }) => {
   }
   // Navigation handlers
   const openChatRoom = () => {
-    router.push({
-      pathname: '/TicketNotesScreen',
-      params: { projectId: project.id },
-    })
-  }
-
-  const openEquipmentModal = () => {
     router.push({
       pathname: '/TicketNotesScreen',
       params: { projectId: project.id },
@@ -160,7 +153,7 @@ const TicketCard = ({ project, onPress }) => {
 
   if (project.messageCount > 0) {
     icons.push(
-      <TouchableOpacity key="messages" onPress={openChatRoom}>
+      <TouchableOpacity key="messages" onPress={openEquipmentModal}>
         <MessageIndicator
           count={project.messageCount}
           name="bubble.left.and.exclamationmark.bubble.right"
