@@ -376,22 +376,19 @@ const TicketDetailsScreen = () => {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Photos</Text>
           {ticket.photos && ticket.photos.length > 0 ? (
-            (console.log('ticket.photos', ticket.photos),
-            (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {ticket.photos.map((photo, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => handlePhotoPress(photo.uri)}
-                  >
-                    <Image
-                      source={{ uri: photo.uri }}
-                      style={styles.projectPhoto}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            ))
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {ticket.photos.map((photo, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => handlePhotoPress(photo.uri)}
+                >
+                  <Image
+                    source={{ uri: photo.uri }}
+                    style={styles.projectPhoto}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : (
             <Text style={styles.placeholderText}>No photos available</Text>
           )}

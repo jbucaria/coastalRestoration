@@ -11,13 +11,14 @@ import {
   Alert,
   ScrollView,
   Platform,
-  CheckBox,
+  Modal,
 } from 'react-native'
 import { collection, addDoc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
 import * as ImagePicker from 'expo-image-picker'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { Picker } from '@react-native-picker/picker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 import 'react-native-get-random-values'
 import { IconSymbol } from '@/components/ui/IconSymbol'
@@ -38,6 +39,7 @@ const initialTicketStatus = {
   reason: 'leak in garage',
   jobType: 'inspection',
   hours: '',
+  typeOfJob: '',
   recommendedActions: '',
   messageCount: 0,
   photos: [],
@@ -47,6 +49,7 @@ const initialTicketStatus = {
   remediationComplete: false,
   equipmentOnSite: false,
   siteComplete: false,
+  measurementsRequired: false,
 }
 
 const CreateTicketScreen = () => {
@@ -61,10 +64,25 @@ const CreateTicketScreen = () => {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
+  const [jobType, setJobType] = useState('')
+  const [pickerVisible, setPickerVisible] = useState(false)
 
   // Reset the form state
   const resetForm = () => {
     setNewTicket(initialTicketStatus)
+  }
+
+  const handleTogglePicker = () => {
+    setPickerVisible(!pickerVisible)
+  }
+
+  const handleJobTypeChange = itemValue => {
+    console.log('Selected job type:', itemValue)
+    setJobType(itemValue)
+    setNewTicket(prevTicket => ({
+      ...prevTicket,
+      typeOfJob: itemValue, // Updating the typeOfJob field in the state
+    }))
   }
 
   // Return to the previous screen
@@ -107,6 +125,7 @@ const CreateTicketScreen = () => {
       const docRef = await addDoc(collection(firestore, 'tickets'), {
         ...ticketData,
         createdAt: new Date(),
+        typeOfJob: newTicket.typeOfJob,
       })
 
       const docId = docRef.id
@@ -263,17 +282,6 @@ const CreateTicketScreen = () => {
     if (time) {
       setEndTime(setTimeToDate(selectedDate, time))
     }
-  }
-
-  const formatTime = date => {
-    let hours = date.getHours()
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    const ampm = hours >= 12 ? 'PM' : 'AM'
-
-    // Convert to 12-hour format
-    hours = hours % 12 || 12 // 0 should be 12
-
-    return `${hours}:${minutes} ${ampm}`
   }
 
   return (
@@ -468,13 +476,46 @@ const CreateTicketScreen = () => {
           onChangeText={text => setNewTicket({ ...newTicket, reason: text })}
           keyboardType="default"
         />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Type of Job"
-          value={newTicket.jobType}
-          onChangeText={text => setNewTicket({ ...newTicket, jobType: text })}
-          keyboardType="default"
-        />
+        <View style={styles.container}>
+          {/* Trigger Button */}
+          <TouchableOpacity onPress={handleTogglePicker} style={styles.button}>
+            <Text style={styles.buttonText}>
+              {jobType ? jobType : 'Select Job Type'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Picker Modal */}
+          <Modal
+            visible={pickerVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={handleTogglePicker}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={jobType}
+                  onValueChange={handleJobTypeChange}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Select job type" value="" />
+                  <Picker.Item label="Leak Detection" value="leak detection" />
+                  <Picker.Item label="Containment" value="containment" />
+                  <Picker.Item label="Flood" value="flood" />
+                  <Picker.Item label="Mold Job" value="mold job" />
+                  <Picker.Item label="Wipe Down" value="wipe down" />
+                </Picker>
+                <View
+                  style={{ flexDirection: 'row', justifyContent: 'center' }}
+                >
+                  <TouchableOpacity onPress={handleTogglePicker}>
+                    <Text style={styles.label}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        </View>
 
         {/* Photos */}
         {newTicket.photos.length > 0 && (
@@ -523,6 +564,37 @@ const CreateTicketScreen = () => {
 export default CreateTicketScreen
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    padding: 10,
+    backgroundColor: '#2980b9',
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickerContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  picker: {
+    width: '100%',
+  },
   container: {
     flex: 1,
     backgroundColor: '#eceff1',

@@ -171,7 +171,7 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
       onPress={onPress}
       style={[styles.cardContainer, { backgroundColor }]}
     >
-      {/* Header Row: Inspector + Time */}
+      {/* Header Row: Inspector + Time + Job Type */}
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
           <Text style={styles.inspectorName}>
@@ -179,9 +179,12 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
           </Text>
           <Text style={styles.addressSubText}>{project.ticketNumber}</Text>
         </View>
-        <Text style={styles.timeRange}>
-          {startTime} - {endTime}
-        </Text>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.timeRange}>
+            {startTime} - {endTime}
+          </Text>
+          <Text style={styles.jobType}>{project.typeOfJob || 'N/A'}</Text>
+        </View>
       </View>
       {/* Address */}
       <Text style={styles.addressText}>{project.street}</Text>
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', // Align items to start to accommodate multiline text on the left
+    alignItems: 'flex-start',
   },
   inspectorName: {
     fontSize: 16,
@@ -232,14 +235,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#555',
   },
+  jobType: {
+    fontSize: 14,
+    color: '#007BFF',
+    fontWeight: '500',
+  },
   addressText: {
     marginTop: 8,
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
   },
-
-  // The "tab" for icons
   tabContainer: {
     position: 'absolute',
     bottom: 0,

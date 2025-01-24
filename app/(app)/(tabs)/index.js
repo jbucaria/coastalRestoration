@@ -22,7 +22,7 @@ import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
 import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import { AnimatedIconLegend } from '@/components/IconLegend'
+// import { AnimatedIconLegend } from '@/components/IconLegend'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { EquipmentModal } from '@/components/EquipmentModal'
 
@@ -243,9 +243,9 @@ const TicketsScreen = () => {
       </Animated.View>
 
       {/* Icon Legend */}
-      <Animated.View style={[styles.iconContainer, { opacity }]}>
+      {/* <Animated.View style={[styles.iconContainer, { opacity }]}>
         <AnimatedIconLegend />
-      </Animated.View>
+      </Animated.View> */}
 
       {/* Filter Modal */}
       <FilterModal
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   floatingButtonContainer: {
     position: 'absolute',
-    bottom: 160,
+    bottom: 90,
     right: 24,
   },
   iconContainer: {
