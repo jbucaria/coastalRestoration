@@ -13,8 +13,12 @@ import {
   Switch,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  ScrollView,
+  TouchableWithoutFeedback,
 } from 'react-native'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
@@ -26,6 +30,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { rephraseText } from '@/utils/rephraseText'
 import { ThemedText } from '@/components/ThemedText'
 import { handleGenerateReport } from '@/utils/generateReport'
+import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { EquipmentModal } from './EquipmentModal'
 
 const InspectionForm = ({ project, setProject, projectId }) => {
@@ -297,172 +302,182 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.root}>
-        {/* This is fixed at the top and does NOT scroll */}
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.closeIconContainer}
-        >
-          <IconSymbol name="xmark" size={24} color="#fff" />
-        </TouchableOpacity>
-        <KeyboardAwareScrollView contentContainerStyle={styles.container}>
-          <View style={styles.topFormSection}>
-            <Text style={styles.title}>Create Inspection Report</Text>
-
-            <Text style={styles.addressText}>{address}</Text>
-          </View>
-          <ThemedText style={styles.label}>
-            Hours to Complete Inspection:
-          </ThemedText>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter hours"
-            value={hours}
-            onChangeText={setHours}
-            keyboardType="numeric"
-          />
-
-          <ThemedText style={styles.label}>Inspection Results:</ThemedText>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Enter inspection results"
-            value={inspectionResults}
-            onChangeText={setInspectionResults}
-            multiline
-          />
-          <TouchableOpacity
-            style={styles.rephraseButton}
-            onPress={handleRephraseInspectionResults}
+    <SafeAreaView style={styles.container}>
+      <FloatingBackButton color="#007bff" />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={40} // Adjust this value based on your preference
+      >
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.rephraseButtonText}>
-              {!isThinking ? 'Rephrase Inspection Results' : 'Thinking...'}
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.topFormSection}>
+              <Text style={styles.title}>Create Inspection Report</Text>
 
-          <ThemedText style={styles.label}>Recommended Actions:</ThemedText>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Enter recommended actions"
-            value={recommendedActions}
-            onChangeText={setRecommendedActions}
-            multiline
-          />
-          <TouchableOpacity
-            style={styles.rephraseButton}
-            onPress={handleRephraseRecommendedActions}
-          >
-            <Text style={styles.rephraseButtonText}>
-              {isThinkingRemediation
-                ? 'Thinking....'
-                : 'Rephrase Recommended Actions'}
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.addressText}>{address}</Text>
+            </View>
+            <ThemedText style={styles.label}>
+              Hours to Complete Inspection:
+            </ThemedText>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter hours"
+              value={hours}
+              onChangeText={setHours}
+              keyboardType="numeric"
+            />
 
-          {/* Project-level Switches */}
+            <ThemedText style={styles.label}>Inspection Results:</ThemedText>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter inspection results"
+              value={inspectionResults}
+              onChangeText={setInspectionResults}
+              multiline
+            />
+            <TouchableOpacity
+              style={styles.rephraseButton}
+              onPress={handleRephraseInspectionResults}
+            >
+              <Text style={styles.rephraseButtonText}>
+                {!isThinking ? 'Rephrase Inspection Results' : 'Thinking...'}
+              </Text>
+            </TouchableOpacity>
 
-          <View style={styles.checkboxContainer}>
-            {project.remediationComplete ? (
-              <>
-                <Text style={styles.checkboxLabel}>Remediation Complete</Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    router.push({
-                      pathname: '/ViewRemediationScreen',
-                      params: { projectId: project.projectId },
-                    })
-                  }
-                  style={styles.viewButton}
-                >
-                  <Text style={styles.viewButtonText}>View Details</Text>
+            <ThemedText style={styles.label}>Recommended Actions:</ThemedText>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter recommended actions"
+              value={recommendedActions}
+              onChangeText={setRecommendedActions}
+              multiline
+            />
+            <TouchableOpacity
+              style={styles.rephraseButton}
+              onPress={handleRephraseRecommendedActions}
+            >
+              <Text style={styles.rephraseButtonText}>
+                {isThinkingRemediation
+                  ? 'Thinking....'
+                  : 'Rephrase Recommended Actions'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Project-level Switches */}
+
+            <View style={styles.checkboxContainer}>
+              {project.remediationComplete ? (
+                <>
+                  <Text style={styles.checkboxLabel}>Remediation Complete</Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: '/ViewRemediationScreen',
+                        params: { projectId: project.projectId },
+                      })
+                    }
+                    style={styles.viewButton}
+                  >
+                    <Text style={styles.viewButtonText}>View Details</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Switch
+                    value={project?.remediationRequired || false}
+                    onValueChange={handleRemediationToggle}
+                  />
+                  <Text style={styles.checkboxLabel}>Remediation Required</Text>
+                </>
+              )}
+            </View>
+            <View style={styles.container}>
+              <Text>Equipment</Text>
+              <Switch
+                value={equipmentOnSite}
+                onValueChange={handleSwitchChange}
+              />
+              {equipmentOnSite && (
+                <TouchableOpacity onPress={() => setShowEquipmentModal(true)}>
+                  <Text>View/Edit Equipment</Text>
                 </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Switch
-                  value={project?.remediationRequired || false}
-                  onValueChange={handleRemediationToggle}
-                />
-                <Text style={styles.checkboxLabel}>Remediation Required</Text>
-              </>
-            )}
-          </View>
-          <View style={styles.container}>
-            <Text>Equipment</Text>
-            <Switch
-              value={equipmentOnSite}
-              onValueChange={handleSwitchChange}
-            />
-            {equipmentOnSite && (
-              <TouchableOpacity onPress={() => setShowEquipmentModal(true)}>
-                <Text>View/Edit Equipment</Text>
-              </TouchableOpacity>
-            )}
+              )}
 
-            <EquipmentModal
-              visible={showEquipmentModal}
-              onClose={() => setShowEquipmentModal(false)}
-              projectId={project.id}
-              initialQuantities={project.equipment}
-              equipmentOnSite={equipmentOnSite}
-              onSave={handleEquipmentSave}
-            />
-          </View>
-          <View style={styles.checkboxContainer}>
-            <Switch
-              value={project?.siteComplete || false}
-              onValueChange={value => handleSwitchChange('siteComplete', value)}
-            />
-            <Text style={styles.checkboxLabel}>Site Complete</Text>
-          </View>
-
-          <ThemedView style={styles.photoSection}>
-            <View style={styles.photosHeader}>
-              <ThemedText style={styles.subtitle} type="subtitle">
-                Inspection Photos
-              </ThemedText>
-              <TouchableOpacity onPress={pickImageAsync}>
-                <IconSymbol name="photo.badge.plus" size={30} color="#008000" />
-              </TouchableOpacity>
+              <EquipmentModal
+                visible={showEquipmentModal}
+                onClose={() => setShowEquipmentModal(false)}
+                projectId={project.id}
+                initialQuantities={project.equipment}
+                equipmentOnSite={equipmentOnSite}
+                onSave={handleEquipmentSave}
+              />
+            </View>
+            <View style={styles.checkboxContainer}>
+              <Switch
+                value={project?.siteComplete || false}
+                onValueChange={value =>
+                  handleSwitchChange('siteComplete', value)
+                }
+              />
+              <Text style={styles.checkboxLabel}>Site Complete</Text>
             </View>
 
-            {photos.length === 0 ? (
-              /* Show a "no photos" message or an empty state */
-              <ThemedText style={{ color: '#888' }}>
-                No photos have been added yet.
-              </ThemedText>
-            ) : (
-              /* Map over the existing photos */
-              photos.map((photo, index) => (
-                <View key={index} style={styles.photoItem}>
-                  <Image
-                    source={{ uri: photo.uri }}
-                    style={styles.photoImage}
+            <ThemedView style={styles.photoSection}>
+              <View style={styles.photosHeader}>
+                <ThemedText style={styles.subtitle} type="subtitle">
+                  Inspection Photos
+                </ThemedText>
+                <TouchableOpacity onPress={pickImageAsync}>
+                  <IconSymbol
+                    name="photo.badge.plus"
+                    size={30}
+                    color="#008000"
                   />
-                  <TextInput
-                    style={styles.photoLabelInput}
-                    value={photo.label}
-                    onChangeText={text => handlePhotoLabelChange(text, index)}
-                    placeholder="Label this photo"
-                  />
-                  <TouchableOpacity onPress={() => handleRemovePhoto(index)}>
-                    <ThemedText style={styles.removeText}>Remove</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </ThemedView>
+                </TouchableOpacity>
+              </View>
 
-          {/* Button for generating PDF */}
-          <ThemedView style={styles.buttonContainer}>
-            {isSaving ? (
-              <ActivityIndicator size="large" color="#0000ff" />
-            ) : (
-              <Button title="Save Report" onPress={handleSaveReport} />
-            )}
-          </ThemedView>
-        </KeyboardAwareScrollView>
-      </View>
+              {photos.length === 0 ? (
+                /* Show a "no photos" message or an empty state */
+                <ThemedText style={{ color: '#888' }}>
+                  No photos have been added yet.
+                </ThemedText>
+              ) : (
+                /* Map over the existing photos */
+                photos.map((photo, index) => (
+                  <View key={index} style={styles.photoItem}>
+                    <Image
+                      source={{ uri: photo.uri }}
+                      style={styles.photoImage}
+                    />
+                    <TextInput
+                      style={styles.photoLabelInput}
+                      value={photo.label}
+                      onChangeText={text => handlePhotoLabelChange(text, index)}
+                      placeholder="Label this photo"
+                    />
+                    <TouchableOpacity onPress={() => handleRemovePhoto(index)}>
+                      <ThemedText style={styles.removeText}>Remove</ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ThemedView>
+
+            {/* Button for generating PDF */}
+            <ThemedView style={styles.buttonContainer}>
+              {isSaving ? (
+                <ActivityIndicator size="large" color="#0000ff" />
+              ) : (
+                <Button title="Save Report" onPress={handleSaveReport} />
+              )}
+            </ThemedView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -472,23 +487,28 @@ export { InspectionForm }
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f7f7f7', // or any background you prefer
+    backgroundColor: '#f7f7f7',
   },
   root: {
     flex: 1,
   },
-  closeIconContainer: {
-    position: 'absolute',
-    top: 10,
-    right: 11,
-    zIndex: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 8,
+  scrollView: {
+    padding: 0,
   },
   container: {
-    padding: 20,
-    paddingBottom: 96,
+    padding: 10,
+  },
+  chevronContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  chevronLabel: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#2980b9',
+    fontWeight: '500',
   },
   topFormSection: {
     backgroundColor: '#f7f7f7',
