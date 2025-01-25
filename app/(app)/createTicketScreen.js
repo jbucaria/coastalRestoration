@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter } from 'expo-router'
 import {
   View,
   Text,
@@ -12,16 +12,24 @@ import {
   ScrollView,
   Platform,
   Modal,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native'
+import { Picker } from '@react-native-picker/picker'
+import 'react-native-get-random-values'
+import DateTimePicker from '@react-native-community/datetimepicker'
+
+import * as ImagePicker from 'expo-image-picker'
+
 import { collection, addDoc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore } from '@/firebaseConfig'
-import * as ImagePicker from 'expo-image-picker'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import { Picker } from '@react-native-picker/picker'
+
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import 'react-native-get-random-values'
+
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import { FloatingBackButton } from '@/components/FloatingBackButton'
 
 const initialTicketStatus = {
   street: '',
@@ -54,20 +62,18 @@ const initialTicketStatus = {
 
 const CreateTicketScreen = () => {
   const router = useRouter()
-  const { projectId } = useLocalSearchParams()
 
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [startTime, setStartTime] = useState(new Date(2023, 0, 1, 10, 0)) // January 1, 2023, 9:00 AM
-  const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0)) // January 1, 2023, 5:00 PM
-  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [startTime, setStartTime] = useState(new Date(2023, 0, 1, 10, 0))
+  const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0))
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
   const [jobType, setJobType] = useState('')
   const [pickerVisible, setPickerVisible] = useState(false)
+  const [vacancyModalVisible, setVacancyModalVisible] = useState('')
 
-  // Reset the form state
   const resetForm = () => {
     setNewTicket(initialTicketStatus)
   }
@@ -81,14 +87,13 @@ const CreateTicketScreen = () => {
     setJobType(itemValue)
     setNewTicket(prevTicket => ({
       ...prevTicket,
-      typeOfJob: itemValue, // Updating the typeOfJob field in the state
+      typeOfJob: itemValue,
     }))
   }
 
-  // Return to the previous screen
   const handleBack = () => {
     resetForm()
-    router.back() // Or any other navigation method you prefer
+    router.back()
   }
 
   const parseAddressComponents = addressComponents => {
@@ -179,7 +184,6 @@ const CreateTicketScreen = () => {
 
       await createTicket(ticketData)
 
-      // After successful save, reset the form and navigate back
       resetForm()
       router.back()
     } catch (error) {
@@ -286,278 +290,299 @@ const CreateTicketScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
+      <FloatingBackButton color="#007bff" />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={40} // Adjust this value based on your preference
       >
-        {/* Title */}
-        <Text style={styles.title}>Create New Ticket</Text>
-        {/* Back Button */}
-        <View style={styles.floatingContainer}>
-          <TouchableOpacity
-            onPress={handleBack}
-            style={styles.floatingBackButton}
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
           >
-            <IconSymbol name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.dateTimeContainer}>
-          <Text style={styles.label}>Date:</Text>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.selectorButton}
-          >
-            <IconSymbol name="calendar-outline" size={24} color="#2980b9" />
-          </TouchableOpacity>
-
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        </View>
-
-        <View style={styles.dateTimeContainer}>
-          <Text style={styles.label}>Start Time:</Text>
-
-          <DateTimePicker
-            value={startTime}
-            mode="time"
-            is24Hour={false}
-            display="default"
-            onChange={handleStartTimeChange}
-            minuteInterval={15}
-          />
-        </View>
-
-        <View style={styles.dateTimeContainer}>
-          <Text style={styles.label}>End Time:</Text>
-
-          <DateTimePicker
-            value={endTime}
-            mode="time"
-            is24Hour={false}
-            display="default"
-            onChange={handleEndTimeChange}
-            minuteInterval={15}
-          />
-        </View>
-        {/* Address Fields */}
-        <Text style={styles.sectionTitle}>Address</Text>
-
-        {/* Google Places Autocomplete */}
-        <GooglePlacesAutocomplete
-          filterReverseGeocodingByTypes={['locality']}
-          debounce={500}
-          disableScroll={true}
-          placeholder="Search address..."
-          onPress={handleAutocompletePress}
-          query={{
-            key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your API key
-            language: 'en',
-            components: 'country:us',
-          }}
-          fetchDetails={true}
-          styles={{
-            textInputContainer: styles.autocompleteContainer,
-            textInput: styles.inputField,
-            listView: {
-              backgroundColor: 'white',
-              maxHeight: 200,
-              elevation: 5,
-              zIndex: 5,
-            },
-          }}
-        />
-
-        <TextInput
-          style={styles.inputField}
-          placeholder="Street"
-          value={newTicket.street}
-          onChangeText={text => setNewTicket({ ...newTicket, street: text })}
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Apt # (optional)"
-          value={newTicket.apt}
-          onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="City"
-          value={newTicket.city}
-          onChangeText={text => setNewTicket({ ...newTicket, city: text })}
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="State"
-          value={newTicket.state}
-          onChangeText={text => setNewTicket({ ...newTicket, state: text })}
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="ZIP"
-          value={newTicket.zip}
-          onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
-          keyboardType="numeric"
-        />
-
-        {/* Customer Info */}
-        <Text style={styles.sectionTitle}>Builder</Text>
-        <TextInput
-          style={styles.inputField}
-          placeholder="Builder"
-          value={newTicket.customer}
-          onChangeText={text => setNewTicket({ ...newTicket, customer: text })}
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Contact Name"
-          value={newTicket.customerName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, customerName: text })
-          }
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Contact Number"
-          value={newTicket.customerNumber}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, customerNumber: text })
-          }
-          keyboardType="phone-pad"
-        />
-
-        {/* Homeowner Info */}
-        <Text style={styles.sectionTitle}>Homeowner</Text>
-        <TextInput
-          style={styles.inputField}
-          placeholder="Homeowner Name"
-          value={newTicket.homeOwnerName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, homeOwnerName: text })
-          }
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Homeowner Number"
-          value={newTicket.homeOwnerNumber}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, homeOwnerNumber: text })
-          }
-          keyboardType="phone-pad"
-        />
-
-        {/* Ticket Details */}
-        <Text style={styles.sectionTitle}>Ticket Details</Text>
-        <TextInput
-          style={styles.inputField}
-          placeholder="Inspector Name"
-          value={newTicket.inspectorName}
-          onChangeText={text =>
-            setNewTicket({ ...newTicket, inspectorName: text })
-          }
-          keyboardType="default"
-        />
-        <TextInput
-          style={styles.inputField}
-          placeholder="Reason for Inspection"
-          value={newTicket.reason}
-          onChangeText={text => setNewTicket({ ...newTicket, reason: text })}
-          keyboardType="default"
-        />
-        <View style={styles.container}>
-          {/* Trigger Button */}
-          <TouchableOpacity onPress={handleTogglePicker} style={styles.button}>
-            <Text style={styles.buttonText}>
-              {jobType ? jobType : 'Select Job Type'}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Picker Modal */}
-          <Modal
-            visible={pickerVisible}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={handleTogglePicker}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={jobType}
-                  onValueChange={handleJobTypeChange}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Select job type" value="" />
-                  <Picker.Item label="Leak Detection" value="leak detection" />
-                  <Picker.Item label="Inspection" value="inspection" />
-                  <Picker.Item label="Containment" value="containment" />
-                  <Picker.Item label="Flood" value="flood" />
-                  <Picker.Item label="Mold Job" value="mold job" />
-                  <Picker.Item label="Wipe Down" value="wipe down" />
-                </Picker>
-                <View
-                  style={{ flexDirection: 'row', justifyContent: 'center' }}
-                >
-                  <TouchableOpacity onPress={handleTogglePicker}>
-                    <Text style={styles.label}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+            {/* Title */}
+            <Text style={styles.title}>Create New Ticket</Text>
+            {/* Back Button */}
+            <View style={styles.floatingContainer}>
+              <TouchableOpacity
+                onPress={handleBack}
+                style={styles.floatingBackButton}
+              >
+                <IconSymbol name="arrow-back" size={24} color="white" />
+              </TouchableOpacity>
             </View>
-          </Modal>
-        </View>
 
-        {/* Photos */}
-        {newTicket.photos.length > 0 && (
-          <View style={styles.photosContainer}>
-            {newTicket.photos.map((uri, index) => (
-              <Image key={index} source={{ uri }} style={styles.photo} />
-            ))}
-          </View>
-        )}
+            <View style={styles.dateTimeContainer}>
+              <Text style={styles.label}>Date:</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                style={styles.selectorButton}
+              >
+                <IconSymbol name="calendar-outline" size={24} color="#2980b9" />
+              </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handleAddPhoto}
-          style={styles.addPhotoButton}
-        >
-          <Text style={styles.addPhotoButtonText}>Add Photo</Text>
-        </TouchableOpacity>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+              />
+            </View>
 
-        {/* Buttons: Create, Cancel */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            onPress={handleCreateTicket}
-            style={[
-              styles.actionButton,
-              styles.createButton,
-              isSubmitting && styles.disabledButton,
-            ]}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.actionButtonText}>
-              {isSubmitting ? 'Creating...' : 'Create'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleBack}
-            style={[styles.actionButton, styles.cancelButton]}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.actionButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <View style={styles.dateTimeContainer}>
+              <Text style={styles.label}>Start Time:</Text>
+
+              <DateTimePicker
+                value={startTime}
+                mode="time"
+                is24Hour={false}
+                display="default"
+                onChange={handleStartTimeChange}
+                minuteInterval={15}
+              />
+            </View>
+
+            <View style={styles.dateTimeContainer}>
+              <Text style={styles.label}>End Time:</Text>
+
+              <DateTimePicker
+                value={endTime}
+                mode="time"
+                is24Hour={false}
+                display="default"
+                onChange={handleEndTimeChange}
+                minuteInterval={15}
+              />
+            </View>
+            {/* Address Fields */}
+            <Text style={styles.sectionTitle}>Address</Text>
+
+            {/* Google Places Autocomplete */}
+            <GooglePlacesAutocomplete
+              filterReverseGeocodingByTypes={['locality']}
+              debounce={500}
+              disableScroll={true}
+              placeholder="Search address..."
+              onPress={handleAutocompletePress}
+              query={{
+                key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your API key
+                language: 'en',
+                components: 'country:us',
+              }}
+              fetchDetails={true}
+              styles={{
+                textInputContainer: styles.autocompleteContainer,
+                textInput: styles.inputField,
+                listView: {
+                  backgroundColor: 'white',
+                  maxHeight: 200,
+                  elevation: 5,
+                  zIndex: 5,
+                },
+              }}
+            />
+
+            <TextInput
+              style={styles.inputField}
+              placeholder="Street"
+              value={newTicket.street}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, street: text })
+              }
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Apt # (optional)"
+              value={newTicket.apt}
+              onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="City"
+              value={newTicket.city}
+              onChangeText={text => setNewTicket({ ...newTicket, city: text })}
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="State"
+              value={newTicket.state}
+              onChangeText={text => setNewTicket({ ...newTicket, state: text })}
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="ZIP"
+              value={newTicket.zip}
+              onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
+              keyboardType="numeric"
+            />
+
+            {/* Customer Info */}
+            <Text style={styles.sectionTitle}>Builder</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Builder"
+              value={newTicket.customer}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, customer: text })
+              }
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Contact Name"
+              value={newTicket.customerName}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, customerName: text })
+              }
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Contact Number"
+              value={newTicket.customerNumber}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, customerNumber: text })
+              }
+              keyboardType="phone-pad"
+            />
+
+            {/* Homeowner Info */}
+            <Text style={styles.sectionTitle}>Homeowner</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Homeowner Name"
+              value={newTicket.homeOwnerName}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, homeOwnerName: text })
+              }
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Homeowner Number"
+              value={newTicket.homeOwnerNumber}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, homeOwnerNumber: text })
+              }
+              keyboardType="phone-pad"
+            />
+
+            {/* Ticket Details */}
+            <Text style={styles.sectionTitle}>Ticket Details</Text>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Inspector Name"
+              value={newTicket.inspectorName}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, inspectorName: text })
+              }
+              keyboardType="default"
+            />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Reason for Inspection"
+              value={newTicket.reason}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, reason: text })
+              }
+              keyboardType="default"
+            />
+            <View style={styles.container}>
+              {/* Trigger Button */}
+              <TouchableOpacity
+                onPress={handleTogglePicker}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>
+                  {jobType ? jobType : 'Select Job Type'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Picker Modal */}
+              <Modal
+                visible={pickerVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={handleTogglePicker}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={jobType}
+                      onValueChange={handleJobTypeChange}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Select job type" value="" />
+                      <Picker.Item
+                        label="Leak Detection"
+                        value="leak detection"
+                      />
+                      <Picker.Item label="Inspection" value="inspection" />
+                      <Picker.Item label="Containment" value="containment" />
+                      <Picker.Item label="Flood" value="flood" />
+                      <Picker.Item label="Mold Job" value="mold job" />
+                      <Picker.Item label="Wipe Down" value="wipe down" />
+                    </Picker>
+                    <View
+                      style={{ flexDirection: 'row', justifyContent: 'center' }}
+                    >
+                      <TouchableOpacity onPress={handleTogglePicker}>
+                        <Text style={styles.label}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+            </View>
+
+            {/* Photos */}
+            {newTicket.photos.length > 0 && (
+              <View style={styles.photosContainer}>
+                {newTicket.photos.map((uri, index) => (
+                  <Image key={index} source={{ uri }} style={styles.photo} />
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={handleAddPhoto}
+              style={styles.addPhotoButton}
+            >
+              <Text style={styles.addPhotoButtonText}>Add Photo</Text>
+            </TouchableOpacity>
+
+            {/* Buttons: Create, Cancel */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                onPress={handleCreateTicket}
+                style={[
+                  styles.actionButton,
+                  styles.createButton,
+                  isSubmitting && styles.disabledButton,
+                ]}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.actionButtonText}>
+                  {isSubmitting ? 'Creating...' : 'Create'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleBack}
+                style={[styles.actionButton, styles.cancelButton]}
+                disabled={isSubmitting}
+              >
+                <Text style={styles.actionButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -608,22 +633,9 @@ const styles = StyleSheet.create({
   },
   floatingContainer: {
     position: 'absolute',
-    top: 0, // Adjust this to your preference
+    top: 0,
     left: -10,
-    zIndex: 10, // Ensure it's above other content
-  },
-  floatingBackButton: {
-    backgroundColor: '#2980b9',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5, // for android shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    zIndex: 10,
   },
   dateTimeContainer: {
     flexDirection: 'row',

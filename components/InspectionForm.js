@@ -77,7 +77,6 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   }, [project])
 
   const handleRemediationToggle = value => {
-    // e.g. setTicket(prev => ({ ...prev, remediationRequired: value }))
     if (value) {
       Alert.alert(
         'Input Measurements',
@@ -108,9 +107,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   }
 
   const updateProjectRemediationRequired = value => {
-    // Here you would update the state and potentially update Firestore
     setProject(prev => ({ ...prev, remediationRequired: value }))
-    // Assuming you have a function to update Firestore
     updateTicket(project.id, 'remediationRequired', value)
   }
 
@@ -136,7 +133,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
         setIsSaving(false)
       }, 1000)
     }
-  }, [project]) // Run whenever project prop changes
+  }, [project])
 
   const validateForm = () => {
     const requiredFields = {
@@ -226,36 +223,14 @@ const InspectionForm = ({ project, setProject, projectId }) => {
     }
   }, [])
 
-  const handleToggleSiteComplete = async () => {
-    const newStatus = !siteComplete
-    try {
-      // Update Firestore to toggle the site complete status
-      const projectRef = doc(firestore, 'tickets', projectId)
-      await updateDoc(projectRef, { siteComplete: newStatus })
-      setSiteComplete(newStatus) // Update local state after successful Firestore update
-      Alert.alert(
-        'Success',
-        `Site marked as ${newStatus ? 'complete' : 'incomplete'}.`
-      )
-      router.push('/(tabs)') // Navigate to the home tab
-    } catch (error) {
-      console.error('Error updating site complete status:', error)
-      Alert.alert(
-        'Error',
-        `Failed to mark the site as ${newStatus ? 'complete' : 'incomplete'}. Please try again.`
-      )
-    }
-  }
-
   const handleSwitchChange = async value => {
     setEquipmentOnSite(value)
     if (!value) {
-      // If turning off, clear equipment
       try {
         await updateDoc(doc(firestore, 'tickets', project.id), {
           equipmentTotal: 0,
           equipmentOnSite: false,
-          equipment: {}, // Assuming you store equipment this way
+          equipment: {},
         })
         Alert.alert(
           'Equipment cleared',
@@ -266,14 +241,12 @@ const InspectionForm = ({ project, setProject, projectId }) => {
         Alert.alert('Error', 'Failed to update the project. Please try again.')
       }
     } else {
-      // Open modal to add equipment
       setShowEquipmentModal(true)
     }
   }
 
   const handleEquipmentSave = equipment => {
     setShowEquipmentModal(false)
-    // Optionally handle equipment data here or in the modal
   }
 
   const handlePhotoLabelChange = (text, index) => {

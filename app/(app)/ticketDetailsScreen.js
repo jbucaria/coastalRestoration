@@ -20,6 +20,7 @@ import { SwitchComponent } from '@/components/SwitchComponent'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import { FloatingBackButton } from '@/components/FloatingBackButton'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
@@ -283,12 +284,7 @@ const TicketDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        style={styles.floatingBackButton}
-        onPress={() => router.back()}
-      >
-        <IconSymbol name="arrow.backward.square" size={24} color="white" />
-      </TouchableOpacity>
+      <FloatingBackButton color="#007bff" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Floating Back Button */}
         {/* -- HEADER SECTION -- */}
