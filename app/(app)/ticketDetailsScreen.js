@@ -13,7 +13,7 @@ import {
   Platform,
   Linking,
 } from 'react-native'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
 import { SwitchComponent } from '@/components/SwitchComponent'
@@ -37,24 +37,25 @@ const TicketDetailsScreen = () => {
   useEffect(() => {
     if (!projectId) return
 
-    const fetchTicket = async () => {
-      try {
-        console.log('Fetching ticket with ID:', projectId)
-        const docRef = doc(firestore, 'tickets', projectId)
-        const docSnap = await getDoc(docRef)
+    const ticketRef = doc(firestore, 'tickets', projectId)
+    const unsubscribe = onSnapshot(
+      ticketRef,
+      docSnap => {
         if (docSnap.exists()) {
           setTicket({ id: docSnap.id, ...docSnap.data() })
         } else {
           Alert.alert('Not Found', 'Ticket does not exist.')
           router.back()
         }
-      } catch (error) {
+      },
+      error => {
         console.error('Error fetching ticket data:', error)
         Alert.alert('Error', 'Unable to fetch ticket data.')
       }
-    }
+    )
 
-    fetchTicket()
+    // Clean up the subscription on unmount
+    return () => unsubscribe()
   }, [projectId])
 
   useEffect(() => {
@@ -177,7 +178,7 @@ const TicketDetailsScreen = () => {
       Alert.alert('Error', 'No ticket selected for inspection or viewing.')
       return
     }
-    const route = ticket.remeditionComplete
+    const route = ticket.remediationComplete
       ? '/ViewRemediationScreen'
       : '/RemediationScreen'
     router.push({
@@ -383,78 +384,86 @@ const TicketDetailsScreen = () => {
           )}
         </View>
 
-        {/* -- ACTION BUTTONS -- */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleInspection}
-          >
-            <Text style={styles.actionButtonText}>
+        {/* -- LINKS & ACTIONS -- */}
+
+        <View style={styles.notesLinkContainer}>
+          <TouchableOpacity onPress={openNotes} style={styles.notesLink}>
+            <IconSymbol name="note.text" size={24} color="#007BFF" />
+            <Text style={styles.notesLinkText}>View Notes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.notesLink} onPress={handleInspection}>
+            <Text style={styles.notesLinkText}>
               {ticket.inspectionComplete ? 'View Report' : 'Start Inspection'}
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
-            onPress={openNotes}
+            style={styles.notesLink}
+            onPress={handleRemediation}
           >
-            <Text style={styles.actionButtonText}>Notes</Text>
+            {ticket.remediationComplete && (
+              <IconSymbol name="pencil.and.ruler" size={24} color="#007BFF" />
+            )}
+            <Text style={styles.notesLinkText}>
+              {ticket.remediationComplete ? 'View Meas.' : 'Input Meas.'}
+            </Text>
           </TouchableOpacity>
-
-          {(ticket.remediationRequired || ticket.remediationComplete) && (
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#00A8E8' }]}
-              onPress={handleRemediation}
-            >
-              <Text style={styles.actionButtonText}>
-                {ticket.remediationComplete ? 'View' : 'Input'}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* -- SWITCHES (WITHOUT siteComplete) -- */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Status</Text>
 
-          <SwitchComponent
-            projectId={ticket.id}
-            field="onSite"
-            label="On Site"
-            value={ticket?.onSite || false}
-          />
-
-          {!ticket.remediationComplete && (
-            <SwitchComponent
-              projectId={ticket.id}
-              field="remediationRequired"
-              label="Remediation Required"
-              value={ticket?.remediationRequired || false}
-              onToggle={handleRemediationToggle}
-            />
-          )}
-
-          <SwitchComponent
-            projectId={ticket.id}
-            field="equipmentOnSite"
-            label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
-            value={ticket?.equipmentOnSite || false}
-            onShowModal={() => setIsEquipmentModalVisible(true)}
-          />
+          <View style={styles.sectionContainer}>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Equipment Total</Text>
+              <Text style={styles.value}>{ticket.equipmentTotal || '0'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Measurements Req.</Text>
+              <Text style={styles.value}>
+                {ticket.remediationRequired ? 'True' : ''}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Inspection Report Req.</Text>
+              <Text style={styles.value}>
+                {!ticket.inspectionComplete ? 'True' : ''}
+              </Text>
+            </View>
+          </View>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.siteCompleteButton,
-            ticket.siteComplete ? styles.siteIncompleteButton : null,
-          ]}
-          onPress={handleSiteComplete}
-        >
-          <Text style={styles.siteCompleteButtonText}>
-            {ticket.siteComplete
-              ? 'Mark Site Incomplete'
-              : 'Mark Site Complete'}
-          </Text>
-        </TouchableOpacity>
+        {!ticket.remediationComplete && (
+          <SwitchComponent
+            projectId={ticket.id}
+            field="remediationRequired"
+            label="Remediation Required"
+            value={ticket?.remediationRequired || false}
+            onToggle={handleRemediationToggle}
+          />
+        )}
+
+        <SwitchComponent
+          projectId={ticket.id}
+          field="equipmentOnSite"
+          label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
+          value={ticket?.equipmentOnSite || false}
+          onShowModal={() => setIsEquipmentModalVisible(true)}
+        />
+        <View style={styles.notesLinkContainer}>
+          <TouchableOpacity
+            style={[
+              styles.siteCompleteButton,
+              ticket.siteComplete ? styles.siteIncompleteButton : null,
+            ]}
+            onPress={handleSiteComplete}
+          >
+            <Text style={styles.siteCompleteButtonText}>
+              {ticket.siteComplete
+                ? 'Mark Site Incomplete'
+                : 'Mark Site Complete'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* -- FULL PHOTO PREVIEW -- */}
@@ -495,6 +504,32 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#666',
+  },
+  notesLinkContainer: {
+    marginTop: 20, // Adjust as needed for your layout
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notesLink: {
+    justifyContent: 'center',
+    marginBottom: 10,
+    width: '60%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#E3F2FD', // Light blue background for emphasis
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  notesLinkText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#007BFF', // Theme color to match the icon
+    fontWeight: '600',
   },
   floatingBackButton: {
     position: 'absolute',

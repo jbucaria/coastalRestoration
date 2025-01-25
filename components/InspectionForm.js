@@ -23,27 +23,15 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { ThemedView } from '@/components/ThemedView'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import { rephraseText } from '@/utils/rephraseText' // Import the function that calls OpenAI
+import { rephraseText } from '@/utils/rephraseText'
 import { ThemedText } from '@/components/ThemedText'
 import { handleGenerateReport } from '@/utils/generateReport'
 import { EquipmentModal } from './EquipmentModal'
 
 const InspectionForm = ({ project, setProject, projectId }) => {
-  const [equipmentOnSite, setEquipmentOnSite] = useState(
-    project.equipmentOnSite || false
-  )
   const [showEquipmentModal, setShowEquipmentModal] = useState(false)
   const [customer, setCustomer] = useState(project.customer || '')
   const [customerName, setCustomerName] = useState(project.customerName || '')
-  const [customerNumber, setCustomerNumber] = useState(
-    project.customerNumber || ''
-  )
-  const [homeOwnerName, setHomeOwnerName] = useState(
-    project.homeOwnerName || ''
-  )
-  const [homeOwnerNumber, setHomeOwnerNumber] = useState(
-    project.homeOwnerNumber || ''
-  )
   const [address, setAddress] = useState(project.address || '')
   const [date, setDate] = useState(new Date(project.date || Date.now()))
   const [reason, setReason] = useState(project.reason || '')
@@ -54,7 +42,15 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   const [isSaving, setIsSaving] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
   const [isThinkingRemediation, setIsThinkingRemediation] = useState(false)
-
+  const [customerNumber, setCustomerNumber] = useState(
+    project.customerNumber || ''
+  )
+  const [homeOwnerName, setHomeOwnerName] = useState(
+    project.homeOwnerName || ''
+  )
+  const [homeOwnerNumber, setHomeOwnerNumber] = useState(
+    project.homeOwnerNumber || ''
+  )
   const [inspectorName, setInspectorName] = useState(
     project.inspectorName || ''
   )
@@ -67,6 +63,18 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   const [localSiteComplete, setLocalSiteComplete] = useState(
     project?.siteComplete || false
   )
+  const [equipmentOnSite, setEquipmentOnSite] = useState(
+    project.equipmentOnSite || false
+  )
+  const [siteComplete, setSiteComplete] = useState(
+    project.siteComplete || false
+  )
+
+  useEffect(() => {
+    // Load project details into state, including `siteComplete`
+    setSiteComplete(project.siteComplete || false)
+    // Other details loading...
+  }, [project])
 
   const handleRemediationToggle = value => {
     // e.g. setTicket(prev => ({ ...prev, remediationRequired: value }))
@@ -217,6 +225,27 @@ const InspectionForm = ({ project, setProject, projectId }) => {
       Alert.alert('Error', 'Failed to update the project. Please try again.')
     }
   }, [])
+
+  const handleToggleSiteComplete = async () => {
+    const newStatus = !siteComplete
+    try {
+      // Update Firestore to toggle the site complete status
+      const projectRef = doc(firestore, 'tickets', projectId)
+      await updateDoc(projectRef, { siteComplete: newStatus })
+      setSiteComplete(newStatus) // Update local state after successful Firestore update
+      Alert.alert(
+        'Success',
+        `Site marked as ${newStatus ? 'complete' : 'incomplete'}.`
+      )
+      router.push('/(tabs)') // Navigate to the home tab
+    } catch (error) {
+      console.error('Error updating site complete status:', error)
+      Alert.alert(
+        'Error',
+        `Failed to mark the site as ${newStatus ? 'complete' : 'incomplete'}. Please try again.`
+      )
+    }
+  }
 
   const handleSwitchChange = async value => {
     setEquipmentOnSite(value)

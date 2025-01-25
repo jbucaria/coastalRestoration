@@ -11,7 +11,7 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
   // Background color logic
   let backgroundColor = ''
   if (project.siteComplete) {
-    backgroundColor = '#8BC34A'
+    backgroundColor = '#a7d49b'
   } else {
     backgroundColor = '#f0faff'
   }

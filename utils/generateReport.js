@@ -69,7 +69,7 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
         {
           text: 'OK',
           onPress: () => {
-            router.push('(tabs)')
+            router.back()
           },
         },
       ],
