@@ -218,7 +218,7 @@ const TicketsScreen = () => {
                 }
                 openEquipmentModal={() => openEquipmentModal(project)}
                 // Pass the background color to TicketCard
-                backgroundColor={index % 2 === 0 ? '' : '#eaeaea'}
+                backgroundColor={index % 2 === 0 ? '#ff000' : '#eaeaea'}
               />
             </View>
           ))

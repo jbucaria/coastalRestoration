@@ -94,7 +94,15 @@ const TicketCard = ({
 
   if (project.messageCount > 0) {
     icons.push(
-      <TouchableOpacity key="messages" onPress={openEquipmentModal}>
+      <TouchableOpacity
+        key="messages"
+        onPress={() => {
+          router.push({
+            pathname: '/TicketNotesScreen',
+            params: { projectId: project.projectId },
+          })
+        }}
+      >
         <MessageIndicator
           count={project.messageCount}
           name="bubble.left.and.text.bubble.right.fill"
@@ -201,7 +209,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     height: 200,
     marginHorizontal: 0,
-    marginBottom: 15,
+    marginBottom: 10,
     padding: 5,
     // paddingTop: 5,
   },
@@ -267,7 +275,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    padding: 4,
+    // padding: 4,
     borderRadius: 8,
     marginLeft: 8,
   },

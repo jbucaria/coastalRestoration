@@ -11,11 +11,13 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
-import { v4 as uuidv4 } from 'uuid' // For generating unique IDs if needed
+import { v4 as uuidv4 } from 'uuid'
 
 export default function EditRemediationScreen() {
   const router = useRouter()
@@ -181,139 +183,150 @@ export default function EditRemediationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>Edit Remediation Measurements</Text>
-
-        {/* Quick Buttons for common room names */}
-        <View style={styles.quickRoomsRow}>
-          {ROOM_OPTIONS.map(option => (
-            <TouchableOpacity
-              key={option}
-              style={styles.quickRoomButton}
-              onPress={() => handleAddRoom(option)}
-            >
-              <Text style={styles.quickRoomButtonText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Button to add a generic room */}
-        <TouchableOpacity
-          onPress={() => handleAddRoom()}
-          style={styles.addGenericRoomButton}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0} // Adjust based on your needs
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.addGenericRoomButtonText}>
-            + Add Generic Room
-          </Text>
-        </TouchableOpacity>
+          <Text style={styles.title}>Edit Remediation Measurements</Text>
 
-        {/* List of Rooms and their measurement data */}
-        {rooms.map(room => (
-          <View key={room.id} style={styles.roomContainer}>
-            <View style={styles.roomHeader}>
-              <TextInput
-                style={[styles.roomTitle, { flex: 1 }]}
-                value={room.name}
-                onChangeText={text =>
-                  setRooms(prev =>
-                    prev.map(r => (r.id === room.id ? { ...r, name: text } : r))
-                  )
-                }
-              />
-              <TouchableOpacity onPress={() => handleDeleteRoom(room.id)}>
-                <Text style={styles.deleteRoomText}>Delete Room</Text>
+          {/* Quick Buttons for common room names */}
+          <View style={styles.quickRoomsRow}>
+            {ROOM_OPTIONS.map(option => (
+              <TouchableOpacity
+                key={option}
+                style={styles.quickRoomButton}
+                onPress={() => handleAddRoom(option)}
+              >
+                <Text style={styles.quickRoomButtonText}>{option}</Text>
               </TouchableOpacity>
-            </View>
+            ))}
+          </View>
 
-            {/* Render Measurements */}
-            {room.measurements.map(measurement => (
-              <View key={measurement.id} style={styles.measurementRow}>
+          {/* Button to add a generic room */}
+          <TouchableOpacity
+            onPress={() => handleAddRoom()}
+            style={styles.addGenericRoomButton}
+          >
+            <Text style={styles.addGenericRoomButtonText}>
+              + Add Generic Room
+            </Text>
+          </TouchableOpacity>
+
+          {/* List of Rooms and their measurement data */}
+          {rooms.map(room => (
+            <View key={room.id} style={styles.roomContainer}>
+              <View style={styles.roomHeader}>
                 <TextInput
-                  style={[styles.measurementInput, { flex: 1 }]}
-                  placeholder="Description (e.g. Carpet)"
-                  value={measurement.description}
-                  onChangeText={val =>
-                    handleMeasurementChange(
-                      room.id,
-                      measurement.id,
-                      'description',
-                      val
+                  style={[styles.roomTitle, { flex: 1 }]}
+                  value={room.name}
+                  onChangeText={text =>
+                    setRooms(prev =>
+                      prev.map(r =>
+                        r.id === room.id ? { ...r, name: text } : r
+                      )
                     )
                   }
                 />
-                <TextInput
-                  style={[
-                    styles.measurementInput,
-                    { width: 100, marginLeft: 8 },
-                  ]}
-                  placeholder="Qty (e.g. 30 sq ft)"
-                  value={measurement.quantity}
-                  onChangeText={val =>
-                    handleMeasurementChange(
-                      room.id,
-                      measurement.id,
-                      'quantity',
-                      val
-                    )
-                  }
-                />
-                <TouchableOpacity
-                  onPress={() =>
-                    handleDeleteMeasurement(room.id, measurement.id)
-                  }
-                  style={styles.deleteMeasurementButton}
-                >
-                  <Text style={styles.deleteMeasurementButtonText}>X</Text>
+                <TouchableOpacity onPress={() => handleDeleteRoom(room.id)}>
+                  <Text style={styles.deleteRoomText}>Delete Room</Text>
                 </TouchableOpacity>
               </View>
-            ))}
 
-            {/* Button to add a new measurement */}
+              {/* Render Measurements */}
+              {room.measurements.map(measurement => (
+                <View key={measurement.id} style={styles.measurementRow}>
+                  <TextInput
+                    style={[styles.measurementInput, { flex: 1 }]}
+                    placeholder="Description (e.g. Carpet)"
+                    value={measurement.description}
+                    onChangeText={val =>
+                      handleMeasurementChange(
+                        room.id,
+                        measurement.id,
+                        'description',
+                        val
+                      )
+                    }
+                  />
+                  <TextInput
+                    style={[
+                      styles.measurementInput,
+                      { width: 100, marginLeft: 8 },
+                    ]}
+                    placeholder="Qty (e.g. 30 sq ft)"
+                    value={measurement.quantity}
+                    onChangeText={val =>
+                      handleMeasurementChange(
+                        room.id,
+                        measurement.id,
+                        'quantity',
+                        val
+                      )
+                    }
+                  />
+                  <TouchableOpacity
+                    onPress={() =>
+                      handleDeleteMeasurement(room.id, measurement.id)
+                    }
+                    style={styles.deleteMeasurementButton}
+                  >
+                    <Text style={styles.deleteMeasurementButtonText}>X</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* Button to add a new measurement */}
+              <TouchableOpacity
+                onPress={() => handleAddMeasurement(room.id)}
+                style={styles.addMeasurementButton}
+              >
+                <Text style={styles.addMeasurementButtonText}>
+                  + Add Measurement
+                </Text>
+              </TouchableOpacity>
+
+              {/* Render Photos */}
+              {room.photos.length > 0 && (
+                <ScrollView horizontal style={styles.photoRow}>
+                  {room.photos.map(uri => (
+                    <View key={uri} style={styles.photoItem}>
+                      <Image source={{ uri }} style={styles.photoImage} />
+                      <TouchableOpacity
+                        onPress={() => handleDeletePhoto(room.id, uri)}
+                        style={styles.deletePhotoButton}
+                      >
+                        <Text style={styles.deletePhotoButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+
+              <TouchableOpacity
+                onPress={() => handleAddPhoto(room.id)}
+                style={styles.addPhotoButton}
+              >
+                <Text style={styles.addPhotoButtonText}>+ Add Photo</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {/* Save Button */}
+          {rooms.length > 0 && (
             <TouchableOpacity
-              onPress={() => handleAddMeasurement(room.id)}
-              style={styles.addMeasurementButton}
+              onPress={handleSaveRemediationData}
+              style={styles.saveButton}
             >
-              <Text style={styles.addMeasurementButtonText}>
-                + Add Measurement
-              </Text>
+              <Text style={styles.saveButtonText}>Save Remediation Report</Text>
             </TouchableOpacity>
-
-            {/* Render Photos */}
-            {room.photos.length > 0 && (
-              <ScrollView horizontal style={styles.photoRow}>
-                {room.photos.map(uri => (
-                  <View key={uri} style={styles.photoItem}>
-                    <Image source={{ uri }} style={styles.photoImage} />
-                    <TouchableOpacity
-                      onPress={() => handleDeletePhoto(room.id, uri)}
-                      style={styles.deletePhotoButton}
-                    >
-                      <Text style={styles.deletePhotoButtonText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            )}
-
-            <TouchableOpacity
-              onPress={() => handleAddPhoto(room.id)}
-              style={styles.addPhotoButton}
-            >
-              <Text style={styles.addPhotoButtonText}>+ Add Photo</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        {/* Save Button */}
-        {rooms.length > 0 && (
-          <TouchableOpacity
-            onPress={handleSaveRemediationData}
-            style={styles.saveButton}
-          >
-            <Text style={styles.saveButtonText}>Save Remediation Report</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -322,6 +335,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F5F7',
+  },
+  keyboardAvoidingContainer: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,

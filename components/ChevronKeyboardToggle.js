@@ -37,6 +37,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 10,
+    zIndex: 1, // Ensure it's on top of other elements
+    backgroundColor: 'rgba(255,255,255,0.8)', // To make it stand out if it's behind something
   },
   chevronLabel: {
     marginLeft: 10,
