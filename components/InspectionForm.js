@@ -307,7 +307,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        keyboardVerticalOffset={40}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}

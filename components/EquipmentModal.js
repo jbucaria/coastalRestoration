@@ -9,6 +9,10 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native'
 import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
@@ -125,53 +129,63 @@ const EquipmentModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            {equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
-          </Text>
-          <FlatList
-            data={Object.keys(equipment)}
-            keyExtractor={item => item}
-            renderItem={({ item }) => (
-              <View style={styles.inputRow}>
-                <Text style={styles.inputLabel}>
-                  {item.replace(/([A-Z])/g, ' $1')}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  value={equipment[item].toString()}
-                  onChangeText={value => handleQuantityChange(item, value)}
-                />
+        <KeyboardAvoidingView
+          style={styles.modalContent}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
+                {equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
+              </Text>
+              <FlatList
+                data={Object.keys(equipment)}
+                keyExtractor={item => item}
+                renderItem={({ item }) => (
+                  <View style={styles.inputRow}>
+                    <Text style={styles.inputLabel}>
+                      {item.replace(/([A-Z])/g, ' $1')}
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      value={equipment[item].toString()}
+                      onChangeText={value => handleQuantityChange(item, value)}
+                    />
+                  </View>
+                )}
+              />
+              <View style={styles.buttonRow}>
+                <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSave}
+                  style={styles.saveButton}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
               </View>
-            )}
-          />
-          <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-              {isSaving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Save</Text>
+              {equipmentOnSite && (
+                <TouchableOpacity
+                  onPress={handlePickUpAll}
+                  style={styles.pickUpAllButton}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Pick Up All</Text>
+                  )}
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
-          </View>
-          {equipmentOnSite && (
-            <TouchableOpacity
-              onPress={handlePickUpAll}
-              style={styles.pickUpAllButton}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Pick Up All</Text>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   )
