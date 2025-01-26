@@ -207,13 +207,7 @@ const TicketsScreen = () => {
           />
         ) : filteredProjects.length > 0 ? (
           filteredProjects.map((project, index) => (
-            <View
-              key={project.id}
-              style={[
-                styles.ticketContainer,
-                { backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#eaeaea' },
-              ]}
-            >
+            <View key={project.id} style={[styles.ticketContainer]}>
               <TicketCard
                 project={project}
                 onPress={() =>
@@ -223,6 +217,8 @@ const TicketsScreen = () => {
                   })
                 }
                 openEquipmentModal={() => openEquipmentModal(project)}
+                // Pass the background color to TicketCard
+                backgroundColor={index % 2 === 0 ? '' : '#eaeaea'}
               />
             </View>
           ))
@@ -300,14 +296,15 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   ticketContainer: {
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    padding: 2,
+    height: 200,
+    // borderRadius: 8,
+    // marginVertical: 4,
+    // shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 2,
+    // elevation: 2,
   },
   noResultsText: {
     textAlign: 'center',
@@ -345,7 +342,7 @@ const styles = StyleSheet.create({
   },
   floatingButtonContainer: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 140,
     right: 24,
   },
   iconContainer: {

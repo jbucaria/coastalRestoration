@@ -7,7 +7,12 @@ import { MessageIndicator } from '@/components/MessageIndicator'
 import { updateDoc, doc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
-const TicketCard = ({ project, onPress, openEquipmentModal }) => {
+const TicketCard = ({
+  project,
+  onPress,
+  openEquipmentModal,
+  backgroundColor,
+}) => {
   // Convert Firestore Timestamps to JS Dates
   const startAt = project.startTime?.toDate?.()
   const endAt = project.endTime?.toDate?.()
@@ -54,7 +59,7 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
           })
         }
       >
-        <IconSymbol name="hammer" size={40} color="green" />
+        <IconSymbol name="hammer.circle.fill" size={40} color="green" />
       </TouchableOpacity>
     )
   }
@@ -69,7 +74,7 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
           })
         }
       >
-        <IconSymbol name="pencil.and.ruler" size={40} color="green" />
+        <IconSymbol name="pencil.and.ruler.fill" size={40} color="green" />
       </TouchableOpacity>
     )
   }
@@ -79,9 +84,9 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
       <TouchableOpacity key="equipment" onPress={openEquipmentModal}>
         <MessageIndicator
           count={project.equipmentTotal}
-          name="fan"
+          name="fan.fill"
           size={40}
-          color="black"
+          color="green"
         />
       </TouchableOpacity>
     )
@@ -92,9 +97,9 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
       <TouchableOpacity key="messages" onPress={openEquipmentModal}>
         <MessageIndicator
           count={project.messageCount}
-          name="bubble.left.and.exclamationmark.bubble.right"
+          name="bubble.left.and.text.bubble.right.fill"
           size={40}
-          color="black"
+          color="green"
         />
       </TouchableOpacity>
     )
@@ -133,7 +138,13 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
   }
 
   return (
-    <TouchableOpacity onPress={onPress} style={styles.cardContainer}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={[
+        styles.cardContainer,
+        { backgroundColor: backgroundColor || '#FFFFFF' }, // Default to white if no background color is provided
+      ]}
+    >
       {/* Header Row: Inspector + Time + Job Type */}
       <View style={styles.headerRow}>
         <View style={styles.inspectorInfo}>
@@ -155,9 +166,11 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
           <Text style={styles.ticketNumber}>{project.ticketNumber}</Text>
         </View>
         <View style={styles.timeInfo}>
-          <Text style={styles.timeRange}>
-            {startTime} - {endTime}
-          </Text>
+          <View style={styles.timeRangeContainer}>
+            <Text style={styles.timeRange}>
+              {startTime} - {endTime}
+            </Text>
+          </View>
           <Text style={styles.jobType}>{project.typeOfJob || 'N/A'}</Text>
         </View>
       </View>
@@ -169,16 +182,15 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
           {project.city}, {project.state} {project.zip}
         </Text>
       </View>
+
       {/* Icons Section */}
       {hasIcons && (
-        <View style={styles.iconsContain}>
-          <View style={styles.iconsContainer}>
-            {icons.map((icon, index) => (
-              <View key={index} style={styles.iconWrapper}>
-                {icon}
-              </View>
-            ))}
-          </View>
+        <View style={styles.iconsContainer}>
+          {icons.map((icon, index) => (
+            <View key={index} style={styles.iconWrapper}>
+              {icon}
+            </View>
+          ))}
         </View>
       )}
     </TouchableOpacity>
@@ -187,44 +199,30 @@ const TicketCard = ({ project, onPress, openEquipmentModal }) => {
 
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '',
-    marginHorizontal: 1,
-    marginBottom: 0,
-    borderRadius: 10,
-    padding: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  iconsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-  },
-
-  iconWrapper: {
-    padding: 2,
-    borderRadius: 8,
-    marginRight: 8,
+    height: 200,
+    marginHorizontal: 0,
+    marginBottom: 15,
+    padding: 5,
+    // paddingTop: 5,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   inspectorInfo: {
     flex: 1,
   },
   inspectorName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#2C3E50',
+    fontWeight: 'bold',
+    color: '#212121',
   },
   onSiteIcon: {
     marginLeft: 5,
+    position: 'relative',
+    top: -2, // Fine-tune icon positioning
   },
   ticketNumber: {
     fontSize: 14,
@@ -233,29 +231,45 @@ const styles = StyleSheet.create({
   timeInfo: {
     alignItems: 'flex-end',
   },
+  timeRangeContainer: {
+    backgroundColor: 'rgba(13, 71, 161, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
   timeRange: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#3F51B5',
+    fontWeight: 'bold',
+    color: 'white',
+    letterSpacing: -0.5,
   },
   jobType: {
     fontSize: 14,
-    color: '#FF9800',
-    fontWeight: '500',
+    color: 'rgba(13, 71, 161, 1)',
+    fontWeight: 'semibold',
     marginTop: 4,
   },
   addressSection: {
-    marginTop: 8,
+    marginBottom: 16,
   },
   addressText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#212121',
-    marginBottom: 4,
   },
   addressSubText: {
     fontSize: 14,
-    color: '#757575',
+    color: '#212121',
+  },
+  iconsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  iconWrapper: {
+    padding: 4,
+    borderRadius: 8,
+    marginLeft: 8,
   },
 })
 
