@@ -71,24 +71,35 @@ const CreateTicketScreen = () => {
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
   const [jobType, setJobType] = useState('')
-  const [pickerVisible, setPickerVisible] = useState(false)
-  const [vacancyModalVisible, setVacancyModalVisible] = useState('')
+  const [jobTypeModalVisible, setJobTypeModalVisible] = useState(false)
+  const [vacancyModalVisible, setVacancyModalVisible] = useState(false)
+  const [vacancy, setVacancy] = useState('')
 
   const resetForm = () => {
     setNewTicket(initialTicketStatus)
   }
 
   const handleTogglePicker = () => {
-    setPickerVisible(!pickerVisible)
+    setJobTypeModalVisible(!jobTypeModalVisible)
+  }
+  const handleToggleVacancyPicker = () => {
+    setVacancyModalVisible(!vacancyModalVisible)
   }
 
   const handleJobTypeChange = itemValue => {
-    console.log('Selected job type:', itemValue)
     setJobType(itemValue)
     setNewTicket(prevTicket => ({
       ...prevTicket,
       typeOfJob: itemValue,
     }))
+  }
+  const handleVacancyChange = itemValue => {
+    setVacancy(itemValue)
+    setNewTicket(prevTicket => ({
+      ...prevTicket,
+      occupied: itemValue === 'occupied',
+    }))
+    setVacancyModalVisible(false)
   }
 
   const handleBack = () => {
@@ -503,10 +514,22 @@ const CreateTicketScreen = () => {
                   {jobType ? jobType : 'Select Job Type'}
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleToggleVacancyPicker}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>
+                  {vacancy === 'occupied'
+                    ? 'Occupied'
+                    : vacancy === 'unoccupied'
+                      ? 'Unoccupied'
+                      : 'Select Occupancy'}
+                </Text>
+              </TouchableOpacity>
 
               {/* Picker Modal */}
               <Modal
-                visible={pickerVisible}
+                visible={jobTypeModalVisible}
                 transparent={true}
                 animationType="slide"
                 onRequestClose={handleTogglePicker}
@@ -528,6 +551,35 @@ const CreateTicketScreen = () => {
                       <Picker.Item label="Flood" value="flood" />
                       <Picker.Item label="Mold Job" value="mold job" />
                       <Picker.Item label="Wipe Down" value="wipe down" />
+                    </Picker>
+                    <View
+                      style={{ flexDirection: 'row', justifyContent: 'center' }}
+                    >
+                      <TouchableOpacity onPress={handleTogglePicker}>
+                        <Text style={styles.label}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+              {/* Picker Modal */}
+              <Modal
+                visible={vacancyModalVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={handleVacancyChange}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.pickerContainer}>
+                    <Picker
+                      selectedValue={vacancy}
+                      onValueChange={handleVacancyChange}
+                      style={styles.picker}
+                    >
+                      <Picker.Item label="Select occupency" value="" />
+
+                      <Picker.Item label="Occupied" value="occupied" />
+                      <Picker.Item label="Unuocupied" value="unoccupied" />
                     </Picker>
                     <View
                       style={{ flexDirection: 'row', justifyContent: 'center' }}

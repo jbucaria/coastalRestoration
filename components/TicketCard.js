@@ -8,14 +8,14 @@ import { updateDoc, doc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
 const TicketCard = ({
-  project,
+  ticket,
   onPress,
   openEquipmentModal,
   backgroundColor,
 }) => {
   // Convert Firestore Timestamps to JS Dates
-  const startAt = project.startTime?.toDate?.()
-  const endAt = project.endTime?.toDate?.()
+  const startAt = ticket.startTime?.toDate?.()
+  const endAt = ticket.endTime?.toDate?.()
 
   let startTime = 'N/A'
   let endTime = 'N/A'
@@ -27,20 +27,19 @@ const TicketCard = ({
     endTime = format(endAt, 'h:mm a')
   }
 
-  // Icons to display based on project status
+  // Icons to display based on ticket status
   const icons = []
   const isEmpty =
-    !project.remediationData ||
-    Object.keys(project.remediationData).length === 0
+    !ticket.remediationData || Object.keys(ticket.remediationData).length === 0
 
-  if (project.inspectionComplete) {
+  if (ticket.inspectionComplete) {
     icons.push(
       <TouchableOpacity
         key="inspectionComplete"
         onPress={() =>
           router.push({
             pathname: '/ViewReport',
-            params: { projectId: project.id },
+            params: { projectId: ticket.id },
           })
         }
       >
@@ -48,14 +47,14 @@ const TicketCard = ({
       </TouchableOpacity>
     )
   }
-  if (project.remediationRequired) {
+  if (ticket.remediationRequired) {
     icons.push(
       <TouchableOpacity
         key="remediationRequired"
         onPress={() =>
           router.push({
             pathname: '/RemediationScreen',
-            params: { projectId: project.id },
+            params: { projectId: ticket.id },
           })
         }
       >
@@ -70,7 +69,7 @@ const TicketCard = ({
         onPress={() =>
           router.push({
             pathname: '/ViewRemediationScreen',
-            params: { projectId: project.id },
+            params: { projectId: ticket.id },
           })
         }
       >
@@ -79,11 +78,11 @@ const TicketCard = ({
     )
   }
 
-  if (project.equipmentTotal > 0) {
+  if (ticket.equipmentTotal > 0) {
     icons.push(
       <TouchableOpacity key="equipment" onPress={openEquipmentModal}>
         <MessageIndicator
-          count={project.equipmentTotal}
+          count={ticket.equipmentTotal}
           name="fan.fill"
           size={40}
           color="green"
@@ -92,19 +91,19 @@ const TicketCard = ({
     )
   }
 
-  if (project.messageCount > 0) {
+  if (ticket.messageCount > 0) {
     icons.push(
       <TouchableOpacity
         key="messages"
         onPress={() => {
           router.push({
             pathname: '/TicketNotesScreen',
-            params: { projectId: project.projectId },
+            params: { projectId: ticket.projectId },
           })
         }}
       >
         <MessageIndicator
-          count={project.messageCount}
+          count={ticket.messageCount}
           name="bubble.left.and.text.bubble.right.fill"
           size={40}
           color="green"
@@ -138,7 +137,7 @@ const TicketCard = ({
               router.push('/(tabs)')
             }
           } catch (error) {
-            console.error('Error updating the project in the database:', error)
+            console.error('Error updating the ticket in the database:', error)
           }
         },
       },
@@ -157,11 +156,11 @@ const TicketCard = ({
       <View style={styles.headerRow}>
         <View style={styles.inspectorInfo}>
           <TouchableOpacity
-            onPress={() => handleArrivingOnSite(project.id, project.onSite)}
+            onPress={() => handleArrivingOnSite(ticket.id, ticket.onSite)}
           >
             <Text style={styles.inspectorName}>
-              {project.inspectorName || 'N/A'}
-              {project.onSite && (
+              {ticket.inspectorName || 'N/A'}
+              {ticket.onSite && (
                 <IconSymbol
                   style={styles.onSiteIcon}
                   name="person.crop.square"
@@ -171,7 +170,7 @@ const TicketCard = ({
               )}
             </Text>
           </TouchableOpacity>
-          <Text style={styles.ticketNumber}>{project.ticketNumber}</Text>
+          <Text style={styles.ticketNumber}>{ticket.ticketNumber}</Text>
         </View>
         <View style={styles.timeInfo}>
           <View style={styles.timeRangeContainer}>
@@ -179,15 +178,22 @@ const TicketCard = ({
               {startTime} - {endTime}
             </Text>
           </View>
-          <Text style={styles.jobType}>{project.typeOfJob || 'N/A'}</Text>
+          <View style={styles.jobTypeContainer}>
+            <View style={styles.occupancyContainer}>
+              <Text style={styles.occupancy}>
+                {ticket.occupied ? 'O' : 'U'}
+              </Text>
+            </View>
+            <Text style={styles.jobType}>{ticket.typeOfJob || 'N/A'}</Text>
+          </View>
         </View>
       </View>
 
       {/* Address Section */}
       <View style={styles.addressSection}>
-        <Text style={styles.addressText}>{project.street}</Text>
+        <Text style={styles.addressText}>{ticket.street}</Text>
         <Text style={styles.addressSubText}>
-          {project.city}, {project.state} {project.zip}
+          {ticket.city}, {ticket.state} {ticket.zip}
         </Text>
       </View>
 
@@ -211,7 +217,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     marginBottom: 10,
     padding: 5,
-    // paddingTop: 5,
   },
   headerRow: {
     flexDirection: 'row',
@@ -251,11 +256,36 @@ const styles = StyleSheet.create({
     color: 'white',
     letterSpacing: -0.5,
   },
+  jobTypeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    alignContent: 'space-between',
+    marginTop: 4,
+  },
+  occupancyContainer: {
+    elevation: 3, // For Android shadow/elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+
+    paddingHorizontal: 2,
+    paddingVertical: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  occupancy: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'rgba(13, 71, 161, 1)',
+  },
   jobType: {
     fontSize: 14,
     color: 'rgba(13, 71, 161, 1)',
     fontWeight: 'semibold',
-    marginTop: 4,
+    marginLeft: 12,
   },
   addressSection: {
     marginBottom: 16,
@@ -275,7 +305,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrapper: {
-    // padding: 4,
     borderRadius: 8,
     marginLeft: 8,
   },

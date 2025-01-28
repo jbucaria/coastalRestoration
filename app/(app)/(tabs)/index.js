@@ -33,16 +33,16 @@ const TicketsScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
   const [showEquipmentModal, setShowEquipmentModal] = useState(false)
-  const [currentProject, setCurrentProject] = useState(null)
+  const [currentTicket, setCurrentTicket] = useState(null)
 
-  const openEquipmentModal = project => {
-    setCurrentProject(project)
+  const openEquipmentModal = ticket => {
+    setCurrentTicket(ticket)
     setShowEquipmentModal(true)
   }
 
   const closeEquipmentModal = () => {
     setShowEquipmentModal(false)
-    setCurrentProject(null) // Clear the current project when closing the modal
+    setCurrentTicket(null) // Clear the current ticket when closing the modal
   }
 
   // Filter state
@@ -205,17 +205,17 @@ const TicketsScreen = () => {
             style={styles.loadingIndicator}
           />
         ) : filteredProjects.length > 0 ? (
-          filteredProjects.map((project, index) => (
-            <View key={project.id} style={[styles.ticketContainer]}>
+          filteredProjects.map((ticket, index) => (
+            <View key={ticket.id} style={[styles.ticketContainer]}>
               <TicketCard
-                project={project}
+                ticket={ticket}
                 onPress={() =>
                   router.push({
                     pathname: '/TicketDetailsScreen',
-                    params: { projectId: project.id },
+                    params: { projectId: ticket.id },
                   })
                 }
-                openEquipmentModal={() => openEquipmentModal(project)}
+                openEquipmentModal={() => openEquipmentModal(ticket)}
                 // Pass the background color to TicketCard
                 backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
               />
@@ -252,9 +252,9 @@ const TicketsScreen = () => {
       <EquipmentModal
         visible={showEquipmentModal}
         onClose={closeEquipmentModal}
-        projectId={currentProject?.id}
-        initialQuantities={currentProject?.equipment}
-        equipmentOnSite={currentProject?.equipmentTotal > 0}
+        projectId={currentTicket?.id}
+        initialQuantities={currentTicket?.equipment}
+        equipmentOnSite={currentTicket?.equipmentTotal > 0}
       />
     </SafeAreaView>
   )
