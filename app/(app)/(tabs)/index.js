@@ -22,7 +22,6 @@ import { firestore } from '@/firebaseConfig'
 import { TicketCard } from '@/components/TicketCard'
 import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-// import { AnimatedIconLegend } from '@/components/IconLegend'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { EquipmentModal } from '@/components/EquipmentModal'
 
@@ -218,7 +217,7 @@ const TicketsScreen = () => {
                 }
                 openEquipmentModal={() => openEquipmentModal(project)}
                 // Pass the background color to TicketCard
-                backgroundColor={index % 2 === 0 ? '#ff000' : '#eaeaea'}
+                backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
               />
             </View>
           ))
