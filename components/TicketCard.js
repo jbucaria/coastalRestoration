@@ -217,6 +217,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     marginBottom: 10,
     padding: 5,
+    borderBottomColor: '#eaeaea',
+    borderBottomWidth: 1,
+  
   },
   headerRow: {
     flexDirection: 'row',
