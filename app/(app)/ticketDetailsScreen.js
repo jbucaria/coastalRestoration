@@ -385,7 +385,9 @@ const TicketDetailsScreen = () => {
         <View style={styles.notesLinkContainer}>
           <TouchableOpacity onPress={openNotes} style={styles.notesLink}>
             <IconSymbol name="note.text" size={24} color="#007BFF" />
-            <Text style={styles.notesLinkText}>View Notes</Text>
+            <Text style={styles.notesLinkText}>
+              {ticket.messageCount ? 'View Notes' : 'Add Note'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.notesLink} onPress={handleInspection}>
             <Text style={styles.notesLinkText}>

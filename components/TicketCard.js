@@ -98,7 +98,7 @@ const TicketCard = ({
         onPress={() => {
           router.push({
             pathname: '/TicketNotesScreen',
-            params: { projectId: ticket.projectId },
+            params: { projectId: ticket.id },
           })
         }}
       >
@@ -219,7 +219,6 @@ const styles = StyleSheet.create({
     padding: 5,
     borderBottomColor: '#eaeaea',
     borderBottomWidth: 1,
-  
   },
   headerRow: {
     flexDirection: 'row',
