@@ -22,14 +22,14 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 
 import * as ImagePicker from 'expo-image-picker'
 
-import { collection, addDoc, updateDoc } from 'firebase/firestore'
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { firestore } from '@/firebaseConfig'
 
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
+import { handleCreateTicket } from '@/utils/ticketUtils'
+import { useUserStore } from '@/store/useUserStore'
 
 const initialTicketStatus = {
   street: '',
@@ -62,6 +62,7 @@ const initialTicketStatus = {
 
 const CreateTicketScreen = () => {
   const router = useRouter()
+  const { user } = useUserStore()
 
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -74,6 +75,7 @@ const CreateTicketScreen = () => {
   const [jobTypeModalVisible, setJobTypeModalVisible] = useState(false)
   const [vacancyModalVisible, setVacancyModalVisible] = useState(false)
   const [vacancy, setVacancy] = useState('')
+  const [newNote, setNewNote] = useState('')
 
   const resetForm = () => {
     setNewTicket(initialTicketStatus)
@@ -100,6 +102,20 @@ const CreateTicketScreen = () => {
       occupied: itemValue === 'occupied',
     }))
     setVacancyModalVisible(false)
+  }
+
+  const handleCreate = () => {
+    handleCreateTicket(
+      newTicket,
+      selectedDate,
+      startTime,
+      endTime,
+      resetForm,
+      setIsSubmitting,
+      isSubmitting,
+      newNote,
+      user
+    )
   }
 
   const handleBack = () => {
@@ -134,75 +150,6 @@ const CreateTicketScreen = () => {
     })
 
     return components
-  }
-
-  const createTicket = async ticketData => {
-    try {
-      const docRef = await addDoc(collection(firestore, 'tickets'), {
-        ...ticketData,
-        createdAt: new Date(),
-        typeOfJob: newTicket.typeOfJob,
-      })
-
-      const docId = docRef.id
-      const lastSix = docId.slice(-6)
-      const ticketNumber = `CR-${lastSix}`
-      await updateDoc(docRef, { projectId: docId, ticketNumber })
-
-      Alert.alert('Success', 'Ticket created successfully.')
-      // Reset the form after a successful save
-      resetForm()
-    } catch (error) {
-      console.error('Error creating ticket:', error)
-      Alert.alert('Error', 'Failed to create the ticket. Please try again.')
-    }
-  }
-
-  const handleCreateTicket = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-
-    try {
-      if (
-        !newTicket.street ||
-        !newTicket.city ||
-        !newTicket.state ||
-        !newTicket.zip ||
-        !newTicket.customer
-      ) {
-        Alert.alert('Validation Error', 'Please fill out all required fields.')
-        setIsSubmitting(false)
-        return
-      }
-
-      const formattedNumber = newTicket.customerNumber
-        .replace(/\D/g, '')
-        .replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
-
-      const composedAddress = `${newTicket.street}${
-        newTicket.apt ? ' Apt ' + newTicket.apt : ''
-      }, ${newTicket.city}, ${newTicket.state} ${newTicket.zip}`
-
-      const ticketData = {
-        ...newTicket,
-        contactNumber: formattedNumber,
-        address: composedAddress,
-        startDate: selectedDate,
-        startTime: startTime,
-        endTime: endTime,
-        createdAt: new Date(),
-      }
-
-      await createTicket(ticketData)
-
-      resetForm()
-      router.back()
-    } catch (error) {
-      console.error('Error creating the ticket:', error)
-      Alert.alert('Error', 'Failed to create the ticket. Please try again.')
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   const handleAutocompletePress = (data, details = null) => {
@@ -527,6 +474,15 @@ const CreateTicketScreen = () => {
                 </Text>
               </TouchableOpacity>
 
+              <TextInput
+                style={styles.inputField}
+                placeholder="Add a note for this ticket..."
+                value={newNote}
+                onChangeText={setNewNote}
+                multiline
+                numberOfLines={4}
+              />
+
               {/* Picker Modal */}
               <Modal
                 visible={jobTypeModalVisible}
@@ -612,7 +568,7 @@ const CreateTicketScreen = () => {
             {/* Buttons: Create, Cancel */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
-                onPress={handleCreateTicket}
+                onPress={handleCreate}
                 style={[
                   styles.actionButton,
                   styles.createButton,

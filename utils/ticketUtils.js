@@ -1,23 +1,45 @@
-import { addDoc, updateDoc, collection } from 'firebase/firestore'
-import { firestore } from '@/firebaseConfig'
 import { Alert } from 'react-native'
+import { router } from 'expo-router'
+import {
+  addDoc,
+  updateDoc,
+  collection,
+  serverTimestamp,
+  increment,
+} from 'firebase/firestore'
+import { auth, firestore } from '@/firebaseConfig'
 
 // Create Ticket Function
-export const createTicket = async (ticketData, resetForm, setIsSubmitting) => {
+export const createTicket = async (
+  ticketData,
+  resetForm,
+  setIsSubmitting,
+  user,
+  newNote
+) => {
   try {
     const docRef = await addDoc(collection(firestore, 'tickets'), {
-      ...ticketData,
       createdAt: new Date(),
-      typeOfJob: ticketData.typeOfJob, // Ensure this is part of ticketData
     })
 
     const docId = docRef.id
     const lastSix = docId.slice(-6)
     const ticketNumber = `CR-${lastSix}`
-    await updateDoc(docRef, { projectId: docId, ticketNumber })
+    await updateDoc(docRef, { projectId: docId, ticketNumber, ...ticketData })
+
+    if (newNote.trim()) {
+      await addDoc(collection(firestore, 'ticketNotes'), {
+        projectId: docRef.id,
+        userId: auth.currentUser.uid,
+        userName: user?.displayName || auth.currentUser.email,
+        message: newNote,
+        timestamp: serverTimestamp(),
+      })
+      await updateDoc(docRef, { messageCount: increment(1) })
+    }
 
     Alert.alert('Success', 'Ticket created successfully.')
-    // Reset the form after a successful save
+    router.push('/(tabs)')
     resetForm()
   } catch (error) {
     console.error('Error creating ticket:', error)
@@ -34,10 +56,13 @@ export const handleCreateTicket = async (
   startTime,
   endTime,
   resetForm,
-  setIsSubmitting
+  setIsSubmitting,
+  isSubmitting,
+  newNote,
+  user
 ) => {
-  if (setIsSubmitting) return
-  setIsSubmitting(true)
+  if (isSubmitting) return // Use isSubmitting here to prevent multiple submissions
+  setIsSubmitting(true) // Set loading state
 
   try {
     // Validation
@@ -72,11 +97,12 @@ export const handleCreateTicket = async (
     }
 
     // Call createTicket function
-    await createTicket(ticketData, resetForm, setIsSubmitting)
+    await createTicket(ticketData, resetForm, setIsSubmitting, user, newNote)
   } catch (error) {
     console.error('Error creating the ticket:', error)
     Alert.alert('Error', 'Failed to create the ticket. Please try again.')
   } finally {
-    setIsSubmitting(false)
+    router.push('/(tabs)')
+    setIsSubmitting(false) // Always set to false after completion
   }
 }
