@@ -203,6 +203,7 @@ const CreateTicketScreen = () => {
         state: parsed.state,
         zip: parsed.zip,
       }))
+      setSelectedAddress(data.description)
     } else {
       console.log('No details returned:', data)
       setNewTicket(prev => ({
@@ -245,6 +246,8 @@ const CreateTicketScreen = () => {
     newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
     return newDate
   }
+
+  console.log('select', selectedAddress)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -345,8 +348,17 @@ const CreateTicketScreen = () => {
             )}
 
             {/* Display selected address */}
-            {selectedAddress && !manualAddress && (
-              <Text style={styles.selectedAddress}>{selectedAddress}</Text>
+            {!manualAddress && selectedAddress && (
+              <View style={styles.addressContainer}>
+                <Text style={styles.selectedAddress}>
+                  {newTicket.street && `${newTicket.street},`}
+                </Text>
+                <Text style={styles.selectedAddress}>
+                  {newTicket.city && `${newTicket.city}, `}
+                  {newTicket.state && `${newTicket.state} `}
+                  {newTicket.zip && `${newTicket.zip}`}
+                </Text>
+              </View>
             )}
 
             {/* Button to switch to manual input */}
@@ -666,6 +678,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+  },
+  addressContainer: {
+    marginBottom: 15,
+  },
+  selectedAddress: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+    textAlign: 'center', // Center the address
   },
   addPhotoButton: {
     backgroundColor: '#2ecc71',
