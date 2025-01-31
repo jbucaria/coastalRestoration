@@ -7,6 +7,7 @@ import {
   serverTimestamp,
   increment,
 } from 'firebase/firestore'
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, firestore } from '@/firebaseConfig'
 
 // Create Ticket Function

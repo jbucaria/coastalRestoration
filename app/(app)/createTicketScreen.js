@@ -22,8 +22,6 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 
 import * as ImagePicker from 'expo-image-picker'
 
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
 
 import { IconSymbol } from '@/components/ui/IconSymbol'

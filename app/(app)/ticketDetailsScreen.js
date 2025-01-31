@@ -336,12 +336,16 @@ const TicketDetailsScreen = () => {
         {/* -- INSPECTOR & REASON -- */}
         <View style={styles.sectionContainer}>
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Inspector</Text>
+            <Text style={styles.label}>Inspector:</Text>
+          </View>
+          <View style={styles.infoRow}>
             <Text style={styles.value}>{ticket.inspectorName || 'N/A'}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.label}>Reason for Visit</Text>
+            <Text style={styles.label}>Reason for Visit:</Text>
+          </View>
+          <View style={styles.reasonRow}>
             <Text style={styles.value}>{ticket.reason || 'N/A'}</Text>
           </View>
         </View>
