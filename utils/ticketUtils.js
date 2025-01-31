@@ -61,8 +61,8 @@ export const handleCreateTicket = async (
   newNote,
   user
 ) => {
-  if (isSubmitting) return // Use isSubmitting here to prevent multiple submissions
-  setIsSubmitting(true) // Set loading state
+  if (isSubmitting) return
+  setIsSubmitting(true)
 
   try {
     // Validation
@@ -96,13 +96,28 @@ export const handleCreateTicket = async (
       createdAt: new Date(),
     }
 
-    // Call createTicket function
+    // Upload photos to Firebase before creating the ticket
+    const storage = getStorage()
+    const uploadPromises = newTicket.photos.map(async uri => {
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      const fileRef = ref(
+        storage,
+        `ticketPhotos/${Date.now()}_${uri.split('/').pop()}`
+      )
+      await uploadBytes(fileRef, blob)
+      return getDownloadURL(fileRef)
+    })
+
+    const photoURLs = await Promise.all(uploadPromises)
+    ticketData.photos = photoURLs // Attach the URLs of the uploaded photos
+
+    // Call the createTicket function
     await createTicket(ticketData, resetForm, setIsSubmitting, user, newNote)
   } catch (error) {
     console.error('Error creating the ticket:', error)
     Alert.alert('Error', 'Failed to create the ticket. Please try again.')
   } finally {
-    router.push('/(tabs)')
-    setIsSubmitting(false) // Always set to false after completion
+    setIsSubmitting(false)
   }
 }

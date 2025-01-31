@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'expo-router'
 import {
   View,
@@ -30,7 +30,6 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { handleCreateTicket } from '@/utils/ticketUtils'
 import { useUserStore } from '@/store/useUserStore'
-import { set } from 'date-fns'
 
 const initialTicketStatus = {
   street: '',
@@ -81,6 +80,29 @@ const CreateTicketScreen = () => {
   const [manualAddress, setManualAddress] = useState(false)
   const [selectedAddress, setSelectedAddress] = useState('')
 
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios')
+    if (date) {
+      setSelectedDate(date)
+      setStartTime(setTimeToDate(date, startTime))
+      setEndTime(setTimeToDate(date, endTime))
+    }
+  }
+
+  const handleStartTimeChange = (event, time) => {
+    setShowStartTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setStartTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
+  const handleEndTimeChange = (event, time) => {
+    setShowEndTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setEndTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
   const handleBackToSearch = () => {
     setManualAddress(false)
     setSelectedAddress('')
@@ -100,6 +122,13 @@ const CreateTicketScreen = () => {
   }
   const handleToggleVacancyPicker = () => {
     setVacancyModalVisible(!vacancyModalVisible)
+  }
+
+  const handleRemovePhoto = index => {
+    setNewTicket(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index), // Remove photo by index
+    }))
   }
 
   const handleJobTypeChange = itemValue => {
@@ -202,30 +231,12 @@ const CreateTicketScreen = () => {
     })
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const storage = getStorage()
-      const uploadPromises = result.assets.map(async asset => {
-        const response = await fetch(asset.uri)
-        const blob = await response.blob()
-        const fileRef = ref(
-          storage,
-          `ticketPhotos/${Date.now()}_${asset.fileName}`
-        )
-        await uploadBytes(fileRef, blob)
-        const downloadURL = await getDownloadURL(fileRef)
-        return downloadURL
-      })
-
-      try {
-        const newPhotoURLs = await Promise.all(uploadPromises)
-        setNewTicket(prev => ({
-          ...prev,
-          photos: [...prev.photos, ...newPhotoURLs],
-        }))
-        Alert.alert('Success', 'Photos added successfully.')
-      } catch (error) {
-        console.error('Error uploading photos:', error)
-        Alert.alert('Error', 'Failed to upload photos. Please try again.')
-      }
+      const selectedPhotos = result.assets.map(asset => asset.uri)
+      setNewTicket(prev => ({
+        ...prev,
+        photos: [...prev.photos, ...selectedPhotos], // Store photo URIs locally
+      }))
+      Alert.alert('Success', 'Photos added successfully.')
     } else {
       Alert.alert('No Selection', 'You did not select any image.')
     }
@@ -235,29 +246,6 @@ const CreateTicketScreen = () => {
     const newDate = new Date(baseDate)
     newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
     return newDate
-  }
-
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (date) {
-      setSelectedDate(date)
-      setStartTime(setTimeToDate(date, startTime))
-      setEndTime(setTimeToDate(date, endTime))
-    }
-  }
-
-  const handleStartTimeChange = (event, time) => {
-    setShowStartTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setStartTime(setTimeToDate(selectedDate, time))
-    }
-  }
-
-  const handleEndTimeChange = (event, time) => {
-    setShowEndTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setEndTime(setTimeToDate(selectedDate, time))
-    }
   }
 
   return (
@@ -604,11 +592,23 @@ const CreateTicketScreen = () => {
 
             {/* Photos */}
             {newTicket.photos.length > 0 && (
-              <View style={styles.photosContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.photosContainer}
+              >
                 {newTicket.photos.map((uri, index) => (
-                  <Image key={index} source={{ uri }} style={styles.photo} />
+                  <View key={index} style={styles.photoWrapper}>
+                    <Image source={{ uri }} style={styles.photo} />
+                    <TouchableOpacity
+                      style={styles.removePhotoButton}
+                      onPress={() => handleRemovePhoto(index)}
+                    >
+                      <Text style={styles.removePhotoText}>X</Text>
+                    </TouchableOpacity>
+                  </View>
                 ))}
-              </View>
+              </ScrollView>
             )}
 
             <TouchableOpacity
@@ -770,10 +770,33 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   photosContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
+    marginVertical: 10,
+  },
+  photoWrapper: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  photo: {
+    width: 100,
+    height: 100,
     marginBottom: 10,
+    borderRadius: 5,
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    borderRadius: 15,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removePhotoText: {
+    color: 'red',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   picker: {
     width: '100%',
