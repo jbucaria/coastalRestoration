@@ -30,6 +30,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { handleCreateTicket } from '@/utils/ticketUtils'
 import { useUserStore } from '@/store/useUserStore'
+import { set } from 'date-fns'
 
 const initialTicketStatus = {
   street: '',
@@ -76,6 +77,19 @@ const CreateTicketScreen = () => {
   const [vacancyModalVisible, setVacancyModalVisible] = useState(false)
   const [vacancy, setVacancy] = useState('')
   const [newNote, setNewNote] = useState('')
+  const [inputHeight, setInputHeight] = useState(40)
+  const [manualAddress, setManualAddress] = useState(false)
+  const [selectedAddress, setSelectedAddress] = useState('')
+
+  const handleBackToSearch = () => {
+    setManualAddress(false)
+    setSelectedAddress('')
+  }
+
+  const handleAddAddressManually = () => {
+    setManualAddress(true)
+    setSelectedAddress('')
+  }
 
   const resetForm = () => {
     setNewTicket(initialTicketStatus)
@@ -250,7 +264,7 @@ const CreateTicketScreen = () => {
     <SafeAreaView style={styles.container}>
       <FloatingBackButton color="#007bff" />
       <KeyboardAvoidingView
-        style={styles.container}
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={40} // Adjust this value based on your preference
       >
@@ -318,68 +332,103 @@ const CreateTicketScreen = () => {
             <Text style={styles.sectionTitle}>Address</Text>
 
             {/* Google Places Autocomplete */}
-            <GooglePlacesAutocomplete
-              filterReverseGeocodingByTypes={['locality']}
-              debounce={500}
-              disableScroll={true}
-              placeholder="Search address..."
-              onPress={handleAutocompletePress}
-              query={{
-                key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your API key
-                language: 'en',
-                components: 'country:us',
-              }}
-              fetchDetails={true}
-              styles={{
-                textInputContainer: styles.autocompleteContainer,
-                textInput: styles.inputField,
-                listView: {
-                  backgroundColor: 'white',
-                  maxHeight: 200,
-                  elevation: 5,
-                  zIndex: 5,
-                },
-              }}
-            />
+            {!manualAddress && (
+              <GooglePlacesAutocomplete
+                filterReverseGeocodingByTypes={['locality']}
+                debounce={500}
+                disableScroll={true}
+                placeholder="Search address..."
+                onPress={handleAutocompletePress}
+                query={{
+                  key: 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs', // Replace with your API key
+                  language: 'en',
+                  components: 'country:us',
+                }}
+                fetchDetails={true}
+                styles={{
+                  textInputContainer: styles.autocompleteContainer,
+                  textInput: styles.inputFieldGoogle,
+                  listView: {
+                    backgroundColor: 'white',
+                    maxHeight: 200,
+                    elevation: 5,
+                    zIndex: 5,
+                  },
+                }}
+              />
+            )}
 
-            <TextInput
-              style={styles.inputField}
-              placeholder="Street"
-              value={newTicket.street}
-              onChangeText={text =>
-                setNewTicket({ ...newTicket, street: text })
-              }
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="Apt # (optional)"
-              value={newTicket.apt}
-              onChangeText={text => setNewTicket({ ...newTicket, apt: text })}
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="City"
-              value={newTicket.city}
-              onChangeText={text => setNewTicket({ ...newTicket, city: text })}
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="State"
-              value={newTicket.state}
-              onChangeText={text => setNewTicket({ ...newTicket, state: text })}
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="ZIP"
-              value={newTicket.zip}
-              onChangeText={text => setNewTicket({ ...newTicket, zip: text })}
-              keyboardType="numeric"
-            />
+            {/* Display selected address */}
+            {selectedAddress && !manualAddress && (
+              <Text style={styles.selectedAddress}>{selectedAddress}</Text>
+            )}
 
+            {/* Button to switch to manual input */}
+            {!manualAddress && (
+              <TouchableOpacity
+                onPress={handleAddAddressManually}
+                style={styles.button}
+              >
+                <Text style={styles.buttonText}>Add Address Manually</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Address Input Fields - Shown when manual input is selected */}
+            {manualAddress && (
+              <>
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Street"
+                  value={newTicket.street}
+                  onChangeText={text =>
+                    setNewTicket({ ...newTicket, street: text })
+                  }
+                  keyboardType="default"
+                />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Apt # (optional)"
+                  value={newTicket.apt}
+                  onChangeText={text =>
+                    setNewTicket({ ...newTicket, apt: text })
+                  }
+                  keyboardType="default"
+                />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="City"
+                  value={newTicket.city}
+                  onChangeText={text =>
+                    setNewTicket({ ...newTicket, city: text })
+                  }
+                  keyboardType="default"
+                />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="State"
+                  value={newTicket.state}
+                  onChangeText={text =>
+                    setNewTicket({ ...newTicket, state: text })
+                  }
+                  keyboardType="default"
+                />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="ZIP"
+                  value={newTicket.zip}
+                  onChangeText={text =>
+                    setNewTicket({ ...newTicket, zip: text })
+                  }
+                  keyboardType="numeric"
+                />
+                <TouchableOpacity
+                  onPress={handleBackToSearch}
+                  style={styles.button}
+                >
+                  <Text style={styles.buttonText}>Back to Search</Text>
+                </TouchableOpacity>
+              </>
+            )}
             {/* Customer Info */}
             <Text style={styles.sectionTitle}>Builder</Text>
             <TextInput
@@ -450,8 +499,21 @@ const CreateTicketScreen = () => {
                 setNewTicket({ ...newTicket, reason: text })
               }
               keyboardType="default"
+              multiline
+              onContentSizeChange={(contentWidth, contentHeight) => {
+                setInputHeight(contentHeight)
+              }}
             />
             <View style={styles.container}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="Add a note for this ticket..."
+                value={newNote}
+                onChangeText={setNewNote}
+                multiline
+                numberOfLines={4}
+              />
+
               {/* Trigger Button */}
               <TouchableOpacity
                 onPress={handleTogglePicker}
@@ -473,15 +535,6 @@ const CreateTicketScreen = () => {
                       : 'Select Occupancy'}
                 </Text>
               </TouchableOpacity>
-
-              <TextInput
-                style={styles.inputField}
-                placeholder="Add a note for this ticket..."
-                value={newNote}
-                onChangeText={setNewNote}
-                multiline
-                numberOfLines={4}
-              />
 
               {/* Picker Modal */}
               <Modal
@@ -598,76 +651,81 @@ const CreateTicketScreen = () => {
 export default CreateTicketScreen
 
 const styles = StyleSheet.create({
-  container: {
+  actionButton: {
     flex: 1,
-    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 5,
     alignItems: 'center',
+    elevation: 3,
+    marginVertical: 5,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  addPhotoButton: {
+    backgroundColor: '#2ecc71',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  addPhotoButtonText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  autocompleteContainer: {
+    paddingHorizontal: 0,
+    marginBottom: 20,
   },
   button: {
-    padding: 10,
+    padding: 12,
     backgroundColor: '#2980b9',
     borderRadius: 5,
     marginBottom: 20,
+    elevation: 3,
   },
   buttonText: {
     color: 'white',
     fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pickerContainer: {
-    backgroundColor: 'white',
-    margin: 20,
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-  },
-  picker: {
-    width: '100%',
+    fontWeight: '600',
   },
   container: {
     flex: 1,
-    backgroundColor: '#eceff1',
-  },
-  scrollView: {
+    backgroundColor: 'white',
     padding: 20,
   },
   contentContainer: {
     paddingBottom: 20,
   },
-  floatingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: -10,
-    zIndex: 10,
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    color: '#34495e',
-    width: 100,
-  },
-  selectorButton: {
-    padding: 5,
+  createButton: {
+    backgroundColor: '#2c3e50',
+    marginRight: 5,
   },
   dateTimeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  dateTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 15,
   },
-  label: {
-    fontSize: 16,
-    color: '#34495e',
-    width: 100,
+  dateTimeSelect: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#bdc3c7',
+    padding: 12,
   },
   displaySelectorContainer: {
     flexDirection: 'row',
@@ -680,53 +738,36 @@ const styles = StyleSheet.create({
     marginRight: 10,
     flex: 1,
   },
-  selectorButton: {
-    padding: 5,
+  disabledButton: {
+    backgroundColor: '#bdc3c7',
   },
-  autocompleteContainer: {
-    paddingHorizontal: 0,
-    marginBottom: 20,
+  floatingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: -10,
+    zIndex: 10,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 20,
+  inputField: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 5,
+    textAlignVertical: 'top',
+    marginBottom: 15,
+    backgroundColor: 'white',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginVertical: 10,
+  inputFieldGoogle: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 5,
+    textAlignVertical: 'top',
+    backgroundColor: 'white',
   },
   label: {
     fontSize: 16,
     color: '#34495e',
     marginRight: 10,
-  },
-  dateTimeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  dateTimeSelect: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#bdc3c7',
-    padding: 10,
-  },
-  inputField: {
-    backgroundColor: 'white',
-    borderColor: '#bdc3c7',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
-    fontSize: 16,
   },
   photosContainer: {
     flexDirection: 'row',
@@ -734,48 +775,33 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     marginBottom: 10,
   },
-  photo: {
-    width: 60,
-    height: 60,
-    marginRight: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+  picker: {
+    width: '100%',
   },
-  addPhotoButton: {
-    backgroundColor: '#2ecc71',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 10,
+  pickerContainer: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
   },
-  addPhotoButtonText: {
-    color: 'white',
-    fontSize: 16,
+  scrollView: {
+    padding: 20,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  selectorButton: {
+    padding: 5,
   },
-  actionButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginVertical: 10,
   },
-  createButton: {
-    backgroundColor: '#2c3e50',
-    marginRight: 5,
-  },
-  cancelButton: {
-    backgroundColor: '#c0392b',
-    marginLeft: 5,
-  },
-  disabledButton: {
-    backgroundColor: '#bdc3c7',
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 16,
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+    marginBottom: 20,
   },
 })
