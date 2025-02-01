@@ -167,7 +167,7 @@ const InspectionForm = ({ project, setProject, projectId }) => {
   }
 
   const handleSaveReport = async () => {
-    if (!validateForm()) return
+    // if (!validateForm()) return
 
     const formData = {
       projectId,

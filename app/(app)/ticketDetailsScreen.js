@@ -34,7 +34,6 @@ const TicketDetailsScreen = () => {
   const [eta, setEta] = useState(null)
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
-  // If you want a local approach to "homeowner" or "photos", you might store them in `ticket`.
 
   useEffect(() => {
     if (!projectId) return
@@ -46,7 +45,7 @@ const TicketDetailsScreen = () => {
         if (docSnap.exists()) {
           setTicket({ id: docSnap.id, ...docSnap.data() })
         } else {
-          Alert.alert('Not Found', 'Ticket does not exist.')
+          // Alert.alert('Not Found', 'Ticket does not exist.')
           router.back()
         }
       },
