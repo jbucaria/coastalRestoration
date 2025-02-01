@@ -17,6 +17,7 @@ import {
 import * as ImagePicker from 'expo-image-picker'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
+import { storage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { v4 as uuidv4 } from 'uuid'
 
 export default function EditRemediationScreen() {
@@ -115,38 +116,70 @@ export default function EditRemediationScreen() {
   }
 
   // Add photo(s) to a room
-  const handleAddPhoto = async roomId => {
+  const handleAddPhoto = async (roomId, projectId) => {
     try {
+      // 1. Request media library permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
           'Permission required',
-          'Camera roll permission is required.'
+          'Camera roll permission is required to select photos.'
         )
         return
       }
 
+      // 2. Let user select photos from the image library
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsMultipleSelection: true,
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         quality: 0.5,
+        copyToCacheDirectory: true, // Helps prevent fetch(...) iOS errors
       })
 
+      // 3. If the user didn't cancel, proceed with upload
       if (!result.canceled && result.assets) {
-        const newUris = result.assets.map(asset => asset.uri)
-        setRooms(prev =>
-          prev.map(room => {
-            if (room.id === roomId)
-              return { ...room, photos: [...room.photos, ...newUris] }
+        // 4. Upload each selected image to Firebase Storage
+        const uploadPromises = result.assets.map(async (asset, index) => {
+          // Convert local URI to a blob
+          const response = await fetch(asset.uri)
+          const blob = await response.blob()
+
+          // Create a unique Storage path
+          const fileName = asset.fileName || `${uuidv4()}.jpg`
+          const storageRef = ref(
+            storage,
+            `remediationPhotos/${projectId}/${fileName}`
+          )
+
+          // Upload the blob
+          await uploadBytes(storageRef, blob)
+
+          // Retrieve the download URL
+          const downloadURL = await getDownloadURL(storageRef)
+          return downloadURL
+        })
+
+        // 5. Wait until all uploads complete
+        const downloadURLs = await Promise.all(uploadPromises)
+
+        // 6. Update your local `rooms` state with these new URLs
+        setRooms(prevRooms =>
+          prevRooms.map(room => {
+            if (room.id === roomId) {
+              return { ...room, photos: [...room.photos, ...downloadURLs] }
+            }
             return room
           })
         )
       }
     } catch (error) {
       console.error('Error selecting images:', error)
+      Alert.alert(
+        'Error',
+        'Could not select or upload photos. Please try again.'
+      )
     }
   }
-
   // Delete a photo from a room
   const handleDeletePhoto = (roomId, photoUri) => {
     setRooms(prev =>

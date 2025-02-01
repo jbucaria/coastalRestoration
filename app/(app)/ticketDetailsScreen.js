@@ -16,11 +16,9 @@ import {
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
-import { SwitchComponent } from '@/components/SwitchComponent'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { deleteTicket } from '@/utils/deleteTicket'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...

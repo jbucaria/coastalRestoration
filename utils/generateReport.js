@@ -64,6 +64,8 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
     // 5. Mark the inspection as complete.
     await onReportComplete(projectId, 'inspectionComplete', true)
 
+    router.push('/(tabs)') // Navigate to the home screen
+
     // 6. Provide user feedback and navigate
     Alert.alert(
       'File Saved',
@@ -71,9 +73,6 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
       [
         {
           text: 'OK',
-          onPress: () => {
-            router.back()
-          },
         },
       ],
       { cancelable: false }
