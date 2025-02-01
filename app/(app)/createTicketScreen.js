@@ -26,7 +26,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
-import { handleCreateTicket } from '@/utils/ticketUtils'
+import { handleCreateTicket } from '@/utils/generateTicket'
 import { useUserStore } from '@/store/useUserStore'
 
 const initialTicketStatus = {
@@ -69,6 +69,7 @@ const CreateTicketScreen = () => {
   const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0))
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [jobType, setJobType] = useState('')
   const [jobTypeModalVisible, setJobTypeModalVisible] = useState(false)
   const [vacancyModalVisible, setVacancyModalVisible] = useState(false)
@@ -142,7 +143,6 @@ const CreateTicketScreen = () => {
       ...prevTicket,
       occupied: itemValue === 'occupied',
     }))
-    setVacancyModalVisible(false)
   }
 
   const handleCreate = () => {
@@ -589,7 +589,7 @@ const CreateTicketScreen = () => {
                     <View
                       style={{ flexDirection: 'row', justifyContent: 'center' }}
                     >
-                      <TouchableOpacity onPress={handleTogglePicker}>
+                      <TouchableOpacity onPress={handleToggleVacancyPicker}>
                         <Text style={styles.label}>Close</Text>
                       </TouchableOpacity>
                     </View>
@@ -641,6 +641,7 @@ const CreateTicketScreen = () => {
                   {isSubmitting ? 'Creating...' : 'Create'}
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={handleBack}
                 style={[styles.actionButton, styles.cancelButton]}
@@ -744,6 +745,7 @@ const styles = StyleSheet.create({
     borderColor: '#bdc3c7',
     padding: 12,
   },
+
   displaySelectorContainer: {
     flexDirection: 'row',
     alignItems: 'center',

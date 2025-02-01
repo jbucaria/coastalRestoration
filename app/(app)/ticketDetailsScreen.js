@@ -21,6 +21,7 @@ import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
+import { deleteTicket } from '@/utils/deleteTicket'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
@@ -115,6 +116,12 @@ const TicketDetailsScreen = () => {
       console.error('Error opening maps with ETA:', error)
       Alert.alert('Error', 'Failed to open navigation.')
     }
+  }
+
+  const handleDeleteTicket = () => {
+    deleteTicket(projectId, () => {
+      router.push('/(tabs)')
+    })
   }
 
   const handleCall = phoneNumber => {
@@ -445,6 +452,12 @@ const TicketDetailsScreen = () => {
         />
         <View style={styles.notesLinkContainer}>
           <TouchableOpacity
+            onPress={handleDeleteTicket}
+            style={styles.deleteButton}
+          >
+            <Text style={styles.deleteButtonText}>Delete Ticket</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
               styles.siteCompleteButton,
               ticket.siteComplete ? styles.siteIncompleteButton : null,
@@ -584,6 +597,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  deleteButton: {
+    marginTop: 10,
+    backgroundColor: '#e74c3c',
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   /* Section Containers */

@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center', // Align items to the top
     justifyContent: 'space-between',
-    marginVertical: 20,
+    marginVertical: 8,
     paddingHorizontal: 15,
     backgroundColor: '#f7f7f7',
     borderRadius: 8,

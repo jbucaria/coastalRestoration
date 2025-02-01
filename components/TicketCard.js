@@ -159,7 +159,7 @@ const TicketCard = ({
             onPress={() => handleArrivingOnSite(ticket.id, ticket.onSite)}
           >
             <Text style={styles.inspectorName}>
-              {ticket.inspectorName || 'N/A'}
+              {ticket.inspectorName || ''}
               {ticket.onSite && (
                 <IconSymbol
                   style={styles.onSiteIcon}
@@ -184,7 +184,7 @@ const TicketCard = ({
                 {ticket.occupied ? 'O' : 'U'}
               </Text>
             </View>
-            <Text style={styles.jobType}>{ticket.typeOfJob || 'N/A'}</Text>
+            <Text style={styles.jobType}>{ticket.typeOfJob || ''}</Text>
           </View>
         </View>
       </View>

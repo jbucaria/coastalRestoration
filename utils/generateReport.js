@@ -38,7 +38,7 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
         // Create a reference for this file in Firebase Storage
         const storageRef = ref(
           storage,
-          `tickets/${projectId}/photos/${Date.now()}_${photo.fileName || index}`
+          `reportPhotos/${Date.now()}_${photo.fileName || index}`
         )
         // Upload the file as a blob
         await uploadBytes(storageRef, blob)
