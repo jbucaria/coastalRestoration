@@ -170,7 +170,7 @@ const TicketsScreen = () => {
           }}
         />
         <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
-          <Text style={styles.filterButtonText}>Filter</Text>
+          <Text style={styles.filterButtonText}>Sort</Text>
         </TouchableOpacity>
       </View>
 
@@ -202,9 +202,9 @@ const TicketsScreen = () => {
           <View style={styles.actionContainer}>
             <TouchableOpacity
               onPress={() => setSelectedDate(new Date())}
-              style={styles.todayButton}
+              style={styles.filterButton}
             >
-              <Text style={styles.todayButtonText}>
+              <Text style={styles.filterButtonText}>
                 {isSameDay(selectedDate, today) ? 'Today' : 'Go To Today'}
               </Text>
             </TouchableOpacity>

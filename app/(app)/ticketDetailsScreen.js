@@ -81,16 +81,6 @@ const TicketDetailsScreen = () => {
     )
   }
 
-  // Helper function for pretty printing address
-  const formatAddress = fullAddress => {
-    if (!fullAddress) return ''
-    const parts = fullAddress.split(',')
-    if (parts.length >= 2) {
-      return parts[0].trim() + ', ' + parts[1].trim()
-    }
-    return fullAddress
-  }
-
   // Use Linking to open addresses in maps
   const openGoogleMapsWithETA = async address => {
     try {
@@ -291,18 +281,13 @@ const TicketDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FloatingBackButton color="#007bff" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Floating Back Button */}
-        {/* -- HEADER SECTION -- */}
-        <View style={styles.headerCard}>
+      {/* HEADER SECTION */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerContent}>
+          <Text style={styles.ticketTitle}>{ticket.street}</Text>
           <Text style={styles.ticketTitle}>
-            Ticket: {ticket.ticketNumber || 'N/A'}
+            {ticket.city}, {ticket.state} {ticket.zip}
           </Text>
-          <Text style={styles.addressValue}>
-            {formatAddress(ticket.address)}
-          </Text>
-
           <TouchableOpacity
             onPress={() => openGoogleMapsWithETA(ticket.address)}
             style={styles.etaContainer}
@@ -311,7 +296,9 @@ const TicketDetailsScreen = () => {
             <Text style={styles.etaValue}>{eta}</Text>
           </TouchableOpacity>
         </View>
-        {/* -- CUSTOMER INFO -- */}
+      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* CUSTOMER INFO */}
         <View style={styles.sectionContainer}>
           <View style={styles.sideBySideContainer}>
             <View style={styles.column}>
@@ -338,7 +325,8 @@ const TicketDetailsScreen = () => {
             </View>
           </View>
         </View>
-        {/* -- INSPECTOR & REASON -- */}
+
+        {/* INSPECTOR & REASON */}
         <View style={styles.sectionContainer}>
           <View style={styles.infoRow}>
             <Text style={styles.label}>Inspector:</Text>
@@ -354,13 +342,15 @@ const TicketDetailsScreen = () => {
             <Text style={styles.value}>{ticket.reason || 'N/A'}</Text>
           </View>
         </View>
-        {/* -- EQUIPMENT MODAL -- */}
+
+        {/* EQUIPMENT MODAL */}
         <EquipmentModal
           visible={isEquipmentModalVisible}
           onClose={() => setIsEquipmentModalVisible(false)}
           projectId={ticket.id}
         />
-        {/* -- PHOTOS -- */}
+
+        {/* PHOTOS */}
         {ticket.photos && ticket.photos.length > 0 && (
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Photos</Text>
@@ -386,34 +376,9 @@ const TicketDetailsScreen = () => {
           </View>
         )}
 
-        {/* -- LINKS & ACTIONS -- */}
-        <View style={styles.notesLinkContainer}>
-          <TouchableOpacity onPress={openNotes} style={styles.notesLink}>
-            <IconSymbol name="note.text" size={24} color="#007BFF" />
-            <Text style={styles.notesLinkText}>
-              {ticket.messageCount ? 'View Notes' : 'Add Note'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.notesLink} onPress={handleInspection}>
-            <Text style={styles.notesLinkText}>
-              {ticket.inspectionComplete ? 'View Report' : 'Start Inspection'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.notesLink}
-            onPress={handleRemediation}
-          >
-            {ticket.remediationComplete && (
-              <IconSymbol name="pencil.and.ruler" size={24} color="#007BFF" />
-            )}
-            <Text style={styles.notesLinkText}>
-              {ticket.remediationComplete ? 'View Meas.' : 'Input Meas.'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {/* -- SWITCHES (WITHOUT siteComplete) -- */}
+        {/* STATUS SECTION */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Status</Text>
+          <Text style={styles.sectionTitle}>Status:</Text>
 
           <View style={styles.sectionContainer}>
             <View style={styles.infoRow}>
@@ -423,264 +388,95 @@ const TicketDetailsScreen = () => {
             <View style={styles.infoRow}>
               <Text style={styles.label}>Measurements Req.</Text>
               <Text style={styles.value}>
-                {ticket.remediationRequired ? 'True' : ''}
+                {ticket.remediationRequired ? 'True' : 'False'}
               </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Inspection Report Req.</Text>
               <Text style={styles.value}>
-                {!ticket.inspectionComplete ? 'True' : ''}
+                {!ticket.inspectionComplete ? 'True' : 'False'}
               </Text>
             </View>
           </View>
         </View>
-        {!ticket.remediationComplete && (
-          <SwitchComponent
-            projectId={ticket.id}
-            field="remediationRequired"
-            label="Remediation Required"
-            value={ticket?.remediationRequired || false}
-            onToggle={handleRemediationToggle}
-          />
-        )}
-        <SwitchComponent
-          projectId={ticket.id}
-          field="equipmentOnSite"
-          label={ticket.equipmentOnSite ? 'Edit Equipment' : 'Add Equipment'}
-          value={ticket?.equipmentOnSite || false}
-          onShowModal={() => setIsEquipmentModalVisible(true)}
-        />
-        <View style={styles.notesLinkContainer}>
+
+        {/* Move all buttons to the bottom */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity onPress={openNotes} style={styles.button}>
+            <IconSymbol name="note.text" size={24} color="#007BFF" />
+            <Text style={styles.buttonText}>
+              {ticket.messageCount ? 'View Notes' : 'Add Note'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleInspection} style={styles.button}>
+            <Text style={styles.buttonText}>
+              {ticket.inspectionComplete
+                ? 'View Inspection Report'
+                : 'Perform Inspection'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleRemediation} style={styles.button}>
+            <Text style={styles.buttonText}>
+              {ticket.remediationComplete
+                ? 'View Remediation'
+                : 'Complete Remediation.'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()} // Assuming you're using React Navigation
+          >
+            <Text style={styles.actionButtonText}>Back</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             onPress={handleDeleteTicket}
-            style={styles.deleteButton}
+            style={styles.dangerButton}
           >
-            <Text style={styles.deleteButtonText}>Delete Ticket</Text>
+            <Text style={styles.dangerButtonText}>Delete</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
+            onPress={handleSiteComplete}
             style={[
               styles.siteCompleteButton,
               ticket.siteComplete ? styles.siteIncompleteButton : null,
             ]}
-            onPress={handleSiteComplete}
           >
             <Text style={styles.siteCompleteButtonText}>
-              {ticket.siteComplete
-                ? 'Mark Site Incomplete'
-                : 'Mark Site Complete'}
+              {ticket.siteComplete ? 'Incomplete' : 'Complete'}
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      {/* -- FULL PHOTO PREVIEW -- */}
-      <PhotoModal
-        visible={selectedPhoto !== null}
-        photo={selectedPhoto}
-        onClose={closePhoto}
-      />
+        {/* FULL PHOTO PREVIEW */}
+        <PhotoModal
+          visible={selectedPhoto !== null}
+          photo={selectedPhoto}
+          onClose={closePhoto}
+        />
+
+        {/* FULL PHOTO PREVIEW */}
+        <PhotoModal
+          visible={selectedPhoto !== null}
+          photo={selectedPhoto}
+          onClose={closePhoto}
+        />
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  /* Container & Scroll */
-  sideBySideContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  column: {
-    gap: 8,
-    flex: 1,
-    marginRight: 10,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F5F7',
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F3F5F7',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#666',
-  },
-  notesLinkContainer: {
-    marginTop: 20, // Adjust as needed for your layout
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notesLink: {
-    justifyContent: 'center',
-    marginBottom: 10,
-    width: '60%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#E3F2FD', // Light blue background for emphasis
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  notesLinkText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#007BFF', // Theme color to match the icon
-    fontWeight: '600',
-  },
-  floatingBackButton: {
-    position: 'absolute',
-    top: 40, // Adjust based on your status bar and header height
-    left: 10,
-    backgroundColor: '#007bff', // Theme color for visibility
-    padding: 10,
-    borderRadius: 30, // Fully rounded corners for a modern, pill-like shape
-    zIndex: 100, // Ensures the button is above all other content
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5, // For Android shadow
-  },
-  headerCard: {
-    marginTop: 60, // Give space for the floating button
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  ticketTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  addressValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#34495E',
-    textAlign: 'center',
-  },
-  etaContainer: {
-    backgroundColor: '#2ECC71',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    alignSelf: 'center',
-    marginBottom: 8,
-  },
-  etaLabel: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  etaValue: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  deleteButton: {
-    marginTop: 10,
-    backgroundColor: '#e74c3c',
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  /* Section Containers */
-  sectionContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#2C3E50',
-    marginBottom: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  label: {
-    color: '#2C3E50',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  value: {
-    color: '#34495E',
-    fontSize: 14,
-  },
-  link: {
-    color: '#007BFF',
-    textDecorationLine: 'underline',
-  },
-
-  /* Photos */
-  projectPhoto: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginRight: 8,
-    marginVertical: 4,
-  },
-  placeholderText: {
-    fontStyle: 'italic',
-    color: '#888',
-    marginVertical: 8,
-    textAlign: 'center',
-  },
-
-  /* Action Buttons (including "Mark Site Complete") */
-
-  actionButtonRow: {
-    // New style for arranging buttons in rows
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  actionsContainer: {
-    marginTop: 12,
-    marginBottom: 24,
-  },
   actionButton: {
     backgroundColor: '#2C3E50',
     borderRadius: 30,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    marginVertical: 8, // Vertical spacing between buttons
+    marginVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -693,30 +489,243 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    textTransform: 'uppercase', // Uppercase for emphasis
+    textTransform: 'uppercase',
   },
-  siteCompleteButton: {
-    backgroundColor: '#2ECC71', // Green for "Complete"
+  actionButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  actionsContainer: {
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  backButton: {
+    backgroundColor: '#007BFF',
+    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  buttonContainer: {
+    flexDirection: 'column', // Changed to column for stacked buttons
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 30,
+    backgroundColor: '#F5F7FA',
+  },
+  button: {
+    backgroundColor: '#E3F2FD',
     borderRadius: 30,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     marginVertical: 8,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center', // Center content
+    width: '100%', // Full width for better touch area on mobile
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  siteIncompleteButton: {
-    backgroundColor: 'red', // Red for "Incomplete"
+  buttonText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#007BFF',
+    fontWeight: '600',
   },
-  siteCompleteButtonText: {
+  column: {
+    flex: 1,
+    marginRight: 15,
+    gap: 8,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+    paddingHorizontal: 16,
+  },
+  contentContainer: {
+    paddingBottom: 20,
+  },
+  dangerButton: {
+    backgroundColor: '#e74c3c',
+    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  dangerButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    marginTop: 20,
+    backgroundColor: '#e74c3c',
+    paddingVertical: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  headerCard: {
+    marginTop: 0,
+    backgroundColor: '#F5F7FA',
+    padding: 10,
+    marginBottom: 5,
+  },
+  etaContainer: {
+    backgroundColor: '#2ECC71',
+    borderRadius: 25,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    alignSelf: 'center',
+    margin: 12,
+  },
+  etaLabel: {
     color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  etaValue: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  floatingBackButton: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 40,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 7,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  label: {
+    color: '#2C3E50',
     fontSize: 16,
     fontWeight: '600',
-    textTransform: 'uppercase',
+  },
+  link: {
+    color: '#007BFF',
+    textDecorationLine: 'underline',
+  },
+  notesLink: {
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: '70%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  notesLinkContainer: {
+    marginTop: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notesLinkText: {
+    marginLeft: 12,
+    fontSize: 18,
+    color: '#007BFF',
+    fontWeight: '600',
+  },
+  projectPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+    marginVertical: 4,
+  },
+  scrollContent: {
+    paddingBottom: 30,
+  },
+  sectionContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 12,
+  },
+  sideBySideContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  siteCompleteButton: {
+    backgroundColor: '#2ECC71',
+    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  siteIncompleteButton: {
+    backgroundColor: '#3498db',
+  },
+  siteCompleteButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  ticketTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  value: {
+    color: '#34495E',
+    fontSize: 14,
   },
 })
 
