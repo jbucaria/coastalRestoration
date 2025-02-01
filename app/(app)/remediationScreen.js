@@ -91,6 +91,8 @@ const RemediationScreen = ({ route }) => {
     )
   }
 
+  console.log('projectId:', projectId)
+
   const handleAddPhoto = async (roomId, projectId) => {
     try {
       // 1. Request media library permissions
@@ -103,45 +105,57 @@ const RemediationScreen = ({ route }) => {
         return
       }
 
-      // 2. Let user select photos from the image library
+      // 2. Launch the ImagePicker
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsMultipleSelection: true,
         mediaTypes: ['images'],
         quality: 0.5,
-        copyToCacheDirectory: true, // Helps prevent fetch(...) iOS errors
+        copyToCacheDirectory: true, // helps avoid iOS fetch() issues
       })
 
-      // 3. If the user didn't cancel, proceed with upload
-      if (!result.canceled && result.assets) {
-        // 4. Upload each selected image to Firebase Storage
-        const uploadPromises = result.assets.map(async (asset, index) => {
-          // Convert local URI to a blob
+      // 3. Check if user canceled
+      if (result.canceled) {
+        return
+      }
+
+      // 4. If there are assets, proceed to upload
+      if (result.assets && result.assets.length > 0) {
+        // 'uploadPromises' will upload each image
+        const uploadPromises = result.assets.map(async asset => {
+          // Convert the local file URI to a Blob
           const response = await fetch(asset.uri)
           const blob = await response.blob()
 
-          // Create a unique Storage path
+          // Create a unique file name for Storage
           const fileName = asset.fileName || `${uuidv4()}.jpg`
-          const storageRef = ref(
-            storage,
-            `remediationPhotos/${projectId}/${fileName}`
-          )
+          const storagePath = `remediationPhotos/${projectId}/${fileName}`
 
-          // Upload the blob
+          // 5. Upload to Firebase Storage
+          const storageRef = ref(storage, storagePath)
           await uploadBytes(storageRef, blob)
 
-          // Retrieve the download URL
+          // 6. Get the download URL
           const downloadURL = await getDownloadURL(storageRef)
-          return downloadURL
+
+          // 7. Return an object with both the storage path and the URL
+          return {
+            storagePath, // "remediationPhotos/<projectId>/<fileName>.jpg"
+            downloadURL, // e.g. "https://firebasestorage.googleapis.com/v0/b/..."
+          }
         })
 
-        // 5. Wait until all uploads complete
-        const downloadURLs = await Promise.all(uploadPromises)
+        // Wait for all uploads to finish
+        const photosArray = await Promise.all(uploadPromises)
 
-        // 6. Update your local `rooms` state with these new URLs
+        // 8. Update your 'rooms' state:
+        //    Each "photo" in 'room.photos' is now an object: { storagePath, downloadURL }
         setRooms(prevRooms =>
           prevRooms.map(room => {
             if (room.id === roomId) {
-              return { ...room, photos: [...room.photos, ...downloadURLs] }
+              return {
+                ...room,
+                photos: [...room.photos, ...photosArray],
+              }
             }
             return room
           })
@@ -283,11 +297,16 @@ const RemediationScreen = ({ route }) => {
             {/* Photos */}
             {room.photos.length > 0 && (
               <ScrollView horizontal style={styles.photoRow}>
-                {room.photos.map(uri => (
-                  <View key={uri} style={styles.photoItem}>
-                    <Image source={{ uri }} style={styles.photoImage} />
+                {room.photos.map(photo => (
+                  <View key={photo.storagePath} style={styles.photoItem}>
+                    <Image
+                      source={{ uri: photo.downloadURL }}
+                      style={styles.photoImage}
+                    />
                     <TouchableOpacity
-                      onPress={() => handleDeletePhoto(room.id, uri)}
+                      onPress={() =>
+                        handleDeletePhoto(room.id, photo.storagePath)
+                      }
                       style={styles.deletePhotoButton}
                     >
                       <Text style={styles.deletePhotoButtonText}>Remove</Text>
@@ -298,7 +317,7 @@ const RemediationScreen = ({ route }) => {
             )}
 
             <TouchableOpacity
-              onPress={() => handleAddPhoto(room.id)}
+              onPress={() => handleAddPhoto(room.id, projectId)}
               style={styles.addPhotoButton}
             >
               <Text style={styles.addPhotoButtonText}>+ Add Photo</Text>
