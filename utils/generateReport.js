@@ -27,41 +27,44 @@ export const handleGenerateReport = async (formData, setIsSaving) => {
       return
     }
 
-    // 1. Upload Photos to Firebase Storage using the fetch/Blob method
+    // 1. Upload Photos to Firebase Storage
     const photoUrls = await Promise.all(
       formData.photos.map(async (photo, index) => {
-        // Use fetch() to get the file from the local URI
         const response = await fetch(photo.uri)
-        // Convert the response to a Blob
         const blob = await response.blob()
-
-        // Create a reference for this file in Firebase Storage
         const storageRef = ref(
           storage,
-          `reportPhotos/${Date.now()}_${photo.fileName || index}`
+          `reportPhotos/${projectId}/${Date.now()}_${photo.fileName || index}`
         )
-        // Upload the file as a blob
         await uploadBytes(storageRef, blob)
-        // Get the public download URL
-        const downloadURL = await getDownloadURL(storageRef)
-        return { uri: downloadURL, label: photo.label }
+        return await getDownloadURL(storageRef) // Return only the URL
       })
     )
 
-    // 2. Update formData with the processed photo URLs, a lowercase version of the address, and a timestamp
-    formData.photos = photoUrls
-    formData.lowercaseAddress = formData.address.toLowerCase()
-    formData.timestamp = new Date()
+    // 2. Prepare reportPhotos as an array of simple objects
+    const reportPhotos = photoUrls.map(url => ({
+      uri: url,
+      label: (formData.photos.find(p => p.uri === url)?.label || '').toString(),
+    }))
 
-    // 3. Update the project document in Firestore with the updated inspection report data.
+    // 3. Update formData with the new structure but remove any existing 'photos' field
+    const { photos, ...restOfFormData } = formData // Destructure to remove 'photos'
+    const updatedFormData = {
+      ...restOfFormData,
+      reportPhotos: reportPhotos,
+      lowercaseAddress: formData.address.toLowerCase(),
+      timestamp: new Date(),
+    }
+
+    // 4. Update the project document in Firestore
     const projectRef = doc(firestore, 'tickets', projectId)
-    await updateDoc(projectRef, formData)
-    console.log('Ticket (with inspection report info) updated successfully.')
+    await updateDoc(projectRef, updatedFormData)
+    console.log('Ticket (with report info) updated successfully.')
 
-    // 4. Mark the inspection as complete.
+    // 5. Mark the inspection as complete.
     await onReportComplete(projectId, 'inspectionComplete', true)
 
-    // 5. Provide user feedback and navigate after the user taps OK.
+    // 6. Provide user feedback and navigate
     Alert.alert(
       'File Saved',
       'The report has been saved.',

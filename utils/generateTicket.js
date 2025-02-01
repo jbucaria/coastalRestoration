@@ -21,12 +21,16 @@ export const createTicket = async (
   try {
     const docRef = await addDoc(collection(firestore, 'tickets'), {
       createdAt: new Date(),
+      ...ticketData,
     })
 
     const docId = docRef.id
     const lastSix = docId.slice(-6)
     const ticketNumber = `CR-${lastSix}`
-    await updateDoc(docRef, { projectId: docId, ticketNumber, ...ticketData })
+    await updateDoc(docRef, {
+      projectId: docId,
+      ticketNumber,
+    })
 
     if (newNote.trim()) {
       await addDoc(collection(firestore, 'ticketNotes'), {
@@ -50,7 +54,6 @@ export const createTicket = async (
   }
 }
 
-// Handle Create Ticket Function (with validation)
 export const handleCreateTicket = async (
   newTicket,
   selectedDate,
@@ -66,7 +69,6 @@ export const handleCreateTicket = async (
   setIsSubmitting(true)
 
   try {
-    // Validation
     if (
       !newTicket.street ||
       !newTicket.city ||
@@ -99,7 +101,7 @@ export const handleCreateTicket = async (
 
     // Upload photos to Firebase before creating the ticket
     const storage = getStorage()
-    const uploadPromises = newTicket.photos.map(async uri => {
+    const uploadPromises = newTicket.ticketPhotos.map(async uri => {
       const response = await fetch(uri)
       const blob = await response.blob()
       const fileRef = ref(
@@ -111,7 +113,7 @@ export const handleCreateTicket = async (
     })
 
     const photoURLs = await Promise.all(uploadPromises)
-    ticketData.photos = photoURLs // Attach the URLs of the uploaded photos
+    ticketData.ticketPhotos = photoURLs // Attach the URLs of the uploaded photos
 
     // Call the createTicket function
     await createTicket(ticketData, resetForm, setIsSubmitting, user, newNote)

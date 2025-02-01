@@ -248,13 +248,13 @@ const ViewReport = () => {
         {/* CARD: Photos */}
         <View style={styles.card}>
           <Text style={styles.reportFieldLabel}>Photos:</Text>
-          {project.photos && project.photos.length > 0 ? (
+          {project.photos && project.reportPhotos.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.reportPhotos}
             >
-              {project.photos.map((photo, index) => (
+              {project.reportPhotos.map((photo, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => handlePhotoPress(photo)}

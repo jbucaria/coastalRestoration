@@ -351,12 +351,12 @@ const TicketDetailsScreen = () => {
         />
 
         {/* PHOTOS */}
-        {ticket.photos && ticket.photos.length > 0 && (
+        {ticket.ticketPhotos && ticket.ticketPhotos.length > 0 && (
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Photos</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {ticket.photos.map((photoUri, index) => {
+              {ticket.ticketPhotos.map((photoUri, index) => {
                 return (
                   <TouchableOpacity
                     key={index}

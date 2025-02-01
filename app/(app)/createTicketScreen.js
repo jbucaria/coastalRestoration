@@ -48,7 +48,8 @@ const initialTicketStatus = {
   typeOfJob: '',
   recommendedActions: '',
   messageCount: 0,
-  photos: [],
+  reportPhotos: [],
+  ticketPhotos: [],
   onSite: false,
   inspectionComplete: false,
   remediationRequired: false,
@@ -126,7 +127,7 @@ const CreateTicketScreen = () => {
   const handleRemovePhoto = index => {
     setNewTicket(prev => ({
       ...prev,
-      photos: prev.photos.filter((_, i) => i !== index), // Remove photo by index
+      ticketPhotos: prev.photos.filter((_, i) => i !== index), // Remove photo by index
     }))
   }
 
@@ -233,7 +234,7 @@ const CreateTicketScreen = () => {
       const selectedPhotos = result.assets.map(asset => asset.uri)
       setNewTicket(prev => ({
         ...prev,
-        photos: [...prev.photos, ...selectedPhotos], // Store photo URIs locally
+        ticketPhotos: [...prev.ticketPhotos, ...selectedPhotos], // Store photo URIs locally
       }))
       Alert.alert('Success', 'Photos added successfully.')
     } else {
@@ -599,23 +600,28 @@ const CreateTicketScreen = () => {
             </View>
 
             {/* Photos */}
-            {newTicket.photos.length > 0 && (
+            {newTicket.ticketPhotos.length > 0 && ( // Changed to ticketPhotos
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.photosContainer}
               >
-                {newTicket.photos.map((uri, index) => (
-                  <View key={index} style={styles.photoWrapper}>
-                    <Image source={{ uri }} style={styles.photo} />
-                    <TouchableOpacity
-                      style={styles.removePhotoButton}
-                      onPress={() => handleRemovePhoto(index)}
-                    >
-                      <Text style={styles.removePhotoText}>X</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                {newTicket.ticketPhotos.map(
+                  (
+                    uri,
+                    index // Changed to ticketPhotos
+                  ) => (
+                    <View key={index} style={styles.photoWrapper}>
+                      <Image source={{ uri }} style={styles.photo} />
+                      <TouchableOpacity
+                        style={styles.removePhotoButton}
+                        onPress={() => handleRemovePhoto(index)}
+                      >
+                        <Text style={styles.removePhotoText}>X</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )
+                )}
               </ScrollView>
             )}
 

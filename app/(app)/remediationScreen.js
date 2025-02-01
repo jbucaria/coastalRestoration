@@ -19,7 +19,7 @@ import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { rem } from 'nativewind'
 
-export default function RemediationScreen({ route }) {
+const RemediationScreen = ({ route }) => {
   const router = useRouter()
   const { projectId } = useLocalSearchParams()
 
@@ -290,6 +290,8 @@ export default function RemediationScreen({ route }) {
     </SafeAreaView>
   )
 }
+
+export default RemediationScreen
 
 const styles = StyleSheet.create({
   container: {
