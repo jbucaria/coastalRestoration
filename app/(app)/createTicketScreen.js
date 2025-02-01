@@ -247,8 +247,6 @@ const CreateTicketScreen = () => {
     return newDate
   }
 
-  console.log('select', selectedAddress)
-
   return (
     <SafeAreaView style={styles.container}>
       <FloatingBackButton color="#007bff" />

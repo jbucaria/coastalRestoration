@@ -304,7 +304,6 @@ const TicketDetailsScreen = () => {
             <Text style={styles.etaValue}>{eta}</Text>
           </TouchableOpacity>
         </View>
-
         {/* -- CUSTOMER INFO -- */}
         <View style={styles.sectionContainer}>
           <View style={styles.sideBySideContainer}>
@@ -332,7 +331,6 @@ const TicketDetailsScreen = () => {
             </View>
           </View>
         </View>
-
         {/* -- INSPECTOR & REASON -- */}
         <View style={styles.sectionContainer}>
           <View style={styles.infoRow}>
@@ -349,18 +347,17 @@ const TicketDetailsScreen = () => {
             <Text style={styles.value}>{ticket.reason || 'N/A'}</Text>
           </View>
         </View>
-
         {/* -- EQUIPMENT MODAL -- */}
         <EquipmentModal
           visible={isEquipmentModalVisible}
           onClose={() => setIsEquipmentModalVisible(false)}
           projectId={ticket.id}
         />
-
         {/* -- PHOTOS -- */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Photos</Text>
-          {ticket.photos && ticket.photos.length > 0 ? (
+        {ticket.photos && ticket.photos.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Photos</Text>
+
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {ticket.photos.map((photoUri, index) => {
                 return (
@@ -379,13 +376,10 @@ const TicketDetailsScreen = () => {
                 )
               })}
             </ScrollView>
-          ) : (
-            <Text style={styles.placeholderText}>No photos available</Text>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* -- LINKS & ACTIONS -- */}
-
         <View style={styles.notesLinkContainer}>
           <TouchableOpacity onPress={openNotes} style={styles.notesLink}>
             <IconSymbol name="note.text" size={24} color="#007BFF" />
@@ -410,7 +404,6 @@ const TicketDetailsScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-
         {/* -- SWITCHES (WITHOUT siteComplete) -- */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Status</Text>
@@ -443,7 +436,6 @@ const TicketDetailsScreen = () => {
             onToggle={handleRemediationToggle}
           />
         )}
-
         <SwitchComponent
           projectId={ticket.id}
           field="equipmentOnSite"

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, Switch, StyleSheet, Alert } from 'react-native'
+import {
+  View,
+  Text,
+  Switch,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native'
 import { doc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 
@@ -8,6 +15,7 @@ const SwitchComponent = ({
   field,
   label,
   value,
+  equipmentCount,
   onShowModal,
   onToggle,
 }) => {
@@ -37,15 +45,35 @@ const SwitchComponent = ({
     setSwitchValue(value) // Update local state if the `value` prop changes
   }, [value])
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+  const renderSwitch = () => {
+    if (equipmentCount > 0) {
+      return (
+        <TouchableOpacity
+          onPress={() => handleToggle(true)}
+          style={styles.plusButton}
+        >
+          <Text style={styles.plusText}>+</Text>
+        </TouchableOpacity>
+      )
+    }
+
+    return (
       <Switch
         value={switchValue}
         onValueChange={handleToggle}
         trackColor={{ false: '#ccc', true: '#2ecc71' }}
         thumbColor={switchValue ? '#2C3E50' : '#f4f3f4'}
       />
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.label}>{label}</Text>
+      {equipmentCount > 0 ? (
+        <Text style={styles.editText}>Edit Equipment</Text>
+      ) : null}
+      {renderSwitch()}
     </View>
   )
 }
@@ -69,6 +97,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     color: '#2C3E50',
+  },
+  plusButton: {
+    backgroundColor: '#2ecc71',
+    borderRadius: 5,
+    padding: 10,
+    alignItems: 'center',
+  },
+  plusText: {
+    fontSize: 20,
+    color: 'white',
+  },
+  editText: {
+    fontSize: 14,
+    color: '#2C3E50',
+    marginBottom: 8,
   },
 })
 

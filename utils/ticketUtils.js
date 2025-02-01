@@ -104,7 +104,7 @@ export const handleCreateTicket = async (
       const blob = await response.blob()
       const fileRef = ref(
         storage,
-        `ticketPhotos/${Date.now()}_${uri.split('/').pop()}`
+        `ticketPhotos/${ticketData.projectId}/${Date.now()}_${uri.split('/').pop()}`
       )
       await uploadBytes(fileRef, blob)
       return getDownloadURL(fileRef)
