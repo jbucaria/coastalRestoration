@@ -58,6 +58,7 @@ const ViewInvoiceScreen = () => {
     }
 
     const invoiceData = {
+      customerEmail: customerEmail,
       customerId: '3', // Replace with actual QuickBooks Customer ID
       customerName: customerName,
       invoiceDate: invoiceDate.toISOString().split('T')[0], // Format YYYY-MM-DD
@@ -76,6 +77,7 @@ const ViewInvoiceScreen = () => {
 
     if (result) {
       console.log('Invoice successfully sent:', result)
+      router.back()
     }
   }
   // Fetch invoice data from Firestore

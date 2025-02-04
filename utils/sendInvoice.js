@@ -19,13 +19,17 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
   }
 
   const requestBody = {
-    AllowOnlinePayment: true, // ✅ Enable online payments
-    AllowOnlineCreditCardPayment: true,
-    AllowOnlineACHPayment: true,
     CustomerRef: {
       value: invoiceData.customerId,
       name: invoiceData.customerName,
     },
+    BillEmail: {
+      Address: invoiceData.customerEmail,
+    },
+    EmailStatus: 'NeedToSend',
+    AllowOnlinePayment: true,
+    AllowOnlineCreditCardPayment: true,
+    AllowOnlineACHPayment: true,
     Line: invoiceData.lineItems.map(item => ({
       DetailType: 'SalesItemLineDetail',
       Amount: item.quantity * item.amount,
@@ -43,8 +47,11 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
     CurrencyRef: {
       value: 'USD',
     },
+    TotalAmt: invoiceData.lineItems.reduce(
+      (total, item) => total + item.quantity * item.amount,
+      0
+    ),
   }
-
   try {
     console.log(
       '🚀 Sending Invoice Data:',

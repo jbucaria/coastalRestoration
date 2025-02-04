@@ -39,7 +39,7 @@ const initialTicketStatus = {
   customer: 'DR Horton',
   customerName: 'Cool Cars',
   customerNumber: '727-555-1234',
-  customerEmail: 'Cool_Cars@intuit.com',
+  customerEmail: 'jbucaria1@gmail.com',
   homeOwnerName: 'Jane Doe',
   homeOwnerNumber: '727-555-5678',
   inspectorName: 'John Bucaria',
