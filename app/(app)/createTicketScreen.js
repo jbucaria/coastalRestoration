@@ -456,6 +456,15 @@ const CreateTicketScreen = () => {
               }
               keyboardType="phone-pad"
             />
+            <TextInput
+              style={styles.inputField}
+              placeholder="Contact Email"
+              value={newTicket.customerEmail}
+              onChangeText={text =>
+                setNewTicket({ ...newTicket, customerEmail: text })
+              }
+              keyboardType="phone-pad"
+            />
 
             {/* Homeowner Info */}
             <Text style={styles.sectionTitle}>Homeowner</Text>
@@ -502,103 +511,102 @@ const CreateTicketScreen = () => {
                 setInputHeight(contentHeight)
               }}
             />
-            <View style={styles.container}>
-              <TextInput
-                style={styles.inputField}
-                placeholder="Add a note for this ticket..."
-                value={newNote}
-                onChangeText={setNewNote}
-                multiline
-                numberOfLines={4}
-              />
 
-              {/* Trigger Button */}
-              <TouchableOpacity
-                onPress={handleTogglePicker}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>
-                  {jobType ? jobType : 'Select Job Type'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleToggleVacancyPicker}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>
-                  {vacancy === 'occupied'
-                    ? 'Occupied'
-                    : vacancy === 'unoccupied'
-                    ? 'Unoccupied'
-                    : 'Select Occupancy'}
-                </Text>
-              </TouchableOpacity>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Add a note for this ticket..."
+              value={newNote}
+              onChangeText={setNewNote}
+              multiline
+              numberOfLines={4}
+            />
 
-              {/* Picker Modal */}
-              <Modal
-                visible={jobTypeModalVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={handleTogglePicker}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={jobType}
-                      onValueChange={handleJobTypeChange}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select job type" value="" />
-                      <Picker.Item
-                        label="Leak Detection"
-                        value="leak detection"
-                      />
-                      <Picker.Item label="Inspection" value="inspection" />
-                      <Picker.Item label="Containment" value="containment" />
-                      <Picker.Item label="Flood" value="flood" />
-                      <Picker.Item label="Mold Job" value="mold job" />
-                      <Picker.Item label="Wipe Down" value="wipe down" />
-                    </Picker>
-                    <View
-                      style={{ flexDirection: 'row', justifyContent: 'center' }}
-                    >
-                      <TouchableOpacity onPress={handleTogglePicker}>
-                        <Text style={styles.label}>Close</Text>
-                      </TouchableOpacity>
-                    </View>
+            {/* Trigger Button */}
+            <TouchableOpacity
+              onPress={handleTogglePicker}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>
+                {jobType ? jobType : 'Select Job Type'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleToggleVacancyPicker}
+              style={styles.button}
+            >
+              <Text style={styles.buttonText}>
+                {vacancy === 'occupied'
+                  ? 'Occupied'
+                  : vacancy === 'unoccupied'
+                  ? 'Unoccupied'
+                  : 'Select Occupancy'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Picker Modal */}
+            <Modal
+              visible={jobTypeModalVisible}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={handleTogglePicker}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={jobType}
+                    onValueChange={handleJobTypeChange}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select job type" value="" />
+                    <Picker.Item
+                      label="Leak Detection"
+                      value="leak detection"
+                    />
+                    <Picker.Item label="Inspection" value="inspection" />
+                    <Picker.Item label="Containment" value="containment" />
+                    <Picker.Item label="Flood" value="flood" />
+                    <Picker.Item label="Mold Job" value="mold job" />
+                    <Picker.Item label="Wipe Down" value="wipe down" />
+                  </Picker>
+                  <View
+                    style={{ flexDirection: 'row', justifyContent: 'center' }}
+                  >
+                    <TouchableOpacity onPress={handleTogglePicker}>
+                      <Text style={styles.label}>Close</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </Modal>
-              {/* Picker Modal */}
-              <Modal
-                visible={vacancyModalVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={handleVacancyChange}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={styles.pickerContainer}>
-                    <Picker
-                      selectedValue={vacancy}
-                      onValueChange={handleVacancyChange}
-                      style={styles.picker}
-                    >
-                      <Picker.Item label="Select occupency" value="" />
+              </View>
+            </Modal>
+            {/* Picker Modal */}
+            <Modal
+              visible={vacancyModalVisible}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={handleVacancyChange}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={vacancy}
+                    onValueChange={handleVacancyChange}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select occupency" value="" />
 
-                      <Picker.Item label="Occupied" value="occupied" />
-                      <Picker.Item label="Unuocupied" value="unoccupied" />
-                    </Picker>
-                    <View
-                      style={{ flexDirection: 'row', justifyContent: 'center' }}
-                    >
-                      <TouchableOpacity onPress={handleToggleVacancyPicker}>
-                        <Text style={styles.label}>Close</Text>
-                      </TouchableOpacity>
-                    </View>
+                    <Picker.Item label="Occupied" value="occupied" />
+                    <Picker.Item label="Unuocupied" value="unoccupied" />
+                  </Picker>
+                  <View
+                    style={{ flexDirection: 'row', justifyContent: 'center' }}
+                  >
+                    <TouchableOpacity onPress={handleToggleVacancyPicker}>
+                      <Text style={styles.label}>Close</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </Modal>
-            </View>
+              </View>
+            </Modal>
 
             {/* Photos */}
             {newTicket.ticketPhotos.length > 0 && ( // Changed to ticketPhotos
