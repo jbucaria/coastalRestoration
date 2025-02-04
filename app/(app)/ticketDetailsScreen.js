@@ -1,6 +1,6 @@
 // ticketDetailsScreen.js
 import React, { useState, useEffect } from 'react'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter } from 'expo-router'
 import {
   View,
   Text,
@@ -20,14 +20,14 @@ import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { deleteTicket } from '@/utils/deleteTicket'
+import { useProjectStore } from '@/store/useProjectStore'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
 
 const TicketDetailsScreen = () => {
   const router = useRouter()
-  const { projectId } = useLocalSearchParams()
-
+  const { projectId } = useProjectStore()
   const [ticket, setTicket] = useState(null)
   const [eta, setEta] = useState(null)
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)

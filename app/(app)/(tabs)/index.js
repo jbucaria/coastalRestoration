@@ -24,8 +24,10 @@ import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { EquipmentModal } from '@/components/EquipmentModal'
+import { useProjectStore } from '@/store/useProjectStore'
 
 const TicketsScreen = () => {
+  const { setProjectId } = useProjectStore()
   const [projects, setProjects] = useState([])
   const [filteredProjects, setFilteredProjects] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -232,12 +234,12 @@ const TicketsScreen = () => {
             <View key={ticket.id} style={[styles.ticketContainer]}>
               <TicketCard
                 ticket={ticket}
-                onPress={() =>
+                onPress={() => {
+                  setProjectId(ticket.id)
                   router.push({
                     pathname: '/TicketDetailsScreen',
-                    params: { projectId: ticket.id },
                   })
-                }
+                }}
                 openEquipmentModal={() => openEquipmentModal(ticket)}
                 // Pass the background color to TicketCard
                 backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
