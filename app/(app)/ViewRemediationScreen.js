@@ -14,10 +14,11 @@ import {
 } from 'react-native'
 import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
-import { exportCSVReport } from '@/utils/createCSVReport' // Adjust the path as needed
+import { exportCSVReport } from '@/utils/createCSVReport'
 
 export default function ViewRemediationScreen() {
   const { projectId } = useLocalSearchParams()
+
   const router = useRouter()
   const [remediationData, setRemediationData] = useState(null)
   const [loading, setLoading] = useState(true)

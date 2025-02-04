@@ -1,4 +1,3 @@
-// RootLayout.js
 import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { useRouter, useSegments, Slot } from 'expo-router'
@@ -8,6 +7,7 @@ import { auth, firestore } from '@/firebaseConfig'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { useUserStore } from '@/store/useUserStore'
+import useAuthStore from '@/store/useAuthStore' // Import Zustand store
 
 export default function RootLayout() {
   const [initializing, setInitializing] = useState(true)
@@ -15,6 +15,7 @@ export default function RootLayout() {
   const router = useRouter()
   const segments = useSegments()
   const { setUser, user } = useUserStore()
+  const { setCredentials } = useAuthStore()
 
   useEffect(() => {
     if (auth.currentUser) {
@@ -34,13 +35,40 @@ export default function RootLayout() {
     const unsubscribe = onAuthStateChanged(auth, async firebaseUser => {
       if (firebaseUser) {
         try {
+          // Fetch user profile
           const userDocRef = doc(firestore, 'users', firebaseUser.uid)
           const userDocSnap = await getDoc(userDocRef)
           const profileData = userDocSnap.exists() ? userDocSnap.data() : {}
           const userData = { ...firebaseUser, ...profileData }
           setUser(userData)
+
+          // 🔥 Fetch QuickBooks credentials from Firestore
+          const companyRef = doc(
+            firestore,
+            'companyInfo',
+            'Vj0FigLyhZCyprQ8iGGV'
+          )
+          const companySnap = await getDoc(companyRef)
+
+          if (companySnap.exists()) {
+            const companyData = companySnap.data()
+
+            // ✅ Store QuickBooks credentials in Zustand
+            setCredentials({
+              quickBooksCompanyId: companyData.quickBooksCompanyId,
+              clientId: companyData.clientId,
+              accessToken: companyData.accessToken,
+            })
+
+            console.log('QuickBooks credentials stored in Zustand')
+          } else {
+            console.error('Company info not found in Firestore')
+          }
         } catch (error) {
-          console.error('Error fetching user profile:', error)
+          console.error(
+            'Error fetching user profile or QuickBooks credentials:',
+            error
+          )
         }
       } else {
         setUser(null)
@@ -49,7 +77,7 @@ export default function RootLayout() {
       if (initializing) setInitializing(false)
     })
     return unsubscribe
-  }, [initializing, setUser])
+  }, [initializing, setUser, setCredentials])
 
   useEffect(() => {
     if (initializing || !profileLoaded) return

@@ -6,20 +6,20 @@ const useAuthStore = create(
   persist(
     set => ({
       quickBooksCompanyId: null,
-      quickBooksClientId: null,
+      clientId: null,
       accessToken: null,
       refreshToken: null,
 
       // ✅ Set credentials after login
       setCredentials: ({
         quickBooksCompanyId,
-        quickBooksClientId,
+        clientId,
         accessToken,
         refreshToken,
       }) =>
         set({
           quickBooksCompanyId,
-          quickBooksClientId,
+          clientId,
           accessToken,
           refreshToken,
         }),
@@ -28,7 +28,7 @@ const useAuthStore = create(
       clearCredentials: () =>
         set({
           quickBooksCompanyId: null,
-          quickBooksClientId: null,
+          clientId: null,
           accessToken: null,
           refreshToken: null,
         }),

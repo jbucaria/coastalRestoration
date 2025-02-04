@@ -16,10 +16,10 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import * as AuthSession from 'expo-auth-session'
 import { sendInvoiceToQuickBooks } from '@/utils/sendInvoice'
+import useAuthStore from '@/store/useAuthStore'
 
 // Define your QuickBooks app's redirect URI
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
-const clientId = 'ABtSFRJhZ5sNYErUyLl0Lwqrqb5QJfQ76b8jwUSDbKstvWRmA8'
 
 const discovery = {
   authorizationEndpoint: 'https://appcenter.intuit.com/connect/oauth2',
@@ -27,6 +27,7 @@ const discovery = {
 
 const ViewInvoiceScreen = () => {
   const { projectId } = useLocalSearchParams()
+  const { clientId } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
