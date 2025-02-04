@@ -57,7 +57,7 @@ exports.quickBooksRedirectHandler = onRequest(async (req, res) => {
     }
 
     // Store tokens in Firestore under tickets/{projectId}
-    await firestore.collection('tickets').doc(state).set(
+    await firestore.collection('companyInfo').doc('Vj0FigLyhZCyprQ8iGGV').set(
       {
         accessToken: tokenData.access_token,
         refreshToken: tokenData.refresh_token,
