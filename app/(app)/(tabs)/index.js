@@ -24,7 +24,7 @@ import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { EquipmentModal } from '@/components/EquipmentModal'
-import { useProjectStore } from '@/store/useProjectStore'
+import useProjectStore from '@/store/useProjectStore'
 
 const TicketsScreen = () => {
   const { setProjectId } = useProjectStore()
@@ -215,40 +215,20 @@ const TicketsScreen = () => {
       )}
 
       {/* Tickets List */}
-      <Animated.ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-      >
-        {isLoading ? (
-          <ActivityIndicator
-            size="large"
-            color="#0000ff"
-            style={styles.loadingIndicator}
-          />
-        ) : filteredProjects.length > 0 ? (
-          filteredProjects.map((ticket, index) => (
-            <View key={ticket.id} style={[styles.ticketContainer]}>
-              <TicketCard
-                ticket={ticket}
-                onPress={() => {
-                  setProjectId(ticket.id)
-                  router.push({
-                    pathname: '/TicketDetailsScreen',
-                  })
-                }}
-                openEquipmentModal={() => openEquipmentModal(ticket)}
-                // Pass the background color to TicketCard
-                backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
-              />
-            </View>
-          ))
-        ) : (
-          <Text style={styles.noResultsText}>No tickets found.</Text>
-        )}
+      <Animated.ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {filteredProjects.map((ticket, index) => (
+          <View key={ticket.id} style={styles.ticketContainer}>
+            <TicketCard
+              ticket={ticket}
+              onPress={() => {
+                setProjectId(ticket.id) // ✅ Correctly sets projectId in Zustand
+                router.push('/TicketDetailsScreen') // ✅ Navigate without params
+              }}
+              openEquipmentModal={() => openEquipmentModal(ticket)}
+              backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
+            />
+          </View>
+        ))}
       </Animated.ScrollView>
 
       {/* Floating Button */}

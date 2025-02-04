@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-const useProjectStore = create =>
+const useProjectStore = create(
   persist(
     set => ({
       projectId: null,
@@ -16,5 +16,6 @@ const useProjectStore = create =>
       name: 'project-storage', // Persist data across app sessions
     }
   )
+)
 
-export { useProjectStore }
+export default useProjectStore

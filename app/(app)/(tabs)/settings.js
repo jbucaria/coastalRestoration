@@ -260,6 +260,12 @@ const Settings = () => {
                 >
                   <Text style={styles.editButtonText}>Update Profile</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push('/QuickBookActionsScreen')}
+                  style={styles.editButton}
+                >
+                  <Text style={styles.editButtonText}>Quickbooks Actions</Text>
+                </TouchableOpacity>
               </>
             )}
 

@@ -20,7 +20,7 @@ import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { deleteTicket } from '@/utils/deleteTicket'
-import { useProjectStore } from '@/store/useProjectStore'
+import useProjectStore from '@/store/useProjectStore'
 
 // If you want to handle photo viewing in a modal, import PhotoModal from somewhere...
 // import PhotoModal from '@/components/PhotoModal' // if needed
