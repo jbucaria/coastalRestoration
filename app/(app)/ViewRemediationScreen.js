@@ -107,6 +107,17 @@ export default function ViewRemediationScreen() {
         >
           <Text style={styles.exportButtonText}>Edit</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            router.push({
+              pathname: '/QuickBooksAuthScreen',
+              params: { projectId: projectId },
+            })
+          }}
+          style={styles.exportButton}
+        >
+          <Text style={styles.exportButtonText}>Create Invoice</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   )

@@ -91,8 +91,6 @@ const RemediationScreen = ({ route }) => {
     )
   }
 
-  console.log('projectId:', projectId)
-
   const handleAddPhoto = async (roomId, projectId) => {
     try {
       // 1. Request media library permissions
