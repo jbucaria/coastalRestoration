@@ -11,13 +11,12 @@ import {
 } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { firestore } from '@/firebaseConfig'
-import { collection, setDoc, doc, getDoc, getDocs } from 'firebase/firestore'
+import { collection, setDoc, doc, getDocs } from 'firebase/firestore'
 import * as AuthSession from 'expo-auth-session'
 import useAuthStore from '@/store/useAuthStore'
 
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
 
-const projectId = 'lskdflf'
 const discovery = {
   authorizationEndpoint: 'https://appcenter.intuit.com/connect/oauth2',
 }
@@ -27,10 +26,8 @@ const QuickBooksActionsScreen = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const { quickBooksCompanyId, quickBooksClientId, accessToken } =
-    useAuthStore()
+  const { quickBooksCompanyId, clientId, accessToken } = useAuthStore()
 
-  // 🔍 Fetch customers from Firestore (Local DB)
   useEffect(() => {
     fetchCustomersFromFirestore()
   }, [])
@@ -48,10 +45,9 @@ const QuickBooksActionsScreen = () => {
     }
   }
 
-  // 🔥 Fetch customers from QuickBooks API
   const fetchCustomersFromQuickBooks = async () => {
     if (!quickBooksCompanyId || !accessToken) {
-      Alert.alert('Error', 'QuickBooks credentials are missing!')
+      Alert.alert('Error', 'QuickBooks credentials are missing.')
       return
     }
 
@@ -70,10 +66,8 @@ const QuickBooksActionsScreen = () => {
       })
       const data = await response.json()
 
-      console.log('📦 QuickBooks Customer Data:', JSON.stringify(data, null, 2))
-
       if (!response.ok || !data.QueryResponse.Customer) {
-        throw new Error('Failed to retrieve customers from QuickBooks')
+        throw new Error('Failed to retrieve customers from QuickBooks.')
       }
 
       const customersData = data.QueryResponse.Customer.map(customer => ({
@@ -84,42 +78,37 @@ const QuickBooksActionsScreen = () => {
           : 'No email',
       }))
 
-      // ✅ Save customers to Firestore
       await saveCustomersToFirestore(customersData)
 
-      Alert.alert('Success', 'Customers synced successfully!')
-      fetchCustomersFromFirestore() // Refresh picker data
+      Alert.alert('Success', 'Customers synced successfully.')
+      fetchCustomersFromFirestore()
     } catch (error) {
-      console.error('🚨 Error fetching QuickBooks customers:', error)
+      console.error('Error fetching QuickBooks customers:', error)
       Alert.alert('Error', 'Failed to fetch customers from QuickBooks.')
     } finally {
       setLoading(false)
     }
   }
 
-  // ✅ Save Customers to Firestore
   const saveCustomersToFirestore = async customersData => {
     try {
       const batch = customersData.map(customer =>
         setDoc(doc(firestore, 'customers', customer.id), customer)
       )
       await Promise.all(batch)
-      console.log('✅ Customers saved to Firestore')
     } catch (error) {
-      console.error('🚨 Error saving customers to Firestore:', error)
+      console.error('Error saving customers to Firestore:', error)
       Alert.alert('Error', 'Failed to save customers to database.')
     }
   }
 
-  //   AuthToken Flow Start
-
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
-      quickBooksClientId,
+      clientId,
       scopes: ['com.intuit.quickbooks.accounting'],
-      redirectUri, // Use the HTTPS redirect URI for QuickBooks
+      redirectUri,
       responseType: 'code',
-      state: projectId, // Pass projectId as state
+      state: 'quickbooks_auth',
     },
     discovery
   )
@@ -127,7 +116,6 @@ const QuickBooksActionsScreen = () => {
   useEffect(() => {
     if (response?.type === 'success') {
       console.log('OAuth process completed successfully.')
-      // The Cloud Function will handle the rest (token exchange and redirect to app)
     }
   }, [response])
 
@@ -138,7 +126,6 @@ const QuickBooksActionsScreen = () => {
           Customer Management
         </Text>
 
-        {/* 🔄 Sync Customers Button */}
         <TouchableOpacity
           onPress={fetchCustomersFromQuickBooks}
           style={{
@@ -155,7 +142,6 @@ const QuickBooksActionsScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* 🔽 Customer Picker Dropdown */}
         <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
           Select a Customer
         </Text>
@@ -184,7 +170,6 @@ const QuickBooksActionsScreen = () => {
           </Picker>
         </View>
 
-        {/* Display Customer Info */}
         {selectedCustomer && (
           <View
             style={{
@@ -211,7 +196,6 @@ const QuickBooksActionsScreen = () => {
           Token Management
         </Text>
 
-        {/* 🔄 Sync Customers Button */}
         <View
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         >
@@ -222,7 +206,6 @@ const QuickBooksActionsScreen = () => {
           />
         </View>
 
-        {/* ⏳ Loading Indicator */}
         {loading && <ActivityIndicator size="large" color="#27AE60" />}
       </ScrollView>
     </SafeAreaView>

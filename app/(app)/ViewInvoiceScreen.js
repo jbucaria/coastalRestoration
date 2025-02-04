@@ -27,7 +27,7 @@ const discovery = {
 
 const ViewInvoiceScreen = () => {
   const { projectId } = useLocalSearchParams()
-  const { clientId } = useAuthStore()
+  const { clientId, accessToken } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
@@ -48,7 +48,6 @@ const ViewInvoiceScreen = () => {
   useEffect(() => {
     if (response?.type === 'success') {
       console.log('OAuth process completed successfully.')
-      // The Cloud Function will handle the rest (token exchange and redirect to app)
     }
   }, [response])
 
@@ -59,18 +58,21 @@ const ViewInvoiceScreen = () => {
     }
 
     const invoiceData = {
-      customerId: '12345', // Replace with actual QuickBooks Customer ID
+      customerId: '3', // Replace with actual QuickBooks Customer ID
       customerName: customerName,
       invoiceDate: invoiceDate.toISOString().split('T')[0], // Format YYYY-MM-DD
       lineItems: lineItems.map(item => ({
-        itemId: '6789', // Replace with actual QuickBooks Item ID
         description: item.description,
         quantity: item.quantity,
         amount: item.amount,
       })),
     }
-
-    const result = await sendInvoiceToQuickBooks(invoiceData, accessToken)
+    console.log('invoiceData', invoiceData)
+    const result = await sendInvoiceToQuickBooks(
+      invoiceData,
+      accessToken,
+      clientId
+    )
 
     if (result) {
       console.log('Invoice successfully sent:', result)
