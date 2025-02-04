@@ -37,14 +37,15 @@ const initialTicketStatus = {
   zip: '',
   date: '',
   customer: 'DR Horton',
-  customerName: 'John Doe',
+  customerName: 'Cool Cars',
   customerNumber: '727-555-1234',
+  customerEmail: 'Cool_Cars@intuit.com',
   homeOwnerName: 'Jane Doe',
   homeOwnerNumber: '727-555-5678',
   inspectorName: 'John Bucaria',
   reason: 'leak in garage',
   jobType: 'inspection',
-  hours: '',
+  hours: '2',
   typeOfJob: '',
   recommendedActions: '',
   messageCount: 0,
@@ -528,8 +529,8 @@ const CreateTicketScreen = () => {
                   {vacancy === 'occupied'
                     ? 'Occupied'
                     : vacancy === 'unoccupied'
-                      ? 'Unoccupied'
-                      : 'Select Occupancy'}
+                    ? 'Unoccupied'
+                    : 'Select Occupancy'}
                 </Text>
               </TouchableOpacity>
 

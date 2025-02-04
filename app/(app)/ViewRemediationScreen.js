@@ -1,6 +1,6 @@
 // ViewRemediationScreen.js
 import React, { useEffect, useState } from 'react'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter, router } from 'expo-router'
 import {
   SafeAreaView,
   ScrollView,
@@ -21,6 +21,8 @@ export default function ViewRemediationScreen() {
   const router = useRouter()
   const [remediationData, setRemediationData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [customerName, setCustomerName] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
 
   // Fetch remediation data when the component mounts.
   useEffect(() => {
@@ -29,8 +31,10 @@ export default function ViewRemediationScreen() {
         const docRef = doc(firestore, 'tickets', projectId)
         const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          // Assumes your remediation data is under key "remediationData"
-          setRemediationData(docSnap.data().remediationData)
+          const data = docSnap.data()
+          setRemediationData(data.remediationData || null)
+          setCustomerName(data.customerName || 'Unknown')
+          setCustomerEmail(data.customerEmail || 'No Email Provided')
         } else {
           Alert.alert('Error', 'No remediation data found.')
         }
@@ -62,7 +66,10 @@ export default function ViewRemediationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        key={projectId}
+      >
         <Text style={styles.title}>Remediation Report</Text>
 
         {remediationData.rooms &&
@@ -110,7 +117,7 @@ export default function ViewRemediationScreen() {
         <TouchableOpacity
           onPress={() => {
             router.push({
-              pathname: '/QuickBooksAuthScreen',
+              pathname: '/ViewInvoiceScreen',
               params: { projectId: projectId },
             })
           }}
