@@ -40,7 +40,6 @@ const initialTicketStatus = {
   customerName: '', // builder's display name
   customerNumber: '', // builder's phone number
   customerEmail: '', // builder's email
-  // ... (other fields omitted for brevity)
   homeOwnerName: 'Terry Cruze',
   homeOwnerNumber: '727-555-1234',
   inspectorName: 'John Bucaria',

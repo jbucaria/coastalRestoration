@@ -302,11 +302,12 @@ const TicketDetailsScreen = () => {
               <Text style={styles.sectionTitle}>Builder:</Text>
               <Text style={styles.value}>{ticket.customer || 'N/A'}</Text>
               <Text style={styles.value}>{ticket.customerName || 'N/A'}</Text>
+              <Text style={styles.value}>{ticket.customerEmail || 'N/A'}</Text>
               <Text
-                onPress={() => handleCall(ticket.contactNumber)}
+                onPress={() => handleCall(ticket.customerNumber)}
                 style={[styles.value, styles.link]}
               >
-                {ticket.contactNumber || 'N/A'}
+                {ticket.customerNumber || 'N/A'}
               </Text>
             </View>
 

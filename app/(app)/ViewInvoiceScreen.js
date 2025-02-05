@@ -57,6 +57,7 @@ const ViewInvoiceScreen = () => {
     setIsSending(true)
     if (!accessToken) {
       Alert.alert('Error', 'Missing QuickBooks authentication token.')
+      setIsSending(false)
       return
     }
 
