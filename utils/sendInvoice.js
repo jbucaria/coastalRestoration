@@ -3,14 +3,14 @@ import useAuthStore from '@/store/useAuthStore'
 
 const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
   const { quickBooksCompanyId } = useAuthStore.getState() // Retrieve stored company ID
-  console.log(quickBooksCompanyId)
+
   if (!quickBooksCompanyId || !accessToken) {
     Alert.alert('Error', 'Missing QuickBooks credentials.')
     console.error('QuickBooks Error: Missing access token or company ID')
     return null
   }
 
-  const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/invoice`
+  const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/invoice`
 
   const headers = {
     Authorization: `Bearer ${accessToken}`,
@@ -19,9 +19,9 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
   }
 
   const requestBody = {
+    AutoDocNumber: true,
     CustomerRef: {
-      value: invoiceData.customerId,
-      name: invoiceData.customerName,
+      value: '188',
     },
     BillEmail: {
       Address: invoiceData.customerEmail,
@@ -32,15 +32,15 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
     AllowOnlineACHPayment: true,
     Line: invoiceData.lineItems.map(item => ({
       DetailType: 'SalesItemLineDetail',
-      Amount: item.quantity * item.amount,
+      Amount: item.amount,
       Description: item.description,
       SalesItemLineDetail: {
         ItemRef: {
-          value: item.itemId || '2',
-          name: item.description,
+          value: '1',
+          name: 'Services',
         },
         UnitPrice: item.amount,
-        Qty: item.quantity,
+        Qty: 1,
       },
     })),
     TxnDate: invoiceData.invoiceDate,
@@ -52,6 +52,7 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       0
     ),
   }
+
   try {
     console.log(
       '🚀 Sending Invoice Data:',
@@ -60,15 +61,17 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify(requestBody),
     })
 
-    const responseText = await response.text() // Capture full raw response
+    // Capture raw response for debugging
+    const responseText = await response.text()
     let responseData
 
+    // Parse JSON if possible
     try {
-      responseData = JSON.parse(responseText) // Parse JSON if possible
+      responseData = JSON.parse(responseText)
     } catch (error) {
       console.error('🛑 Failed to parse JSON response:', responseText)
       Alert.alert('Error', 'Invalid JSON response from QuickBooks.')
@@ -85,12 +88,14 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       console.log('✅ Invoice Created:', responseData)
       return responseData
     } else {
-      const errorDetails = responseData.Fault?.Error || []
+      // Ensure property names (lowercase) match QuickBooks error structure
+      const errorDetails = responseData.fault?.error || []
       let errorMessage = `QuickBooks API Error: ${response.status} ${response.statusText}`
 
       if (errorDetails.length > 0) {
+        // Use 'message' (lowercase) instead of 'Message'
         errorMessage += `\nDetails: ${
-          errorDetails[0]?.Message || 'Unknown Error'
+          errorDetails[0]?.message || 'Unknown Error'
         }`
       }
 
@@ -98,9 +103,9 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       console.error('❌ QuickBooks Error Details:', errorDetails)
       return null
     }
-  } catch (error) {
+  } catch (networkError) {
     Alert.alert('Error', 'Failed to connect to QuickBooks API.')
-    console.error('❌ Network or Unexpected Error:', error)
+    console.error('❌ Network or Unexpected Error:', networkError)
     return null
   }
 }

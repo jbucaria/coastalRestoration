@@ -11,8 +11,8 @@ async function getFetch() {
 }
 
 const QUICKBOOKS_CLIENT_ID =
-  'ABtSFRJhZ5sNYErUyLl0Lwqrqb5QJfQ76b8jwUSDbKstvWRmA8'
-const QUICKBOOKS_CLIENT_SECRET = 'v0sUaT5caf2HT5VOjyZykVWSuAjtOCrrKx2MvnI6'
+  'BBH3sQV8BaGA4ZxmDTFSXOF94ErNGHh2Iu82TC6eogpXwMlYTe'
+const QUICKBOOKS_CLIENT_SECRET = 'J68Jzvy0X5BfcV2do84ef5dPKBeq4SQ1xcJh6NzF'
 const QB_TOKEN_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
 
 // Handles QuickBooks redirect

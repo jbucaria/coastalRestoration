@@ -100,10 +100,9 @@ const ViewInvoiceScreen = () => {
             const formattedLineItems = data.remediationData.rooms.flatMap(
               room =>
                 room.measurements?.map(measurement => ({
-                  id: measurement.id,
                   description: measurement.description,
-                  quantity: measurement.quantity,
-                  amount: measurement.price || 0, // Default price
+                  quantity: measurement.quantity || 0,
+                  amount: measurement.amount || 0,
                 })) || []
             )
             setLineItems(formattedLineItems)
@@ -189,6 +188,7 @@ const ViewInvoiceScreen = () => {
             <TextInput
               style={styles.input}
               keyboardType="numeric"
+              // Convert numeric amount to string for display:
               value={String(item.amount)}
               onChangeText={text => handleUpdateAmount(item.id, text)}
             />

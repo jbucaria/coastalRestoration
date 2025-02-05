@@ -54,7 +54,7 @@ const RemediationScreen = ({ route }) => {
     const newMeasurement = {
       id: uuidv4(),
       description: '',
-      quantity: '',
+      quantity: 0,
     }
     setRooms(prev =>
       prev.map(room =>
