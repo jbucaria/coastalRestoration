@@ -1,89 +1,386 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coastal Restoration Services - Revitalize Your Coastline</title>
+    <style>
+      /* Reset & Basic Styling */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.2.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.2.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.2.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f7fafc; /* Soft background color */
+        color: #333;
+      }
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
+      :root {
+        --primary-color: #3498db; /* Vibrant coastal blue */
+        --accent-color: #e74c3c; /* Eye-catching red (for buttons, etc.) */
+        --light-bg: #ffffff; /* White background for sections */
+      }
+
+      /* Header Styles */
+      header {
+        background: var(--primary-color);
+        padding: 1rem 0;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+      }
+      .header-content {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo-container {
+        display: flex;
+        align-items: center;
+      }
+      .logo {
+        height: 60px;
+        margin-right: 1rem;
+      }
+      .site-title {
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        margin-left: 1.5rem;
+        font-weight: bold;
+      }
+      nav a:hover {
+        color: var(--accent-color);
+      }
+
+      /* Hero Section */
+      .hero {
+        background: linear-gradient(
+            rgba(52, 152, 219, 0.6),
+            rgba(52, 152, 219, 0.6)
+          ),
+          url('https://picsum.photos/1200/500?grayscale') center/cover no-repeat;
+        height: 60vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #fff;
+      }
+      .hero h1 {
+        font-size: 3rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+      .hero p {
+        font-size: 1.25rem;
+        margin: 1rem 0;
+      }
+      .cta-button {
+        display: inline-block;
+        padding: 10px 20px;
+        background: var(--accent-color);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background 0.3s ease;
+      }
+      .cta-button:hover {
+        background: #c0392b;
+      }
+
+      /* Main Content */
+      .content {
+        width: 90%;
+        max-width: 1100px;
+        margin: 2rem auto;
+      }
+      .content h2 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+      .content p {
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+      }
+
+      /* Services Section (Optional) */
+      #services {
+        margin-top: 3rem;
+      }
+      .service-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+      }
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        transition: transform 0.3s ease;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+      }
+      .card h3 {
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+      }
+
+      /* Scrollable Legal Section */
+      #legal-section {
+        background: var(--light-bg);
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 3rem;
+      }
+      #legal-section h2 {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+      .scrollable-text {
+        max-height: 300px; /* Adjust as needed */
+        overflow-y: auto;
+        background: #fff;
+        padding: 1rem;
+        border: 1px solid #ccc;
+        margin-bottom: 2rem;
+        border-radius: 5px;
+        font-family: monospace; /* Or keep it normal—up to you */
+        white-space: pre-wrap; /* So text wraps nicely */
+      }
+
+      /* Footer */
+      footer {
+        background: var(--primary-color);
+        color: #fff;
+        text-align: center;
+        padding: 1rem;
+        margin-top: 2rem;
       }
     </style>
   </head>
   <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+    <!-- HEADER -->
+    <header>
+      <div class="header-content">
+        <!-- Logo & Site Title -->
+        <div class="logo-container">
+          <!-- Replace 'logo.png' with your actual logo file or data URL -->
+
+          <!-- Or use the provided blue/turquoise logo if you have a direct image link -->
+          <!-- <img src="YOUR-LOGO-URL" alt="Coastal Restoration Logo" class="logo" /> -->
+          <span class="site-title">Coastal Restoration</span>
+        </div>
+        <!-- Navigation -->
+        <nav>
+          <a href="#hero">Home</a>
+          <a href="#services">Services</a>
+          <a href="#legal-section">Legal</a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero" id="hero">
+      <h1>Revitalize Your Coastline</h1>
+      <p>We help restore your property & keep you fishing!</p>
+      <a href="#services" class="cta-button">Explore Our Services</a>
+    </section>
+
+    <!-- MAIN CONTENT -->
+    <div class="content">
+      <h2>About Us</h2>
+      <p>
+        Coastal Restoration Services specializes in providing top-notch
+        remediation and restoration solutions to protect your home, business,
+        and the environment. Whether it’s flood damage, mold remediation, or
+        other restoration needs, we bring expertise and a passion for coastal
+        living to every job.
+      </p>
+      <p>
+        We believe in preserving the natural beauty of our shores for
+        generations to come. Explore our services, learn more about our mission,
+        or get in touch to start your next restoration project.
+      </p>
+
+      <!-- SERVICES SECTION EXAMPLE -->
+      <section id="services">
+        <h2>Our Services</h2>
+        <div class="service-cards">
+          <div class="card">
+            <h3>Flood Damage Repair</h3>
+            <p>Quick and efficient restoration to get you back on your feet.</p>
+          </div>
+          <div class="card">
+            <h3>Mold Remediation</h3>
+            <p>Healthy living starts with a mold-free environment.</p>
+          </div>
+          <div class="card">
+            <h3>Coastal Conservation</h3>
+            <p>Preserving our beaches for future generations.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCROLLABLE LEGAL SECTION -->
+      <section id="legal-section">
+        <h2>End-User License Agreement &amp; Privacy Policy</h2>
+        <!-- EULA -->
+        <div class="scrollable-text">
+          ======================================================== COASTAL
+          RESTORATION END-USER LICENSE AGREEMENT (EULA) AND PRIVACY POLICY
+          ======================================================== Last Updated:
+          2025-05-02 ────────────────────────────────────────────────────────
+          END-USER LICENSE AGREEMENT
+          ──────────────────────────────────────────────────────── This End-User
+          License Agreement (“Agreement”) is a legally binding contract between
+          you (“User” or “you”) and Coastal Restoration (“Company,” “we,” “us,”
+          or “our”) concerning your use of our software application
+          (“Application”). By installing, accessing, or otherwise using the
+          Application, you agree to be bound by this Agreement. 1. LICENSE GRANT
+          1.1 Limited License Subject to the terms of this Agreement, the
+          Company grants you a non-exclusive, non-transferable, revocable
+          license to use the Application for your personal or internal business
+          purposes. 1.2 License Restrictions You agree not to: • Modify, copy,
+          distribute, or create derivative works based on the Application. •
+          Reverse engineer, decompile, or disassemble the Application, except to
+          the extent expressly permitted by applicable law. • Remove, alter, or
+          obscure any copyright, trademark, or other proprietary notices
+          contained in the Application. 2. OWNERSHIP All rights, title, and
+          interest in and to the Application, including all intellectual
+          property rights, are and will remain the exclusive property of the
+          Company or its licensors. This Agreement does not convey to you any
+          title or ownership interest in the Application, but only a limited
+          right of use. 3. UPDATES AND MODIFICATIONS The Company may provide
+          updates or modifications to the Application. Such updates may be
+          installed automatically without prior notice. By using the
+          Application, you consent to these automatic updates. If you do not
+          wish to receive such updates, your sole remedy is to cease using the
+          Application. 4. USER DATA AND PRIVACY Your use of the Application is
+          also governed by our Privacy Policy, which is incorporated by
+          reference into this Agreement. You agree that we may collect, use, and
+          share your information as outlined in our Privacy Policy. 5. TERM AND
+          TERMINATION 5.1 Term This Agreement is effective from the moment you
+          accept it (e.g., by installing or using the Application) and remains
+          in effect until terminated by you or the Company. 5.2 Termination The
+          Company may terminate this Agreement and your license at any time if
+          you fail to comply with any term(s) of this Agreement. Upon
+          termination, you must cease all use of the Application and destroy any
+          copies in your possession or control. 6. DISCLAIMER OF WARRANTIES The
+          Application is provided “AS IS” and “AS AVAILABLE,” without warranties
+          of any kind, whether express or implied, including but not limited to
+          merchantability, fitness for a particular purpose, title,
+          non-infringement, or availability. The Company does not warrant that
+          the Application will be uninterrupted or error-free. 7. LIMITATION OF
+          LIABILITY To the maximum extent permitted by law, in no event shall
+          the Company be liable for any indirect, incidental, consequential,
+          special, or exemplary damages (including but not limited to loss of
+          profits, data, or business opportunities) arising out of or in
+          connection with your use of the Application, whether based on
+          contract, tort, strict liability, or any other legal theory, even if
+          advised of the possibility of such damages. 8. INDEMNIFICATION You
+          agree to indemnify, defend, and hold harmless the Company, its
+          affiliates, and their respective officers, directors, employees, and
+          agents from and against any and all claims, damages, liabilities,
+          losses, costs, or expenses arising from or related to your use of the
+          Application or your violation of this Agreement. 9. GOVERNING LAW AND
+          DISPUTE RESOLUTION This Agreement shall be governed by and construed
+          in accordance with the laws of [Your Jurisdiction], without regard to
+          its conflict of law principles. Any dispute arising out of or relating
+          to this Agreement shall be resolved exclusively in the courts located
+          in [Your Jurisdiction], and you consent to the jurisdiction of such
+          courts. 10. CHANGES TO THIS AGREEMENT The Company reserves the right
+          to modify this Agreement at any time by posting the revised version.
+          Your continued use of the Application after any such changes
+          constitutes your acceptance of the new Agreement. 11. CONTACT
+          INFORMATION If you have any questions about this Agreement, please
+          contact us at: Coastal Restoration Email: jbucaria@gmail.com
+          ──────────────────────────────────────────────────────── PRIVACY
+          POLICY ──────────────────────────────────────────────────────── Last
+          Updated: [Date] Coastal Restoration (“we,” “us,” or “our”) is
+          committed to protecting your privacy. This Privacy Policy explains how
+          we collect, use, disclose, and safeguard your information when you use
+          our software application (the “Application”). By using the
+          Application, you agree to the collection and use of your information
+          in accordance with this Privacy Policy. 1. INFORMATION WE COLLECT 1.1
+          Personal Information • Contact Information: Such as your name, email
+          address, or phone number (if you choose to provide it). • Account
+          Details: If applicable, we may collect usernames, passwords, and other
+          login information. 1.2 Usage Data • Log and Device Information: We may
+          collect information from or about the device you use to access the
+          Application (e.g., IP address, operating system, device type, browser
+          type). • Application Usage: We track features you access, time spent
+          in the Application, and other diagnostic data. 2. HOW WE USE YOUR
+          INFORMATION We may use the information we collect for various
+          purposes, including: • To provide and maintain the Application. • To
+          personalize and improve your experience. • To communicate with you
+          about updates, security alerts, and administrative messages. • To
+          monitor usage and analyze trends to improve our services. • To protect
+          our rights, property, and safety or the rights, property, and safety
+          of others. 3. HOW WE SHARE YOUR INFORMATION We do not sell or rent
+          your personal information to third parties. However, we may share
+          certain information in the following circumstances: • Service
+          Providers: We may share your information with third-party vendors who
+          perform services on our behalf (e.g., hosting, analytics). • Legal
+          Requirements: We may disclose your information if required by law or
+          in response to valid requests by public authorities. • Business
+          Transfers: If we are involved in a merger, acquisition, or asset sale,
+          your information may be transferred as part of that transaction. 4.
+          SECURITY We use commercially reasonable measures to protect your
+          information. However, no data transmission over the internet or
+          electronic storage method is 100% secure. Therefore, we cannot
+          guarantee absolute security. 5. DATA RETENTION We will retain your
+          personal information for as long as necessary to provide the
+          Application or as required by law. If you wish to delete your personal
+          information, please contact us at the email address below, and we will
+          take commercially reasonable steps to honor your request. 6.
+          CHILDREN’S PRIVACY Our Application is not directed to individuals
+          under the age of 13 (or other age as required by local law). We do not
+          knowingly collect personal information from children. If you believe
+          we have collected information from a child, please contact us
+          immediately. 7. YOUR RIGHTS Depending on your jurisdiction, you may
+          have certain rights regarding your personal information, such as the
+          right to access, update, or delete your data. To exercise any such
+          rights, please contact us at the email address below. 8. CHANGES TO
+          THIS PRIVACY POLICY We may update this Privacy Policy from time to
+          time. Any changes will be posted here with an updated “Last Updated”
+          date. Your continued use of the Application after any changes
+          indicates your acceptance of the new Privacy Policy. 9. CONTACT US For
+          any questions or concerns about this Privacy Policy or our data
+          practices, please contact us at: Email: jbucaria@gmail.com
+          ──────────────────────────────────────────────────────── DISCLAIMER
+          ──────────────────────────────────────────────────────── This is a
+          generic template. Laws and regulations vary by jurisdiction, and
+          additional or alternative provisions may be required to fully protect
+          your business and comply with local rules (e.g., GDPR, CCPA). Always
+          seek professional legal advice when drafting or updating legal
+          agreements.
+        </div>
+      </section>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>&copy; <span id="year"></span> Coastal Restoration Services</p>
+    </footer>
 
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-      });
+      // Set the current year
+      document.getElementById('year').textContent = new Date().getFullYear()
     </script>
   </body>
 </html>

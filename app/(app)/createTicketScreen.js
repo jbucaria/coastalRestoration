@@ -36,15 +36,15 @@ const initialTicketStatus = {
   state: '',
   zip: '',
   date: '',
-  customer: 'DR Horton',
-  customerName: 'Cool Cars',
-  customerNumber: '727-555-1234',
-  customerEmail: 'jbucaria1@gmail.com',
-  homeOwnerName: 'Jane Doe',
-  homeOwnerNumber: '727-555-5678',
-  inspectorName: 'John Bucaria',
-  reason: 'leak in garage',
-  jobType: 'inspection',
+  customer: '',
+  customerName: '',
+  customerNumber: '',
+  customerEmail: '',
+  homeOwnerName: '',
+  homeOwnerNumber: '',
+  inspectorName: '',
+  reason: '',
+  jobType: '',
   hours: '2',
   typeOfJob: '',
   recommendedActions: '',
@@ -440,7 +440,7 @@ const CreateTicketScreen = () => {
             />
             <TextInput
               style={styles.inputField}
-              placeholder="Contact Name"
+              placeholder="Builder Name"
               value={newTicket.customerName}
               onChangeText={text =>
                 setNewTicket({ ...newTicket, customerName: text })
@@ -449,7 +449,7 @@ const CreateTicketScreen = () => {
             />
             <TextInput
               style={styles.inputField}
-              placeholder="Contact Number"
+              placeholder="Builder Number"
               value={newTicket.customerNumber}
               onChangeText={text =>
                 setNewTicket({ ...newTicket, customerNumber: text })
@@ -458,12 +458,12 @@ const CreateTicketScreen = () => {
             />
             <TextInput
               style={styles.inputField}
-              placeholder="Contact Email"
+              placeholder="Builder Email"
               value={newTicket.customerEmail}
               onChangeText={text =>
                 setNewTicket({ ...newTicket, customerEmail: text })
               }
-              keyboardType="phone-pad"
+              keyboardType="default"
             />
 
             {/* Homeowner Info */}
@@ -500,7 +500,7 @@ const CreateTicketScreen = () => {
             />
             <TextInput
               style={styles.inputField}
-              placeholder="Reason for Inspection"
+              placeholder="Reason for visit"
               value={newTicket.reason}
               onChangeText={text =>
                 setNewTicket({ ...newTicket, reason: text })
