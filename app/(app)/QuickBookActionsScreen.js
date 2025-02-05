@@ -52,7 +52,7 @@ const QuickBooksActionsScreen = () => {
     }
 
     setLoading(true)
-    const url = `https://sandbox-quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=SELECT * FROM Customer`
+    const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=SELECT * FROM Customer`
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
