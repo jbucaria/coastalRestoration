@@ -8,6 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   Button,
+  TextInput,
+  StyleSheet,
 } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { firestore } from '@/firebaseConfig'
@@ -25,6 +27,7 @@ const QuickBooksActionsScreen = () => {
   const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { quickBooksCompanyId, clientId, accessToken } = useAuthStore()
 
@@ -102,6 +105,17 @@ const QuickBooksActionsScreen = () => {
     }
   }
 
+  // Filter customers based on the search query (search by id, displayName, or email)
+  const filteredCustomers = customers.filter(customer => {
+    const query = searchQuery.toLowerCase()
+    return (
+      customer.id.toLowerCase().includes(query) ||
+      (customer.displayName &&
+        customer.displayName.toLowerCase().includes(query)) ||
+      (customer.email && customer.email.toLowerCase().includes(query))
+    )
+  })
+
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId,
@@ -120,39 +134,20 @@ const QuickBooksActionsScreen = () => {
   }, [response])
 
   return (
-    <SafeAreaView style={{ flex: 1, padding: 16 }}>
-      <ScrollView contentContainerStyle={{ alignItems: 'center' }}>
-        <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 20 }}>
-          Customer Management
-        </Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>Customer Management</Text>
 
         <TouchableOpacity
           onPress={fetchCustomersFromQuickBooks}
-          style={{
-            backgroundColor: '#27AE60',
-            padding: 14,
-            borderRadius: 8,
-            marginBottom: 20,
-            width: '90%',
-            alignItems: 'center',
-          }}
+          style={styles.syncButton}
         >
-          <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>
+          <Text style={styles.syncButtonText}>
             {loading ? 'Syncing Customers...' : 'Sync Customers'}
           </Text>
         </TouchableOpacity>
 
-        <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 8 }}>
-          Select a Customer
-        </Text>
-        <View
-          style={{
-            borderWidth: 1,
-            borderRadius: 8,
-            width: '90%',
-            marginBottom: 20,
-          }}
-        >
+        <View style={styles.pickerContainer}>
           <Picker
             selectedValue={selectedCustomer}
             onValueChange={itemValue => {
@@ -160,50 +155,24 @@ const QuickBooksActionsScreen = () => {
             }}
           >
             <Picker.Item label="Select a customer..." value={null} />
-            {customers.map(customer => (
+            {filteredCustomers.map(customer => (
               <Picker.Item
                 key={customer.id}
-                label={customer.displayName}
+                label={`${customer.id} - ${customer.displayName}`}
                 value={customer.id}
               />
             ))}
           </Picker>
         </View>
 
-        {selectedCustomer && (
-          <View
-            style={{
-              backgroundColor: '#F3F5F7',
-              padding: 16,
-              borderRadius: 8,
-              width: '90%',
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
-              Customer Details
-            </Text>
-            <Text>
-              Name:{' '}
-              {customers.find(c => c.id === selectedCustomer)?.displayName}
-            </Text>
-            <Text>
-              Email: {customers.find(c => c.id === selectedCustomer)?.email}
-            </Text>
-          </View>
-        )}
-
-        <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 20 }}>
-          Token Management
-        </Text>
-
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
-          <Button
-            disabled={!request}
-            title="Connect to QuickBooks"
+        <Text style={styles.title}>Token Management</Text>
+        <View style={styles.oauthContainer}>
+          <TouchableOpacity
             onPress={() => promptAsync()}
-          />
+            style={styles.oauthButton}
+          >
+            <Text style={styles.buttonText}>Get Auth Token</Text>
+          </TouchableOpacity>
         </View>
 
         {loading && <ActivityIndicator size="large" color="#27AE60" />}
@@ -213,3 +182,87 @@ const QuickBooksActionsScreen = () => {
 }
 
 export default QuickBooksActionsScreen
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  scrollContainer: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  syncButton: {
+    backgroundColor: '#27AE60',
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 20,
+    width: '90%',
+    alignItems: 'center',
+  },
+  syncButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  searchInput: {
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  subTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    width: '90%',
+    marginBottom: 20,
+  },
+  detailCard: {
+    backgroundColor: '#F3F5F7',
+    padding: 16,
+    borderRadius: 8,
+    width: '90%',
+    marginBottom: 20,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  oauthContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  oauthButton: {
+    width: '90%',
+    marginTop: 10,
+    backgroundColor: '#B9770E',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+})

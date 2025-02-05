@@ -19,15 +19,14 @@ import {
 import { Picker } from '@react-native-picker/picker'
 import 'react-native-get-random-values'
 import DateTimePicker from '@react-native-community/datetimepicker'
-
 import * as ImagePicker from 'expo-image-picker'
-
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { handleCreateTicket } from '@/utils/generateTicket'
 import { useUserStore } from '@/store/useUserStore'
+import { firestore } from '@/firebaseConfig'
+import { collection, getDocs } from 'firebase/firestore'
 
 const initialTicketStatus = {
   street: '123 Main St',
@@ -36,10 +35,12 @@ const initialTicketStatus = {
   state: 'FL',
   zip: '33602',
   date: '',
-  customer: 'DR Horton',
-  customerName: 'A2C6202A',
-  customerNumber: '727-555-1234',
-  customerEmail: 'jessicabucaria07@gmail.com',
+  // Builder fields:
+  customer: '', // might be an internal id
+  customerName: '', // builder's display name
+  customerNumber: '', // builder's phone number
+  customerEmail: '', // builder's email
+  // ... (other fields omitted for brevity)
   homeOwnerName: 'Terry Cruze',
   homeOwnerNumber: '727-555-1234',
   inspectorName: 'John Bucaria',
@@ -65,6 +66,7 @@ const CreateTicketScreen = () => {
   const router = useRouter()
   const { user } = useUserStore()
 
+  // Ticket state
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -82,90 +84,40 @@ const CreateTicketScreen = () => {
   const [manualAddress, setManualAddress] = useState(false)
   const [selectedAddress, setSelectedAddress] = useState('')
 
-  const handleDateChange = (event, date) => {
-    setShowDatePicker(Platform.OS === 'ios')
-    if (date) {
-      setSelectedDate(date)
-      setStartTime(setTimeToDate(date, startTime))
-      setEndTime(setTimeToDate(date, endTime))
+  // --- Customer (Builder) Search State ---
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+  const [customerSuggestions, setCustomerSuggestions] = useState([])
+  const [allCustomers, setAllCustomers] = useState([])
+
+  // Load all customers from Firestore on mount
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(firestore, 'customers'))
+        const customersData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        setAllCustomers(customersData)
+      } catch (error) {
+        console.error('Error fetching customers:', error)
+      }
     }
-  }
+    fetchCustomers()
+  }, [])
 
-  const handleStartTimeChange = (event, time) => {
-    setShowStartTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setStartTime(setTimeToDate(selectedDate, time))
+  // Update suggestions whenever the search query changes
+  useEffect(() => {
+    if (customerSearchQuery.trim() === '') {
+      setCustomerSuggestions([])
+      return
     }
-  }
-
-  const handleEndTimeChange = (event, time) => {
-    setShowEndTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setEndTime(setTimeToDate(selectedDate, time))
-    }
-  }
-
-  const handleBackToSearch = () => {
-    setManualAddress(false)
-    setSelectedAddress('')
-  }
-
-  const handleAddAddressManually = () => {
-    setManualAddress(true)
-    setSelectedAddress('')
-  }
-
-  const resetForm = () => {
-    setNewTicket(initialTicketStatus)
-  }
-
-  const handleTogglePicker = () => {
-    setJobTypeModalVisible(!jobTypeModalVisible)
-  }
-  const handleToggleVacancyPicker = () => {
-    setVacancyModalVisible(!vacancyModalVisible)
-  }
-
-  const handleRemovePhoto = index => {
-    setNewTicket(prev => ({
-      ...prev,
-      ticketPhotos: prev.photos.filter((_, i) => i !== index), // Remove photo by index
-    }))
-  }
-
-  const handleJobTypeChange = itemValue => {
-    setJobType(itemValue)
-    setNewTicket(prevTicket => ({
-      ...prevTicket,
-      typeOfJob: itemValue,
-    }))
-  }
-  const handleVacancyChange = itemValue => {
-    setVacancy(itemValue)
-    setNewTicket(prevTicket => ({
-      ...prevTicket,
-      occupied: itemValue === 'occupied',
-    }))
-  }
-
-  const handleCreate = () => {
-    handleCreateTicket(
-      newTicket,
-      selectedDate,
-      startTime,
-      endTime,
-      resetForm,
-      setIsSubmitting,
-      isSubmitting,
-      newNote,
-      user
+    const query = customerSearchQuery.toLowerCase()
+    const filtered = allCustomers.filter(c =>
+      c.displayName?.toLowerCase().includes(query)
     )
-  }
-
-  const handleBack = () => {
-    resetForm()
-    router.back()
-  }
+    setCustomerSuggestions(filtered)
+  }, [customerSearchQuery, allCustomers])
 
   const parseAddressComponents = addressComponents => {
     const components = {
@@ -216,6 +168,102 @@ const CreateTicketScreen = () => {
     }
   }
 
+  // When a customer is selected from the suggestions, update the builder fields
+  const handleSelectCustomer = selectedCustomer => {
+    setNewTicket(prev => ({
+      ...prev,
+      customer: selectedCustomer.id,
+      customerName: selectedCustomer.displayName || '',
+      customerEmail: selectedCustomer.email || '',
+      customerNumber: selectedCustomer.phone || '', // Adjust field name if needed
+    }))
+    setCustomerSearchQuery(selectedCustomer.displayName)
+    setCustomerSuggestions([])
+  }
+
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(Platform.OS === 'ios')
+    if (date) {
+      setSelectedDate(date)
+      setStartTime(setTimeToDate(date, startTime))
+      setEndTime(setTimeToDate(date, endTime))
+    }
+  }
+
+  const handleStartTimeChange = (event, time) => {
+    setShowStartTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setStartTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
+  const handleEndTimeChange = (event, time) => {
+    setShowEndTimePicker(Platform.OS === 'ios')
+    if (time) {
+      setEndTime(setTimeToDate(selectedDate, time))
+    }
+  }
+
+  const handleBack = () => {
+    resetForm()
+    router.back()
+  }
+
+  const resetForm = () => {
+    setNewTicket(initialTicketStatus)
+    setCustomerSearchQuery('')
+    setCustomerSuggestions([])
+  }
+
+  const handleTogglePicker = () => {
+    setJobTypeModalVisible(!jobTypeModalVisible)
+  }
+  const handleToggleVacancyPicker = () => {
+    setVacancyModalVisible(!vacancyModalVisible)
+  }
+
+  const handleRemovePhoto = index => {
+    setNewTicket(prev => ({
+      ...prev,
+      ticketPhotos: prev.ticketPhotos.filter((_, i) => i !== index),
+    }))
+  }
+
+  const handleJobTypeChange = itemValue => {
+    setJobType(itemValue)
+    setNewTicket(prevTicket => ({
+      ...prevTicket,
+      typeOfJob: itemValue,
+    }))
+  }
+  const handleVacancyChange = itemValue => {
+    setVacancy(itemValue)
+    setNewTicket(prevTicket => ({
+      ...prevTicket,
+      occupied: itemValue === 'occupied',
+    }))
+  }
+
+  const handleCreate = () => {
+    handleCreateTicket(
+      newTicket,
+      selectedDate,
+      startTime,
+      endTime,
+      resetForm,
+      setIsSubmitting,
+      isSubmitting,
+      newNote,
+      user
+    )
+  }
+
+  const setTimeToDate = (baseDate, timeDate) => {
+    const newDate = new Date(baseDate)
+    newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
+    return newDate
+  }
+
   const handleAddPhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (status !== 'granted') {
@@ -236,7 +284,7 @@ const CreateTicketScreen = () => {
       const selectedPhotos = result.assets.map(asset => asset.uri)
       setNewTicket(prev => ({
         ...prev,
-        ticketPhotos: [...prev.ticketPhotos, ...selectedPhotos], // Store photo URIs locally
+        ticketPhotos: [...prev.ticketPhotos, ...selectedPhotos],
       }))
       Alert.alert('Success', 'Photos added successfully.')
     } else {
@@ -244,19 +292,13 @@ const CreateTicketScreen = () => {
     }
   }, [])
 
-  const setTimeToDate = (baseDate, timeDate) => {
-    const newDate = new Date(baseDate)
-    newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
-    return newDate
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <FloatingBackButton color="#007bff" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={40} // Adjust this value based on your preference
+        keyboardVerticalOffset={40}
       >
         <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
           <ScrollView
@@ -276,51 +318,46 @@ const CreateTicketScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.dateTimeContainer}>
-              <Text style={styles.label}>Date:</Text>
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
-                style={styles.selectorButton}
-              >
-                <IconSymbol name="calendar-outline" size={24} color="#2980b9" />
-              </TouchableOpacity>
-
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
+            {/* Date and Time Section */}
+            <View style={styles.dateTimeSection}>
+              <View style={styles.datePickerContainer}>
+                <Text style={styles.label}>Date:</Text>
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  style={styles.datePicker}
+                />
+              </View>
+              <View style={styles.timePickerContainer}>
+                <Text style={styles.label}>Start Time:</Text>
+                <DateTimePicker
+                  value={startTime}
+                  mode="time"
+                  is24Hour={false}
+                  display="default"
+                  onChange={handleStartTimeChange}
+                  minuteInterval={15}
+                  style={styles.timePicker}
+                />
+              </View>
+              <View style={styles.timePickerContainer}>
+                <Text style={styles.label}>End Time:</Text>
+                <DateTimePicker
+                  value={endTime}
+                  mode="time"
+                  is24Hour={false}
+                  display="default"
+                  onChange={handleEndTimeChange}
+                  minuteInterval={15}
+                  style={styles.timePicker}
+                />
+              </View>
             </View>
 
-            <View style={styles.dateTimeContainer}>
-              <Text style={styles.label}>Start Time:</Text>
-
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                is24Hour={false}
-                display="default"
-                onChange={handleStartTimeChange}
-                minuteInterval={15}
-              />
-            </View>
-
-            <View style={styles.dateTimeContainer}>
-              <Text style={styles.label}>End Time:</Text>
-
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                is24Hour={false}
-                display="default"
-                onChange={handleEndTimeChange}
-                minuteInterval={15}
-              />
-            </View>
-            {/* Address Fields */}
+            {/* Address Section */}
             <Text style={styles.sectionTitle}>Address</Text>
-
             {/* Google Places Autocomplete */}
             {!manualAddress && (
               <GooglePlacesAutocomplete
@@ -348,124 +385,56 @@ const CreateTicketScreen = () => {
               />
             )}
 
-            {/* Display selected address */}
-            {!manualAddress && selectedAddress && (
-              <View style={styles.addressContainer}>
-                <Text style={styles.selectedAddress}>
-                  {newTicket.street && `${newTicket.street},`}
-                </Text>
-                <Text style={styles.selectedAddress}>
-                  {newTicket.city && `${newTicket.city}, `}
-                  {newTicket.state && `${newTicket.state} `}
-                  {newTicket.zip && `${newTicket.zip}`}
-                </Text>
+            {/* Selected Address Display */}
+            {selectedAddress !== '' && (
+              <View style={styles.addressDisplay}>
+                <Text style={styles.addressText}>{selectedAddress}</Text>
               </View>
             )}
 
-            {/* Button to switch to manual input */}
-            {!manualAddress && (
-              <TouchableOpacity
-                onPress={handleAddAddressManually}
-                style={styles.button}
-              >
-                <Text style={styles.buttonText}>Add Address Manually</Text>
-              </TouchableOpacity>
+            {/* Builder / Customer Search Section */}
+            <Text style={styles.sectionTitle}>Builder Information</Text>
+            <View style={styles.searchSection}>
+              <TextInput
+                style={styles.inputField}
+                placeholder="Search builder by name..."
+                value={customerSearchQuery}
+                onChangeText={setCustomerSearchQuery}
+              />
+              {/* Suggestions Container */}
+              {customerSuggestions.length > 0 && (
+                <View style={styles.suggestionsWrapper}>
+                  <ScrollView style={styles.suggestionsContainer}>
+                    {customerSuggestions.map(cust => (
+                      <TouchableOpacity
+                        key={cust.id}
+                        onPress={() => handleSelectCustomer(cust)}
+                        style={styles.suggestionItem}
+                      >
+                        <Text style={styles.suggestionText}>
+                          {cust.displayName} ({cust.email})
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+            {/* Display Selected Customer Info */}
+            {newTicket.customerName !== '' && (
+              <View style={styles.detailCard}>
+                <Text style={styles.detailTitle}>Selected Builder</Text>
+                <Text style={styles.detailText}>
+                  Name: {newTicket.customerName}
+                </Text>
+                <Text style={styles.detailText}>
+                  Email: {newTicket.customerEmail}
+                </Text>
+                <Text style={styles.detailText}>
+                  Phone: {newTicket.customerNumber}
+                </Text>
+              </View>
             )}
-
-            {/* Address Input Fields - Shown when manual input is selected */}
-            {manualAddress && (
-              <>
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="Street"
-                  value={newTicket.street}
-                  onChangeText={text =>
-                    setNewTicket({ ...newTicket, street: text })
-                  }
-                  keyboardType="default"
-                />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="Apt # (optional)"
-                  value={newTicket.apt}
-                  onChangeText={text =>
-                    setNewTicket({ ...newTicket, apt: text })
-                  }
-                  keyboardType="default"
-                />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="City"
-                  value={newTicket.city}
-                  onChangeText={text =>
-                    setNewTicket({ ...newTicket, city: text })
-                  }
-                  keyboardType="default"
-                />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="State"
-                  value={newTicket.state}
-                  onChangeText={text =>
-                    setNewTicket({ ...newTicket, state: text })
-                  }
-                  keyboardType="default"
-                />
-                <TextInput
-                  style={styles.inputField}
-                  placeholder="ZIP"
-                  value={newTicket.zip}
-                  onChangeText={text =>
-                    setNewTicket({ ...newTicket, zip: text })
-                  }
-                  keyboardType="numeric"
-                />
-                <TouchableOpacity
-                  onPress={handleBackToSearch}
-                  style={styles.button}
-                >
-                  <Text style={styles.buttonText}>Back to Search</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {/* Customer Info */}
-            <Text style={styles.sectionTitle}>Builder</Text>
-            <TextInput
-              style={styles.inputField}
-              placeholder="Builder"
-              value={newTicket.customer}
-              onChangeText={text =>
-                setNewTicket({ ...newTicket, customer: text })
-              }
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="Builder Name"
-              value={newTicket.customerName}
-              onChangeText={text =>
-                setNewTicket({ ...newTicket, customerName: text })
-              }
-              keyboardType="default"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="Builder Number"
-              value={newTicket.customerNumber}
-              onChangeText={text =>
-                setNewTicket({ ...newTicket, customerNumber: text })
-              }
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              style={styles.inputField}
-              placeholder="Builder Email"
-              value={newTicket.customerEmail}
-              onChangeText={text =>
-                setNewTicket({ ...newTicket, customerEmail: text })
-              }
-              keyboardType="default"
-            />
 
             {/* Homeowner Info */}
             <Text style={styles.sectionTitle}>Homeowner</Text>
@@ -476,7 +445,6 @@ const CreateTicketScreen = () => {
               onChangeText={text =>
                 setNewTicket({ ...newTicket, homeOwnerName: text })
               }
-              keyboardType="default"
             />
             <TextInput
               style={styles.inputField}
@@ -497,24 +465,18 @@ const CreateTicketScreen = () => {
               onChangeText={text =>
                 setNewTicket({ ...newTicket, inspectorName: text })
               }
-              keyboardType="default"
             />
             <TextInput
-              style={styles.inputField}
+              style={[styles.inputField, { height: 100 }]}
               placeholder="Reason for visit"
               value={newTicket.reason}
               onChangeText={text =>
                 setNewTicket({ ...newTicket, reason: text })
               }
-              keyboardType="default"
               multiline
-              onContentSizeChange={(contentWidth, contentHeight) => {
-                setInputHeight(contentHeight)
-              }}
             />
-
             <TextInput
-              style={styles.inputField}
+              style={[styles.inputField, { height: 80 }]}
               placeholder="Add a note for this ticket..."
               value={newNote}
               onChangeText={setNewNote}
@@ -522,7 +484,7 @@ const CreateTicketScreen = () => {
               numberOfLines={4}
             />
 
-            {/* Trigger Button */}
+            {/* Job Type and Vacancy Pickers (modals) */}
             <TouchableOpacity
               onPress={handleTogglePicker}
               style={styles.button}
@@ -544,7 +506,7 @@ const CreateTicketScreen = () => {
               </Text>
             </TouchableOpacity>
 
-            {/* Picker Modal */}
+            {/* Picker Modal for Job Type */}
             <Modal
               visible={jobTypeModalVisible}
               transparent={true}
@@ -569,22 +531,21 @@ const CreateTicketScreen = () => {
                     <Picker.Item label="Mold Job" value="mold job" />
                     <Picker.Item label="Wipe Down" value="wipe down" />
                   </Picker>
-                  <View
-                    style={{ flexDirection: 'row', justifyContent: 'center' }}
-                  >
+                  <View style={styles.modalCloseContainer}>
                     <TouchableOpacity onPress={handleTogglePicker}>
-                      <Text style={styles.label}>Close</Text>
+                      <Text style={styles.modalCloseText}>Close</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </View>
             </Modal>
-            {/* Picker Modal */}
+
+            {/* Picker Modal for Vacancy */}
             <Modal
               visible={vacancyModalVisible}
               transparent={true}
               animationType="slide"
-              onRequestClose={handleVacancyChange}
+              onRequestClose={handleToggleVacancyPicker}
             >
               <View style={styles.modalOverlay}>
                 <View style={styles.pickerContainer}>
@@ -593,16 +554,13 @@ const CreateTicketScreen = () => {
                     onValueChange={handleVacancyChange}
                     style={styles.picker}
                   >
-                    <Picker.Item label="Select occupency" value="" />
-
+                    <Picker.Item label="Select occupancy" value="" />
                     <Picker.Item label="Occupied" value="occupied" />
-                    <Picker.Item label="Unuocupied" value="unoccupied" />
+                    <Picker.Item label="Unoccupied" value="unoccupied" />
                   </Picker>
-                  <View
-                    style={{ flexDirection: 'row', justifyContent: 'center' }}
-                  >
+                  <View style={styles.modalCloseContainer}>
                     <TouchableOpacity onPress={handleToggleVacancyPicker}>
-                      <Text style={styles.label}>Close</Text>
+                      <Text style={styles.modalCloseText}>Close</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -610,28 +568,23 @@ const CreateTicketScreen = () => {
             </Modal>
 
             {/* Photos */}
-            {newTicket.ticketPhotos.length > 0 && ( // Changed to ticketPhotos
+            {newTicket.ticketPhotos.length > 0 && (
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.photosContainer}
               >
-                {newTicket.ticketPhotos.map(
-                  (
-                    uri,
-                    index // Changed to ticketPhotos
-                  ) => (
-                    <View key={index} style={styles.photoWrapper}>
-                      <Image source={{ uri }} style={styles.photo} />
-                      <TouchableOpacity
-                        style={styles.removePhotoButton}
-                        onPress={() => handleRemovePhoto(index)}
-                      >
-                        <Text style={styles.removePhotoText}>X</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )
-                )}
+                {newTicket.ticketPhotos.map((uri, index) => (
+                  <View key={index} style={styles.photoWrapper}>
+                    <Image source={{ uri }} style={styles.photo} />
+                    <TouchableOpacity
+                      style={styles.removePhotoButton}
+                      onPress={() => handleRemovePhoto(index)}
+                    >
+                      <Text style={styles.removePhotoText}>X</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </ScrollView>
             )}
 
@@ -642,7 +595,7 @@ const CreateTicketScreen = () => {
               <Text style={styles.addPhotoButtonText}>Add Photo</Text>
             </TouchableOpacity>
 
-            {/* Buttons: Create, Cancel */}
+            {/* Action Buttons */}
             <View style={styles.actionButtons}>
               <TouchableOpacity
                 onPress={handleCreate}
@@ -657,7 +610,6 @@ const CreateTicketScreen = () => {
                   {isSubmitting ? 'Creating...' : 'Create'}
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={handleBack}
                 style={[styles.actionButton, styles.cancelButton]}
@@ -676,47 +628,130 @@ const CreateTicketScreen = () => {
 export default CreateTicketScreen
 
 const styles = StyleSheet.create({
-  actionButton: {
+  container: {
     flex: 1,
-    padding: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    elevation: 3,
-    marginVertical: 5,
+    backgroundColor: 'white',
+    padding: 20,
   },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 18,
+  scrollView: {
+    padding: 20,
+  },
+  contentContainer: {
+    paddingBottom: 20,
+  },
+  floatingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: -10,
+    zIndex: 10,
+  },
+  title: {
+    fontSize: 24,
     fontWeight: 'bold',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    color: '#2c3e50',
+    textAlign: 'center',
     marginBottom: 20,
   },
-  addressContainer: {
-    marginBottom: 15,
+  dateTimeSection: {
+    marginBottom: 20,
   },
-  selectedAddress: {
+  datePickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  timePickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 16,
+    color: '#34495e',
+    marginRight: 10,
+    width: 90,
+  },
+  datePicker: {
+    flex: 1,
+  },
+  timePicker: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginVertical: 10,
+  },
+  addressDisplay: {
+    backgroundColor: '#F3F5F7',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  addressText: {
     fontSize: 16,
     color: '#2c3e50',
-    fontWeight: '500',
-    textAlign: 'center', // Center the address
   },
-  addPhotoButton: {
-    backgroundColor: '#2ecc71',
+  searchSection: {
+    width: '100%',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  inputField: {
+    borderWidth: 1,
+    borderColor: '#ccc',
     padding: 12,
     borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 5,
+    backgroundColor: 'white',
   },
-  addPhotoButtonText: {
-    color: 'white',
-    fontSize: 18,
+  inputFieldGoogle: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 5,
+    textAlignVertical: 'top',
+    backgroundColor: 'white',
   },
-  autocompleteContainer: {
-    paddingHorizontal: 0,
+  suggestionsWrapper: {
+    position: 'absolute',
+    top: 55, // Adjust to position it just below the search input
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+  },
+  suggestionsContainer: {
+    maxHeight: 150,
+  },
+  suggestionItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  detailCard: {
+    backgroundColor: '#F3F5F7',
+    padding: 16,
+    borderRadius: 8,
+    width: '100%',
     marginBottom: 20,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 16,
+    marginBottom: 4,
   },
   button: {
     padding: 12,
@@ -729,80 +764,43 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    padding: 20,
-  },
-  contentContainer: {
-    paddingBottom: 20,
-  },
-  createButton: {
-    backgroundColor: '#2c3e50',
-    marginRight: 5,
-  },
-  dateTimeContainer: {
+  actionButtons: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  dateTimeRow: {
-    flexDirection: 'row',
+  actionButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 5,
+    alignItems: 'center',
+    elevation: 3,
+    marginVertical: 5,
+    marginHorizontal: 5,
+  },
+  createButton: {
+    backgroundColor: '#2c3e50',
+  },
+  cancelButton: {
+    backgroundColor: '#e74c3c',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  addPhotoButton: {
+    backgroundColor: '#2ecc71',
+    padding: 12,
+    borderRadius: 5,
     alignItems: 'center',
     marginBottom: 15,
   },
-  dateTimeSelect: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#bdc3c7',
-    padding: 12,
-  },
-
-  displaySelectorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  displayText: {
-    fontSize: 16,
-    color: '#2c3e50',
-    marginRight: 10,
-    flex: 1,
-  },
-  disabledButton: {
-    backgroundColor: '#bdc3c7',
-  },
-  floatingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: -10,
-    zIndex: 10,
-  },
-  inputField: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 5,
-    textAlignVertical: 'top',
-    marginBottom: 15,
-    backgroundColor: 'white',
-  },
-  inputFieldGoogle: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 12,
-    borderRadius: 5,
-    textAlignVertical: 'top',
-    backgroundColor: 'white',
-  },
-  label: {
-    fontSize: 16,
-    color: '#34495e',
-    marginRight: 10,
+  addPhotoButtonText: {
+    color: 'white',
+    fontSize: 18,
   },
   photosContainer: {
     marginVertical: 10,
@@ -821,7 +819,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 5,
     right: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 15,
     width: 24,
     height: 24,
@@ -833,8 +831,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
-  picker: {
-    width: '100%',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pickerContainer: {
     backgroundColor: 'white',
@@ -843,23 +844,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: '80%',
   },
-  scrollView: {
-    padding: 20,
+  modalCloseContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
   },
-  selectorButton: {
-    padding: 5,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginVertical: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 20,
+  modalCloseText: {
+    fontSize: 16,
+    color: '#2980b9',
   },
 })
