@@ -17,6 +17,7 @@ import { firestore } from '@/firebaseConfig'
 import * as AuthSession from 'expo-auth-session'
 import { sendInvoiceToQuickBooks } from '@/utils/sendInvoice'
 import useAuthStore from '@/store/useAuthStore'
+import { se } from 'date-fns/locale'
 
 // Define your QuickBooks app's redirect URI
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
@@ -33,6 +34,7 @@ const ViewInvoiceScreen = () => {
   const [customerEmail, setCustomerEmail] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(new Date())
   const [lineItems, setLineItems] = useState([])
+  const [isSending, setIsSending] = useState(false)
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -52,6 +54,7 @@ const ViewInvoiceScreen = () => {
   }, [response])
 
   const handleSendInvoice = async () => {
+    setIsSending(true)
     if (!accessToken) {
       Alert.alert('Error', 'Missing QuickBooks authentication token.')
       return
@@ -77,6 +80,7 @@ const ViewInvoiceScreen = () => {
 
     if (result) {
       console.log('Invoice successfully sent:', result)
+      setIsSending(false)
       router.back()
     }
   }
@@ -206,7 +210,11 @@ const ViewInvoiceScreen = () => {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSendInvoice} style={styles.sendButton}>
-          <Text style={styles.buttonText}>Send Invoice</Text>
+          {isSending ? (
+            <ActivityIndicator size="large" color="#27AE60" />
+          ) : (
+            <Text style={styles.buttonText}>Save Invoice To QB</Text>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
