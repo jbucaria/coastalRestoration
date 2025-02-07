@@ -17,11 +17,12 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
+import { useSelectedDate } from '@/store/useSelectedDate'
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCaaprXbVDmKz6W5rn3s6W4HhF4S1K2-zs' // Replace with your API Key
 
 const TicketsMapScreen = ({ route }) => {
-  const { selectedDate } = route.params // Selected date passed as a prop
+  const { selectedDate } = useSelectedDate()
   const [location, setLocation] = useState(null)
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)

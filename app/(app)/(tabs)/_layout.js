@@ -45,20 +45,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="quickBooks"
         options={{
-          title: 'Reports',
+          title: 'Acct.',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="document" color={color} />
+            <IconSymbol size={28} name="dollarsign.circle" color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="maps"
         options={{
-          title: 'Maps',
+          title: 'Map',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="document" color={color} />
+            <IconSymbol size={28} name="map" color={color} />
           ),
         }}
       />
