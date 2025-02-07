@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { signOut, updateEmail as authUpdateEmail } from 'firebase/auth'
 import { doc, updateDoc, getDoc } from 'firebase/firestore'
 import { auth, firestore } from '@/firebaseConfig'
-import { KeyboardToolbar } from 'react-native-keyboard-controller'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { useUserStore } from '@/store/useUserStore'
 
@@ -259,12 +258,6 @@ const Settings = () => {
                   style={styles.editButton}
                 >
                   <Text style={styles.editButtonText}>Update Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => router.push('/QuickBookActionsScreen')}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>Quickbooks Actions</Text>
                 </TouchableOpacity>
               </>
             )}

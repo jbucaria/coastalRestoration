@@ -1,24 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { router } from 'expo-router'
 import {
-  View,
-  SafeAreaView,
-  Text,
-  TextInput,
-  Alert,
-  StyleSheet,
-  TouchableOpacity,
   Animated,
-  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+  StyleSheet,
 } from 'react-native'
 import {
   collection,
+  setDoc,
+  doc,
+  getDocs,
   onSnapshot,
   query,
   where,
   Timestamp,
 } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
+import * as AuthSession from 'expo-auth-session'
+import { router } from 'expo-router'
+import useAuthStore from '@/store/useAuthStore'
 import { TicketCard } from '@/components/TicketCard'
 import { FilterModal } from '@/components/FilterModal'
 import { IconSymbol } from '@/components/ui/IconSymbol'
@@ -31,14 +36,24 @@ const TicketsScreen = () => {
   const [projects, setProjects] = useState([])
   const [filteredProjects, setFilteredProjects] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [showDatePicker, setShowDatePicker] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [isLoading, setIsLoading] = useState(true)
+  const [isFilterModalVisible, setFilterModalVisible] = useState(false)
   const [showEquipmentModal, setShowEquipmentModal] = useState(false)
   const [currentTicket, setCurrentTicket] = useState(null)
   const today = new Date()
 
-  // Normalize both dates by removing the time part
+  // Animated value for scroll
+  const scrollY = useRef(new Animated.Value(0)).current
+
+  // Interpolate opacity for the floating button (and potentially tab bar)
+  const floatingOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  })
+
+  // Example: check if two dates are on the same day
   const isSameDay = (date1, date2) => {
     return (
       date1.getDate() === date2.getDate() &&
@@ -54,7 +69,7 @@ const TicketsScreen = () => {
 
   const closeEquipmentModal = () => {
     setShowEquipmentModal(false)
-    setCurrentTicket(null) // Clear the current ticket when closing the modal
+    setCurrentTicket(null)
   }
 
   // Filter state
@@ -64,25 +79,19 @@ const TicketsScreen = () => {
     inspectorName: '',
   })
 
-  // Modal visibility
-  const [isFilterModalVisible, setFilterModalVisible] = useState(false)
-
-  // Animated values for opacity
-  const scrollY = useRef(new Animated.Value(0)).current
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     let baseQuery = collection(firestore, 'tickets')
     let constructedQuery = baseQuery
 
     if (searchQuery) {
-      // Prioritize search query over date filtering
       constructedQuery = query(
         constructedQuery,
         where('address', '>=', searchQuery),
         where('address', '<=', searchQuery + '\uf8ff')
       )
     } else if (selectedDate) {
-      // Apply date filter if no search query is present
       const startOfDay = Timestamp.fromDate(
         new Date(selectedDate.setHours(0, 0, 0, 0))
       )
@@ -118,23 +127,16 @@ const TicketsScreen = () => {
     return () => unsubscribe()
   }, [searchQuery, selectedDate])
 
-  // Apply filters and sorting
   useEffect(() => {
     let sortedProjects = [...projects]
-
     sortedProjects.sort((a, b) => {
-      // Convert Firestore Timestamps to JavaScript Date objects for comparison
       const timeA = a.startTime ? a.startTime.toDate() : new Date(0)
       const timeB = b.startTime ? b.startTime.toDate() : new Date(0)
-
-      // Compare timestamps
-      return timeB - timeA // Sort in ascending order by time
+      return timeB - timeA
     })
-
     setFilteredProjects(sortedProjects)
   }, [projects])
 
-  // Handle opening and applying filters
   const openFilterModal = () => setFilterModalVisible(true)
   const closeFilterModal = () => setFilterModalVisible(false)
 
@@ -147,20 +149,13 @@ const TicketsScreen = () => {
   const handleDateChange = (event, date) => {
     if (date) {
       setSelectedDate(date)
-      setSearchQuery('') // Clear search when selecting a new date
+      setSearchQuery('')
     }
   }
 
-  // Interpolate opacity from scrollY
-  const opacity = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  })
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header Actions */}
+      {/* Header with Search and Filter */}
       <View style={styles.header}>
         <TextInput
           style={styles.searchInput}
@@ -168,7 +163,7 @@ const TicketsScreen = () => {
           value={searchQuery}
           onChangeText={text => {
             setSearchQuery(text)
-            setSelectedDate(null) // Clear selected date when typing a search query
+            setSelectedDate(null)
           }}
         />
         <TouchableOpacity onPress={openFilterModal} style={styles.filterButton}>
@@ -176,15 +171,12 @@ const TicketsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Display current filter date */}
+      {/* Date Indicator */}
       {!searchQuery && (
         <View style={styles.dateIndicator}>
           <View style={styles.leftContainer}>
-            <View style={styles.labelContainer}>
-              <Text style={styles.dateText}>Showing tickets for: </Text>
-            </View>
-
-            <View style={[styles.datePickerContainer, { flex: 2 }]}>
+            <Text style={styles.dateText}>Showing tickets for:</Text>
+            <View style={styles.datePickerContainer}>
               <DateTimePicker
                 value={selectedDate || new Date()}
                 mode="date"
@@ -200,29 +192,33 @@ const TicketsScreen = () => {
               />
             </View>
           </View>
-
-          <View style={styles.actionContainer}>
-            <TouchableOpacity
-              onPress={() => setSelectedDate(new Date())}
-              style={styles.filterButton}
-            >
-              <Text style={styles.filterButtonText}>
-                {isSameDay(selectedDate, today) ? 'Today' : 'Go To Today'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => setSelectedDate(new Date())}
+            style={styles.todayButton}
+          >
+            <Text style={styles.todayButtonText}>
+              {isSameDay(selectedDate, today) ? 'Today' : 'Go To Today'}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Tickets List */}
-      <Animated.ScrollView contentContainerStyle={styles.scrollViewContent}>
+      {/* Animated ScrollView for Tickets */}
+      <Animated.ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
         {filteredProjects.map((ticket, index) => (
           <View key={ticket.id} style={styles.ticketContainer}>
             <TicketCard
               ticket={ticket}
               onPress={() => {
-                setProjectId(ticket.id) // ✅ Correctly sets projectId in Zustand
-                router.push('/TicketDetailsScreen') // ✅ Navigate without params
+                setProjectId(ticket.id)
+                router.push('/TicketDetailsScreen')
               }}
               openEquipmentModal={() => openEquipmentModal(ticket)}
               backgroundColor={index % 2 === 0 ? '#eaeaea' : '#fff'}
@@ -232,7 +228,9 @@ const TicketsScreen = () => {
       </Animated.ScrollView>
 
       {/* Floating Button */}
-      <Animated.View style={[styles.floatingButtonContainer, { opacity }]}>
+      <Animated.View
+        style={[styles.floatingButtonContainer, { opacity: floatingOpacity }]}
+      >
         <TouchableOpacity
           onPress={() => router.push('/CreateTicketScreen')}
           style={styles.floatingButton}
@@ -241,11 +239,6 @@ const TicketsScreen = () => {
           <Text style={styles.floatingButtonText}>Create Ticket</Text>
         </TouchableOpacity>
       </Animated.View>
-
-      {/* Icon Legend */}
-      {/* <Animated.View style={[styles.iconContainer, { opacity }]}>
-        <AnimatedIconLegend />
-      </Animated.View> */}
 
       {/* Filter Modal */}
       <FilterModal
@@ -261,6 +254,10 @@ const TicketsScreen = () => {
         initialQuantities={currentTicket?.equipment}
         equipmentOnSite={currentTicket?.equipmentTotal > 0}
       />
+
+      {/* NOTE: The Tab Bar is defined in your TabLayout.
+          To hide or blur the tab bar on scroll, you'll need to create a custom tab bar component that listens to the scrollY value or shared context.
+          One approach is to wrap your tab bar in an Animated.View and adjust its opacity or add a blur effect as scrollY changes. */}
     </SafeAreaView>
   )
 }
@@ -287,7 +284,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   filterButton: {
-    marginRight: 8,
     backgroundColor: '#3498db',
     padding: 10,
     borderRadius: 8,
@@ -298,7 +294,7 @@ const styles = StyleSheet.create({
   },
   dateIndicator: {
     flexDirection: 'row',
-    alignItems: 'center', // Align items to the top
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginVertical: 8,
     paddingHorizontal: 15,
@@ -309,47 +305,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    height: 80, // Set a fixed height to fit all elements properly
+    height: 80,
   },
   leftContainer: {
     flex: 3,
     flexDirection: 'column',
     justifyContent: 'flex-start',
   },
-  labelContainer: {
-    marginBottom: 8,
-  },
   dateText: {
     fontSize: 16,
     color: '#2c3e50',
-    marginRight: 10,
+    marginBottom: 8,
     fontWeight: '600',
   },
   datePickerContainer: {
-    marginBottom: 8, // Add space below the DatePicker
+    marginBottom: 8,
   },
   datePicker: {
     borderRadius: 5,
     paddingHorizontal: 10,
-  },
-  actionContainer: {
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    flexDirection: 'column', // Stack the button vertically
-    justifyContent: 'space-between', // Ensure that "Go to Today" is at the bottom
   },
   todayButton: {
     backgroundColor: '#2ecc71',
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   todayButtonText: {
     color: 'white',
@@ -363,12 +343,6 @@ const styles = StyleSheet.create({
     padding: 2,
     height: 200,
   },
-  noResultsText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#888',
-    marginTop: 20,
-  },
   floatingButtonContainer: {
     position: 'absolute',
     bottom: 140,
@@ -377,7 +351,6 @@ const styles = StyleSheet.create({
   floatingButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     backgroundColor: '#F39C12',
     borderRadius: 30,
     padding: 16,
@@ -393,9 +366,44 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
     marginLeft: 10,
   },
-  iconContainer: {
+  // Customers / Items management styles (if applicable)
+  suggestionsWrapper: {
     position: 'absolute',
-    bottom: 90,
-    right: 24,
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+  },
+  suggestionsContainer: {
+    maxHeight: 150,
+  },
+  suggestionItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionText: {
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  detailCard: {
+    backgroundColor: '#F3F5F7',
+    padding: 16,
+    borderRadius: 8,
+    width: '100%',
+    marginBottom: 20,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 16,
+    marginBottom: 4,
   },
 })

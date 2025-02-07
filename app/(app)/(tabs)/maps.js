@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   SafeAreaView,
   View,
@@ -26,6 +26,7 @@ const TicketsMapScreen = ({ route }) => {
   const [location, setLocation] = useState(null)
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
+  const mapRef = useRef(null)
 
   useEffect(() => {
     getUserLocation()
@@ -116,6 +117,22 @@ const TicketsMapScreen = ({ route }) => {
       return null
     }
   }
+
+  // After tickets are loaded, zoom out to show all markers
+  useEffect(() => {
+    if (tickets.length > 0 && mapRef.current) {
+      // Extract coordinates from each ticket (ensure they exist)
+      const coordinates = tickets
+        .map(ticket => ticket.coordinates)
+        .filter(coord => coord !== null)
+      if (coordinates.length > 0) {
+        mapRef.current.fitToCoordinates(coordinates, {
+          edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+          animated: true,
+        })
+      }
+    }
+  }, [tickets])
 
   return (
     <SafeAreaView style={styles.container}>
