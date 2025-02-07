@@ -10,31 +10,55 @@ import {
   TextInput,
   StyleSheet,
 } from 'react-native'
+import { Picker } from '@react-native-picker/picker'
 import { firestore } from '@/firebaseConfig'
 import { collection, setDoc, doc, getDocs } from 'firebase/firestore'
 import * as AuthSession from 'expo-auth-session'
 import useAuthStore from '@/store/useAuthStore'
 
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
-
 const discovery = {
   authorizationEndpoint: 'https://appcenter.intuit.com/connect/oauth2',
 }
 
-const QuickBooksActionsScreen = () => {
+const QuickBooksManagementScreen = () => {
+  // Active tab state: "customers" or "items"
+  const [activeTab, setActiveTab] = useState('customers')
+
+  // State for customers
   const [customers, setCustomers] = useState([])
-  const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [items, setItems] = useState([]) // New state for items
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+
+  // State for items
+  const [items, setItems] = useState([])
+  const [itemSearchQuery, setItemSearchQuery] = useState('')
   const [loadingItems, setLoadingItems] = useState(false)
 
+  // Get QuickBooks auth values
   const { quickBooksCompanyId, clientId, accessToken } = useAuthStore()
 
-  useEffect(() => {
-    fetchCustomersFromFirestore()
-  }, [])
+  // OAuth request for token management
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId,
+      scopes: ['com.intuit.quickbooks.accounting'],
+      redirectUri,
+      responseType: 'code',
+      state: 'quickbooks_auth',
+    },
+    discovery
+  )
 
+  useEffect(() => {
+    if (response?.type === 'success') {
+      console.log('OAuth process completed successfully.')
+    }
+  }, [response])
+
+  // --------------------------
+  // Customers Functions
+  // --------------------------
   const fetchCustomersFromFirestore = async () => {
     try {
       const querySnapshot = await getDocs(collection(firestore, 'customers'))
@@ -54,41 +78,29 @@ const QuickBooksActionsScreen = () => {
       Alert.alert('Error', 'QuickBooks credentials are missing.')
       return
     }
-
-    setLoading(true)
-    const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=SELECT * FROM Customer`
+    setLoadingCustomers(true)
+    const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=${encodeURIComponent(
+      'SELECT * FROM Customer'
+    )}`
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
       'Content-Type': 'application/json',
     }
-
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: headers,
-      })
-
-      // Check HTTP status first
+      const response = await fetch(url, { method: 'GET', headers })
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(
-          `HTTP Error ${response.status} ${response.statusText}: ${errorText}`
-        )
-        throw new Error(
-          `HTTP Error ${response.status} ${response.statusText}\n${errorText}`
-        )
+        console.error(`HTTP Error ${response.status}: ${errorText}`)
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`)
       }
-
       const data = await response.json()
-      // Check if the expected data is returned
       if (!data.QueryResponse || !data.QueryResponse.Customer) {
         console.error('Unexpected response structure:', data)
         throw new Error(
           'Unexpected response structure: ' + JSON.stringify(data, null, 2)
         )
       }
-
       const customersData = data.QueryResponse.Customer.map(customer => ({
         id: customer.Id,
         displayName: customer.DisplayName,
@@ -96,7 +108,6 @@ const QuickBooksActionsScreen = () => {
           ? customer.PrimaryEmailAddr.Address
           : 'No email',
       }))
-
       await saveCustomersToFirestore(customersData)
       Alert.alert('Success', 'Customers synced successfully.')
       fetchCustomersFromFirestore()
@@ -107,7 +118,7 @@ const QuickBooksActionsScreen = () => {
         error.message || 'Failed to fetch customers from QuickBooks.'
       )
     } finally {
-      setLoading(false)
+      setLoadingCustomers(false)
     }
   }
 
@@ -123,7 +134,7 @@ const QuickBooksActionsScreen = () => {
     }
   }
 
-  // Filter customers based on the search query (by id, displayName, or email)
+  // Filter customers by search query
   const filteredCustomers = customers.filter(customer => {
     const query = searchQuery.toLowerCase()
     return (
@@ -134,13 +145,9 @@ const QuickBooksActionsScreen = () => {
     )
   })
 
-  // When a customer is selected, set the selectedCustomer state and update the search field
-  const handleSelectCustomer = customer => {
-    setSelectedCustomer(customer)
-    setSearchQuery(customer.displayName)
-  }
-
-  // New function: Query QuickBooks for all Items (line items)
+  // --------------------------
+  // Items Functions
+  // --------------------------
   const fetchItemsFromQB = async () => {
     if (!quickBooksCompanyId || !accessToken) {
       Alert.alert('Error', 'Missing QuickBooks credentials.')
@@ -148,24 +155,19 @@ const QuickBooksActionsScreen = () => {
     }
     setLoadingItems(true)
     const query = encodeURIComponent('SELECT * FROM Item')
+    // You can adjust minorversion and URL (sandbox vs production) as needed.
     const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=${query}&minorversion=4`
-
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
       'Content-Type': 'text/plain',
     }
-
     try {
       const response = await fetch(url, { method: 'GET', headers })
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(
-          `HTTP Error ${response.status} ${response.statusText}: ${errorText}`
-        )
-        throw new Error(
-          `HTTP Error ${response.status} ${response.statusText}\n${errorText}`
-        )
+        console.error(`HTTP Error ${response.status}: ${errorText}`)
+        throw new Error(`HTTP Error ${response.status}: ${errorText}`)
       }
       const data = await response.json()
       if (!data.QueryResponse || !data.QueryResponse.Item) {
@@ -177,11 +179,12 @@ const QuickBooksActionsScreen = () => {
       const itemsData = data.QueryResponse.Item.map(item => ({
         id: item.Id,
         name: item.Name,
-        description: item.Description,
+        description: item.Description || '',
         unitPrice: item.UnitPrice,
       }))
+      await saveItemsToFirestore(itemsData)
       setItems(itemsData)
-      Alert.alert('Success', 'Items retrieved successfully.')
+      Alert.alert('Success', 'Items retrieved and saved successfully.')
     } catch (error) {
       console.error('Error fetching items from QB:', error)
       Alert.alert(
@@ -193,88 +196,142 @@ const QuickBooksActionsScreen = () => {
     }
   }
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId,
-      scopes: ['com.intuit.quickbooks.accounting'],
-      redirectUri,
-      responseType: 'code',
-      state: 'quickbooks_auth',
-    },
-    discovery
-  )
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      console.log('OAuth process completed successfully.')
+  const saveItemsToFirestore = async itemsData => {
+    try {
+      const batch = itemsData.map(item =>
+        setDoc(doc(firestore, 'items', item.id), item)
+      )
+      await Promise.all(batch)
+    } catch (error) {
+      console.error('Error saving items to Firestore:', error)
+      Alert.alert('Error', 'Failed to save items to database.')
     }
-  }, [response])
+  }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>Customer Management</Text>
+  // --------------------------
+  // UI: Segmented Control
+  // --------------------------
+  const renderSegmentedControl = () => {
+    return (
+      <View style={styles.segmentedControl}>
+        <TouchableOpacity
+          style={[
+            styles.segmentButton,
+            activeTab === 'customers' && styles.activeSegment,
+          ]}
+          onPress={() => setActiveTab('customers')}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              activeTab === 'customers' && styles.activeSegmentText,
+            ]}
+          >
+            Customers
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.segmentButton,
+            activeTab === 'items' && styles.activeSegment,
+          ]}
+          onPress={() => setActiveTab('items')}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              activeTab === 'items' && styles.activeSegmentText,
+            ]}
+          >
+            Items
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
+  // --------------------------
+  // Render: Customers Management UI
+  // --------------------------
+  const renderCustomersUI = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Manage Customers</Text>
         <TouchableOpacity
           onPress={fetchCustomersFromQuickBooks}
           style={styles.syncButton}
         >
           <Text style={styles.syncButtonText}>
-            {loading ? 'Syncing Customers...' : 'Sync Customers'}
+            {loadingCustomers ? 'Syncing Customers...' : 'Sync Customers'}
           </Text>
         </TouchableOpacity>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search customer by name..."
+          value={searchQuery}
+          onChangeText={text => {
+            setSearchQuery(text)
+          }}
+        />
+        <ScrollView style={styles.listContainer}>
+          {filteredCustomers.map(customer => (
+            <View key={customer.id} style={styles.listItem}>
+              <Text style={styles.listItemText}>
+                {customer.id} - {customer.displayName} ({customer.email})
+              </Text>
+              {/* You can add edit and delete buttons here */}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    )
+  }
 
-        {/* Search Section */}
-        <View style={styles.searchSection}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search customer by name..."
-            value={searchQuery}
-            onChangeText={text => {
-              setSearchQuery(text)
-              // Clear the selected customer if user edits the search text
-              if (selectedCustomer && text !== selectedCustomer.displayName) {
-                setSelectedCustomer(null)
-              }
-            }}
-          />
-          {/* Suggestions Container */}
-          {searchQuery.length > 0 &&
-            filteredCustomers.length > 0 &&
-            !selectedCustomer && (
-              <View style={styles.suggestionsWrapper}>
-                <ScrollView style={styles.suggestionsContainer}>
-                  {filteredCustomers.map(customer => (
-                    <TouchableOpacity
-                      key={customer.id}
-                      onPress={() => handleSelectCustomer(customer)}
-                      style={styles.suggestionItem}
-                    >
-                      <Text style={styles.suggestionText}>
-                        {customer.id} - {customer.displayName} ({customer.email}
-                        )
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+  // --------------------------
+  // Render: Items Management UI
+  // --------------------------
+  const renderItemsUI = () => {
+    return (
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Manage Items</Text>
+        <TouchableOpacity onPress={fetchItemsFromQB} style={styles.syncButton}>
+          <Text style={styles.syncButtonText}>
+            {loadingItems ? 'Loading Items...' : 'Sync Items'}
+          </Text>
+        </TouchableOpacity>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search item by name..."
+          value={itemSearchQuery}
+          onChangeText={text => setItemSearchQuery(text)}
+        />
+        <ScrollView style={styles.listContainer}>
+          {items
+            .filter(item =>
+              item.name.toLowerCase().includes(itemSearchQuery.toLowerCase())
+            )
+            .map(item => (
+              <View key={item.id} style={styles.listItem}>
+                <Text style={styles.listItemText}>
+                  {item.id} - {item.name} - Price: {item.unitPrice}
+                </Text>
+                {/* You can add edit and delete buttons here */}
               </View>
-            )}
-        </View>
+            ))}
+        </ScrollView>
+      </View>
+    )
+  }
 
-        {/* Display Selected Customer Info */}
-        {selectedCustomer && (
-          <View style={styles.detailCard}>
-            <Text style={styles.detailTitle}>Selected Customer</Text>
-            <Text style={styles.detailText}>ID: {selectedCustomer.id}</Text>
-            <Text style={styles.detailText}>
-              Name: {selectedCustomer.displayName}
-            </Text>
-            <Text style={styles.detailText}>
-              Email: {selectedCustomer.email}
-            </Text>
-          </View>
-        )}
-
+  // --------------------------
+  // Render
+  // --------------------------
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>QuickBooks Management</Text>
+        {renderSegmentedControl()}
+        {activeTab === 'customers' ? renderCustomersUI() : renderItemsUI()}
         {/* Token Management Section */}
         <Text style={styles.title}>Token Management</Text>
         <View style={styles.oauthContainer}>
@@ -285,30 +342,12 @@ const QuickBooksActionsScreen = () => {
             <Text style={styles.buttonText}>Get Auth Token</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Items Section */}
-        <TouchableOpacity onPress={fetchItemsFromQB} style={styles.itemsButton}>
-          <Text style={styles.buttonText}>
-            {loadingItems ? 'Loading Items...' : 'Get Items ID'}
-          </Text>
-        </TouchableOpacity>
-        {items.length > 0 && (
-          <View style={styles.itemsContainer}>
-            {items.map(item => (
-              <Text key={item.id} style={styles.itemText}>
-                ID: {item.id} - {item.name} - Price: {item.unitPrice}
-              </Text>
-            ))}
-          </View>
-        )}
-
-        {loading && <ActivityIndicator size="large" color="#27AE60" />}
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-export default QuickBooksActionsScreen
+export default QuickBooksManagementScreen
 
 const styles = StyleSheet.create({
   container: {
@@ -324,12 +363,46 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  segmentedControl: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#f2f2f2',
+    alignItems: 'center',
+  },
+  activeSegment: {
+    backgroundColor: '#3498DB',
+  },
+  segmentText: {
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  activeSegmentText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  sectionContainer: {
+    width: '100%',
+    marginBottom: 30,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#2C3E50',
+  },
   syncButton: {
     backgroundColor: '#27AE60',
-    padding: 14,
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
-    width: '90%',
+    marginBottom: 10,
     alignItems: 'center',
   },
   syncButtonText: {
@@ -337,88 +410,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  searchSection: {
-    width: '90%',
-    marginBottom: 20,
-    position: 'relative',
-  },
   searchInput: {
+    width: '100%',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
+    marginBottom: 10,
     backgroundColor: 'white',
   },
-  suggestionsWrapper: {
-    position: 'absolute',
-    top: 50, // Adjust this value to position it right below the search input
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    backgroundColor: 'white',
+  listContainer: {
+    maxHeight: 300,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
+    backgroundColor: 'white',
   },
-  suggestionsContainer: {
-    maxHeight: 150,
-  },
-  suggestionItem: {
+  listItem: {
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  suggestionText: {
+  listItemText: {
     fontSize: 16,
     color: '#2c3e50',
-  },
-  detailCard: {
-    backgroundColor: '#F3F5F7',
-    padding: 16,
-    borderRadius: 8,
-    width: '90%',
-    marginBottom: 20,
-  },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  detailText: {
-    fontSize: 16,
-    marginBottom: 4,
   },
   oauthContainer: {
     width: '100%',
     alignItems: 'center',
+    marginBottom: 20,
   },
   oauthButton: {
     width: '90%',
-    marginTop: 10,
     backgroundColor: '#B9770E',
-    borderRadius: 8,
     paddingVertical: 12,
-    alignItems: 'center',
-  },
-  itemsButton: {
-    backgroundColor: '#2980b9',
-    padding: 14,
     borderRadius: 8,
-    marginVertical: 10,
-    width: '90%',
     alignItems: 'center',
-  },
-  itemsContainer: {
-    width: '90%',
-    marginTop: 10,
-  },
-  itemText: {
-    fontSize: 16,
-    paddingVertical: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
   },
   buttonText: {
     color: '#FFF',
