@@ -36,7 +36,7 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       Description: item.description,
       SalesItemLineDetail: {
         ItemRef: {
-          value: '1',
+          value: item.itemId,
           name: 'Services',
         },
         UnitPrice: item.amount,
@@ -48,7 +48,7 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       value: 'USD',
     },
     TotalAmt: invoiceData.lineItems.reduce(
-      (total, item) => total + item.quantity * item.amount,
+      (total, item) => total + item.quantity * item.unitPrice,
       0
     ),
   }

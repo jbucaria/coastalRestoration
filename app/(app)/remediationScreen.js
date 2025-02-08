@@ -17,12 +17,13 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native'
+import { Picker } from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker'
 import { v4 as uuidv4 } from 'uuid'
 import { storage, firestore } from '@/firebaseConfig'
-import { doc, updateDoc } from 'firebase/firestore'
+import { doc, updateDoc, collection, getDocs } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
-// Main RemediationScreen component
 const RemediationScreen = ({ route }) => {
   const router = useRouter()
   const { projectId } = useLocalSearchParams()
@@ -30,7 +31,7 @@ const RemediationScreen = ({ route }) => {
   // Rooms state (each room has measurements and photos)
   const [rooms, setRooms] = useState([])
 
-  // Example quick room options
+  // Quick room options
   const ROOM_OPTIONS = [
     'Bedroom',
     'Kitchen',
@@ -39,18 +40,17 @@ const RemediationScreen = ({ route }) => {
     'Bathroom',
   ]
 
-  // --- State for Items Search Modal ---
+  // -------------------- Items Search Modal State --------------------
   const [showItemsModal, setShowItemsModal] = useState(false)
   const [currentRoomId, setCurrentRoomId] = useState(null)
   const [currentMeasurementId, setCurrentMeasurementId] = useState(null)
   const [allItems, setAllItems] = useState([])
   const [itemSearchQuery, setItemSearchQuery] = useState('')
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [loadingItemsModal, setLoadingItemsModal] = useState(false)
 
-  // -----------------------------
-  // Room-related functions
-  // -----------------------------
-
-  // Add a new room. Use uuidv4() to generate a unique id.
+  // -------------------- Room / Measurement Functions --------------------
+  // Add a new room.
   const handleAddRoom = (roomName = '') => {
     const newRoom = {
       id: uuidv4(),
@@ -66,15 +66,15 @@ const RemediationScreen = ({ route }) => {
     setRooms(rooms.filter(room => room.id !== roomId))
   }
 
-  // Add a new measurement line to a room.
-  // This function now creates a measurement with a generated id and then opens the items search modal.
-  const handleAddMeasurement = roomId => {
+  // Create a new measurement and open the item selection modal.
+  const handleCreateMeasurement = roomId => {
     const newMeasurementId = uuidv4()
     const newMeasurement = {
       id: newMeasurementId,
-      description: '', // will be updated when an item is selected
+      description: '', // To be set via item selection
       quantity: 0,
-      itemId: '', // store the selected item id here
+      itemId: '',
+      total: 0,
     }
     setRooms(prev =>
       prev.map(room =>
@@ -83,17 +83,27 @@ const RemediationScreen = ({ route }) => {
           : room
       )
     )
-    // Set the measurement that will be updated by the modal.
     setCurrentRoomId(roomId)
     setCurrentMeasurementId(newMeasurementId)
+    openItemsModal()
+  }
+
+  // Open modal for editing an existing measurement's item.
+  const handleEditMeasurement = (roomId, measurementId) => {
+    setCurrentRoomId(roomId)
+    setCurrentMeasurementId(measurementId)
+    openItemsModal()
+  }
+
+  const openItemsModal = () => {
     setShowItemsModal(true)
-    // If items haven't been loaded yet, fetch them.
     if (allItems.length === 0) {
-      fetchItemsFromQB()
+      setLoadingItemsModal(true)
+      fetchItemsFromFirestore().finally(() => setLoadingItemsModal(false))
     }
   }
 
-  // Update a measurement field.
+  // Update measurement field.
   const handleMeasurementChange = (roomId, measurementId, field, value) => {
     setRooms(prev =>
       prev.map(room => {
@@ -106,7 +116,7 @@ const RemediationScreen = ({ route }) => {
     )
   }
 
-  // Delete a measurement line.
+  // Delete a measurement.
   const handleDeleteMeasurement = (roomId, measurementId) => {
     setRooms(prev =>
       prev.map(room => {
@@ -119,15 +129,13 @@ const RemediationScreen = ({ route }) => {
     )
   }
 
-  // -----------------------------
-  // Photo Functions (unchanged)
-  // -----------------------------
+  // -------------------- Photo Functions --------------------
   const handleAddPhoto = async (roomId, projectId) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== 'granted') {
         Alert.alert(
-          'Permission required',
+          'Permission Required',
           'Camera roll permission is required to select photos.'
         )
         return
@@ -196,81 +204,55 @@ const RemediationScreen = ({ route }) => {
       Alert.alert('Error', 'Failed to save data. Please try again.')
     }
   }
-
-  // -----------------------------
-  // Items Search Functions
-  // -----------------------------
-  // Function to fetch items from QuickBooks
-  const fetchItemsFromQB = async () => {
-    // Replace these values with your actual QuickBooks credentials
-    // (Assuming you have them stored in a similar auth store)
-    const { quickBooksCompanyId, accessToken } = useAuthStore.getState()
-    if (!quickBooksCompanyId || !accessToken) {
-      Alert.alert('Error', 'Missing QuickBooks credentials.')
-      return
-    }
-    const query = encodeURIComponent('SELECT * FROM Item')
-    // Use the appropriate base URL and minorversion as needed.
-    const url = `https://quickbooks.api.intuit.com/v3/company/${quickBooksCompanyId}/query?query=${query}&minorversion=4`
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/json',
-      'Content-Type': 'text/plain',
-    }
+  const fetchItemsFromFirestore = async () => {
     try {
-      const response = await fetch(url, { method: 'GET', headers })
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`HTTP Error ${response.status}: ${errorText}`)
-        throw new Error(`HTTP Error ${response.status}: ${errorText}`)
-      }
-      const data = await response.json()
-      if (!data.QueryResponse || !data.QueryResponse.Item) {
-        console.error('Unexpected response structure:', data)
-        throw new Error(
-          'Unexpected response structure: ' + JSON.stringify(data, null, 2)
-        )
-      }
-      const itemsData = data.QueryResponse.Item.map(item => ({
-        id: item.Id,
-        name: item.Name,
-        description: item.Description || '',
-        unitPrice: item.UnitPrice,
+      const querySnapshot = await getDocs(collection(firestore, 'items'))
+      const itemsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
       }))
       setAllItems(itemsData)
     } catch (error) {
-      console.error('Error fetching items from QB:', error)
-      Alert.alert(
-        'Error',
-        error.message || 'Failed to retrieve items from QuickBooks.'
-      )
+      console.error('Error fetching items from Firestore:', error)
+      Alert.alert('Error', 'Failed to load items from database.')
     }
   }
 
-  // When an item is selected in the modal, update the corresponding measurement.
+  // When an item is selected from the modal Picker, update the measurement.
   const handleSelectItem = item => {
     setRooms(prevRooms =>
       prevRooms.map(room => {
         if (room.id !== currentRoomId) return room
-        const updatedMeasurements = room.measurements.map(m => {
-          if (m.id === currentMeasurementId) {
-            return { ...m, description: item.name, itemId: item.id }
-          }
-          return m
-        })
+        const updatedMeasurements = room.measurements.map(m =>
+          m.id === currentMeasurementId
+            ? {
+                ...m,
+                description: item.name,
+                itemId: item.id,
+                unitPrice: item.unitPrice,
+                total: item.unitPrice * item.quantity,
+              }
+            : m
+        )
         return { ...room, measurements: updatedMeasurements }
       })
     )
-    // Close modal and reset temporary states.
+    // Reset modal state.
     setShowItemsModal(false)
     setItemSearchQuery('')
     setCurrentRoomId(null)
     setCurrentMeasurementId(null)
+    setSelectedItem(null)
   }
 
-  // -----------------------------
-  // Date & Time Functions
-  // -----------------------------
+  // -------------------- Date & Time Functions --------------------
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [startTime, setStartTime] = useState(new Date(2023, 0, 1, 10, 0))
+  const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0))
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false)
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false)
+
   const handleDateChange = (event, date) => {
     setShowDatePicker(Platform.OS === 'ios')
     if (date) {
@@ -280,41 +262,19 @@ const RemediationScreen = ({ route }) => {
     }
   }
 
-  const handleStartTimeChange = (event, time) => {
-    setShowStartTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setStartTime(setTimeToDate(selectedDate, time))
-    }
-  }
-
-  const handleEndTimeChange = (event, time) => {
-    setShowEndTimePicker(Platform.OS === 'ios')
-    if (time) {
-      setEndTime(setTimeToDate(selectedDate, time))
-    }
-  }
-
   const setTimeToDate = (baseDate, timeDate) => {
     const newDate = new Date(baseDate)
     newDate.setHours(timeDate.getHours(), timeDate.getMinutes(), 0, 0)
     return newDate
   }
 
-  // -----------------------------
-  // Navigation and Other Helpers
-  // -----------------------------
-  const handleBack = () => {
-    resetForm()
-    router.back()
-  }
+  // -------------------- Navigation and Helpers --------------------
 
   const resetForm = () => {
-    setNewTicket(initialTicketStatus)
+    setRooms([])
   }
 
-  // -----------------------------
-  // Render
-  // -----------------------------
+  // -------------------- Render --------------------
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -326,7 +286,7 @@ const RemediationScreen = ({ route }) => {
           <ScrollView contentContainerStyle={styles.scrollContainer}>
             <Text style={styles.title}>Remediation Measurements</Text>
 
-            {/* Quick Buttons to Add Common Rooms */}
+            {/* Quick Room Buttons */}
             <View style={styles.quickRoomsRow}>
               {ROOM_OPTIONS.map(option => (
                 <TouchableOpacity
@@ -339,7 +299,7 @@ const RemediationScreen = ({ route }) => {
               ))}
             </View>
 
-            {/* Button to Add a Generic Room */}
+            {/* Add Generic Room Button */}
             <TouchableOpacity
               onPress={() => handleAddRoom()}
               style={styles.addGenericRoomButton}
@@ -359,7 +319,7 @@ const RemediationScreen = ({ route }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Measurements */}
+                {/* List of Measurements */}
                 {room.measurements.map(measurement => (
                   <View key={measurement.id} style={styles.measurementRow}>
                     <TextInput
@@ -383,14 +343,15 @@ const RemediationScreen = ({ route }) => {
                       placeholder="Qty (e.g. 30)"
                       value={measurement.quantity.toString()}
                       keyboardType="numeric"
-                      onChangeText={val =>
+                      onChangeText={val => {
+                        const numericValue = parseFloat(val) || 0 // Convert to number, default to 0 if invalid
                         handleMeasurementChange(
                           room.id,
                           measurement.id,
                           'quantity',
-                          val
+                          numericValue
                         )
-                      }
+                      }}
                     />
                     <TouchableOpacity
                       onPress={() =>
@@ -400,9 +361,11 @@ const RemediationScreen = ({ route }) => {
                     >
                       <Text style={styles.deleteMeasurementButtonText}>X</Text>
                     </TouchableOpacity>
-                    {/* Button to trigger item search modal for this measurement */}
+                    {/* Button to open modal to edit/select item */}
                     <TouchableOpacity
-                      onPress={() => handleAddMeasurement(room.id)}
+                      onPress={() =>
+                        handleEditMeasurement(room.id, measurement.id)
+                      }
                       style={styles.selectItemButton}
                     >
                       <Text style={styles.selectItemButtonText}>
@@ -412,9 +375,9 @@ const RemediationScreen = ({ route }) => {
                   </View>
                 ))}
 
-                {/* Add Measurement Button */}
+                {/* Button to add a new measurement */}
                 <TouchableOpacity
-                  onPress={() => handleAddMeasurement(room.id)}
+                  onPress={() => handleCreateMeasurement(room.id)}
                   style={styles.addMeasurementButton}
                 >
                   <Text style={styles.addMeasurementButtonText}>
@@ -484,32 +447,55 @@ const RemediationScreen = ({ route }) => {
                       value={itemSearchQuery}
                       onChangeText={setItemSearchQuery}
                     />
-                    <ScrollView style={styles.modalItemsList}>
-                      {allItems
-                        .filter(item =>
-                          item.name
-                            .toLowerCase()
-                            .includes(itemSearchQuery.toLowerCase())
-                        )
-                        .map(item => (
-                          <TouchableOpacity
-                            key={item.id}
-                            onPress={() => handleSelectItem(item)}
-                            style={styles.modalItem}
-                          >
-                            <Text style={styles.modalItemText}>
-                              ID: {item.id} - {item.name} - Price:{' '}
-                              {item.unitPrice}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                    <TouchableOpacity
-                      onPress={() => setShowItemsModal(false)}
-                      style={styles.modalCloseButton}
-                    >
-                      <Text style={styles.modalCloseButtonText}>Close</Text>
-                    </TouchableOpacity>
+                    {loadingItemsModal ? (
+                      <ActivityIndicator size="small" color="#2980B9" />
+                    ) : (
+                      <Picker
+                        selectedValue={selectedItem}
+                        onValueChange={(itemValue, itemIndex) =>
+                          setSelectedItem(itemValue)
+                        }
+                      >
+                        {allItems
+                          .filter(item =>
+                            item.name
+                              .toLowerCase()
+                              .includes(itemSearchQuery.toLowerCase())
+                          )
+                          .map(item => (
+                            <Picker.Item
+                              key={item.id}
+                              label={`${item.name} - $${item.unitPrice}`}
+                              value={item}
+                            />
+                          ))}
+                      </Picker>
+                    )}
+                    <View style={styles.modalButtonsRow}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (selectedItem) {
+                            handleSelectItem(selectedItem)
+                          } else {
+                            Alert.alert(
+                              'Select an item',
+                              'Please select an item from the list.'
+                            )
+                          }
+                        }}
+                        style={styles.modalConfirmButton}
+                      >
+                        <Text style={styles.modalConfirmButtonText}>
+                          Confirm
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setShowItemsModal(false)}
+                        style={styles.modalCloseButton}
+                      >
+                        <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </Modal>
@@ -523,7 +509,6 @@ const RemediationScreen = ({ route }) => {
 
 export default RemediationScreen
 
-// ---------------- Styles ----------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -724,15 +709,6 @@ const styles = StyleSheet.create({
   modalItemsList: {
     maxHeight: 200,
   },
-  modalItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: '#2C3E50',
-  },
   modalCloseButton: {
     backgroundColor: '#2980B9',
     paddingVertical: 10,
@@ -741,6 +717,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCloseButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  modalConfirmButton: {
+    backgroundColor: '#27ae60',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  modalConfirmButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',

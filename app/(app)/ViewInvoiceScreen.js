@@ -10,13 +10,13 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import { useLocalSearchParams, router } from 'expo-router'
+import { router } from 'expo-router'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import * as AuthSession from 'expo-auth-session'
 import { sendInvoiceToQuickBooks } from '@/utils/sendInvoice'
 import useAuthStore from '@/store/useAuthStore'
+import useProjectStore from '@/store/useProjectStore'
 import { se } from 'date-fns/locale'
 
 // Define your QuickBooks app's redirect URI
@@ -27,7 +27,7 @@ const discovery = {
 }
 
 const ViewInvoiceScreen = () => {
-  const { projectId } = useLocalSearchParams()
+  const { projectId } = useProjectStore()
   const { clientId, accessToken } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
@@ -70,6 +70,9 @@ const ViewInvoiceScreen = () => {
         description: item.description,
         quantity: item.quantity,
         amount: item.amount,
+        itemId: item.itemId,
+        unitPrice: item.unitPrice,
+        total: item.total,
       })),
     }
     console.log('invoiceData', invoiceData)
@@ -107,7 +110,8 @@ const ViewInvoiceScreen = () => {
                 room.measurements?.map(measurement => ({
                   description: measurement.description,
                   quantity: measurement.quantity || 0,
-                  amount: measurement.amount || 0,
+                  amount: measurement.total || 0,
+                  itemId: measurement.itemId,
                 })) || []
             )
             setLineItems(formattedLineItems)
@@ -136,7 +140,7 @@ const ViewInvoiceScreen = () => {
 
   // Compute total cost
   const totalCost = lineItems.reduce(
-    (total, item) => total + item.quantity * item.amount,
+    (total, item) => total + item.quantity * item.unitPrice,
     0
   )
 
@@ -184,7 +188,10 @@ const ViewInvoiceScreen = () => {
         {lineItems.map(item => (
           <View key={item.id} style={styles.lineItem}>
             <Text style={styles.label}>Item Description</Text>
-            <Text style={styles.textValue}>{item.description}</Text>
+            <Text style={styles.textValue}>
+              {item.description}
+              {item.itemId}
+            </Text>
 
             <Text style={styles.label}>Quantity</Text>
             <Text style={styles.textValue}>{item.quantity}</Text>
@@ -194,7 +201,7 @@ const ViewInvoiceScreen = () => {
               style={styles.input}
               keyboardType="numeric"
               // Convert numeric amount to string for display:
-              value={String(item.amount)}
+              value={Number(item.quantity) * Number(item.unitPrice)}
               onChangeText={text => handleUpdateAmount(item.id, text)}
             />
           </View>

@@ -1,6 +1,6 @@
 // ViewRemediationScreen.js
 import React, { useEffect, useState } from 'react'
-import { useLocalSearchParams, useRouter, router } from 'expo-router'
+import { useRouter, router } from 'expo-router'
 import {
   SafeAreaView,
   ScrollView,
@@ -15,9 +15,10 @@ import {
 import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { exportCSVReport } from '@/utils/createCSVReport'
+import useProjectStore from '@/store/useProjectStore'
 
 export default function ViewRemediationScreen() {
-  const { projectId } = useLocalSearchParams()
+  const { projectId } = useProjectStore()
 
   const router = useRouter()
   const [remediationData, setRemediationData] = useState(null)
@@ -119,7 +120,6 @@ export default function ViewRemediationScreen() {
           onPress={() => {
             router.push({
               pathname: '/ViewInvoiceScreen',
-              params: { projectId: projectId },
             })
           }}
           style={styles.exportButton}
