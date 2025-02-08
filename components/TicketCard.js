@@ -12,6 +12,7 @@ const TicketCard = ({
   onPress,
   openEquipmentModal,
   backgroundColor,
+  timeColor,
 }) => {
   // Convert Firestore Timestamps to JS Dates
   const startAt = ticket.startTime?.toDate?.()
@@ -174,7 +175,7 @@ const TicketCard = ({
         </View>
         <View style={styles.timeInfo}>
           <View style={styles.timeRangeContainer}>
-            <Text style={styles.timeRange}>
+            <Text style={[styles.timeRange, { color: timeColor || 'black' }]}>
               {startTime} - {endTime}
             </Text>
           </View>
@@ -247,7 +248,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   timeRangeContainer: {
-    backgroundColor: 'rgba(13, 71, 161, 0.8)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,

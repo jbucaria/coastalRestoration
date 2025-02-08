@@ -12,13 +12,7 @@ import {
   Modal,
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { router } from 'expo-router'
 import { TicketCard } from '@/components/TicketCard'
@@ -28,22 +22,24 @@ import useProjectStore from '@/store/useProjectStore'
 /**
  * SortModal
  *
- * The user can select one of:
- *  - "remediationRequired"
- *  - "equipmentOnSite"
- *  - null (clear all)
+ * Lets the user pick:
+ *  - 'remediationRequired'
+ *  - 'equipmentOnSite'
+ *  - null (show all)
  *
- * We provide visual feedback by highlighting the selected option
+ * Provides visual feedback by highlighting the selected option
  * and showing a checkmark next to it.
  */
 const SortModal = ({ visible, onClose, sortOption, setSortOption }) => {
-  // Helper function to render a sort button with selection feedback
+  // Helper to render a sort option with selection feedback
   const renderOption = (optionValue, label) => {
     const isSelected = sortOption === optionValue
     return (
       <TouchableOpacity
         style={[styles.optionButton, isSelected && styles.selectedOption]}
-        onPress={() => setSortOption(optionValue)}
+        onPress={() => {
+          setSortOption(optionValue)
+        }}
       >
         <Text
           style={[styles.optionText, isSelected && styles.selectedOptionText]}
@@ -68,19 +64,13 @@ const SortModal = ({ visible, onClose, sortOption, setSortOption }) => {
         <View style={styles.modalContent}>
           <Text style={styles.title}>Filter / Sort Criteria</Text>
 
-          {/* Remediation Required */}
           {renderOption(
             'remediationRequired',
             'Show Only Remediation Required'
           )}
-
-          {/* Equipment On Site */}
           {renderOption('equipmentOnSite', 'Show Only Equipment On Site')}
-
-          {/* Clear Sort/Filter */}
           {renderOption(null, 'Show All (No Filter)')}
 
-          {/* Done Button */}
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>Done</Text>
           </TouchableOpacity>
@@ -92,25 +82,16 @@ const SortModal = ({ visible, onClose, sortOption, setSortOption }) => {
 
 const TicketsScreen = () => {
   const { setProjectId } = useProjectStore()
-
-  // 1) We fetch ALL tickets in ascending order by startTime
   const [allTickets, setAllTickets] = useState([])
-
-  // 2) Displayed tickets after client-side filtering
   const [displayedTickets, setDisplayedTickets] = useState([])
-
-  // Basic filtering states:
-  // - Default selectedDate is "today"
-  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date()) // default to today
   const [searchQuery, setSearchQuery] = useState('')
-  // This represents the filter: only show "remediationRequired" tickets, or "equipmentOnSite," or null (all)
   const [sortOption, setSortOption] = useState(null)
-
   const [isLoading, setIsLoading] = useState(true)
   const [isSortModalVisible, setSortModalVisible] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
 
-  // Animated value for floating button
+  // For animated floating button
   const scrollY = useRef(new Animated.Value(0)).current
   const floatingOpacity = scrollY.interpolate({
     inputRange: [0, 100],
@@ -119,7 +100,7 @@ const TicketsScreen = () => {
   })
 
   /**
-   * Firestore subscription: fetch all tickets (sorted by startTime asc)
+   * Firestore subscription: fetch all tickets sorted by startTime asc
    */
   useEffect(() => {
     const baseQuery = query(
@@ -147,15 +128,13 @@ const TicketsScreen = () => {
   }, [])
 
   /**
-   * Client-side filter logic (useEffect)
+   * Client-side filtering logic
    *
-   * Steps:
-   *  1) If there's a searchQuery, filter across *all* tickets by address (ignore date).
-   *  2) Else, filter by selectedDate (start-of-day to end-of-day).
-   *  3) If a sortOption is chosen, keep only those tickets that have that field = true.
+   * 1) If searchQuery is non-empty, filter by address across all tickets (ignore date).
+   * 2) Otherwise, filter by selected date (today by default).
+   * 3) If sortOption is set, only keep tickets with that boolean field = true.
    */
   useEffect(() => {
-    // Start with a copy of allTickets
     let filtered = [...allTickets]
 
     // (1) Search filter
@@ -166,7 +145,7 @@ const TicketsScreen = () => {
         return address.includes(queryLower)
       })
     } else {
-      // (2) Date filter (only if there's no searchQuery)
+      // (2) Date filter if no search query
       const startOfDay = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
@@ -184,17 +163,17 @@ const TicketsScreen = () => {
         59,
         999
       )
+
       filtered = filtered.filter(ticket => {
         if (!ticket.startTime) return false
-        const ticketDate = ticket.startTime.toDate
-          ? ticket.startTime.toDate() // Firestore Timestamp -> Date
+        const t = ticket.startTime.toDate
+          ? ticket.startTime.toDate()
           : new Date(ticket.startTime)
-        return ticketDate >= startOfDay && ticketDate <= endOfDay
+        return t >= startOfDay && t <= endOfDay
       })
     }
 
-    // (3) "Sort" / Filter by boolean field
-    //     Instead of grouping, we only show tickets that have the field set to true.
+    // (3) Additional filter by boolean field
     if (sortOption === 'remediationRequired') {
       filtered = filtered.filter(t => t.remediationRequired === true)
     } else if (sortOption === 'equipmentOnSite') {
@@ -204,9 +183,7 @@ const TicketsScreen = () => {
     setDisplayedTickets(filtered)
   }, [allTickets, searchQuery, selectedDate, sortOption])
 
-  /**
-   * DateTimePicker handler
-   */
+  // Handle date picker changes
   const onDatePickerChange = (event, date) => {
     setShowDatePicker(false)
     if (date) {
@@ -214,54 +191,77 @@ const TicketsScreen = () => {
     }
   }
 
+  // Clear the active filter
+  const clearFilter = () => {
+    setSortOption(null)
+  }
+
+  // Whether the clear button is disabled (no active sort)
+  const isClearDisabled = !sortOption
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Search Bar */}
-      <View style={styles.searchBarContainer}>
-        <View style={styles.searchBar}>
-          <IconSymbol name="magnifyingglass" size={20} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by address (all tickets)"
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={text => setSearchQuery(text)}
-          />
+      <View style={{ marginHorizontal: 8 }}>
+        <View style={styles.searchBarContainer}>
+          <View style={styles.searchBar}>
+            <IconSymbol name="magnifyingglass" size={20} color="#999" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search address (all tickets)"
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={text => setSearchQuery(text)}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* Top row: chosen date & button to open the sort modal */}
-      <View style={styles.topRowContainer}>
-        {/* Date Display */}
-        <TouchableOpacity
-          style={styles.datePicker}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <IconSymbol name="calendar" size={20} color="#999" />
-          <Text style={styles.dateText}>
-            {searchQuery
-              ? 'Date ignored (search active)'
-              : selectedDate.toDateString()}
-          </Text>
-        </TouchableOpacity>
+        {/* Top row: date & filter buttons */}
+        <View style={styles.topRow}>
+          {/* Date Display */}
+          <TouchableOpacity
+            style={styles.datePicker}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <IconSymbol name="calendar" size={20} color="#999" />
+            <Text style={styles.dateText}>
+              {searchQuery
+                ? 'Date ignored (search active)'
+                : selectedDate.toDateString()}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Actual Date Picker Modal if user presses date */}
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate || new Date()}
-            mode="date"
-            display="default"
-            onChange={onDatePickerChange}
-          />
-        )}
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={onDatePickerChange}
+            />
+          )}
 
-        {/* Sort Modal Button */}
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortModalVisible(true)}
-        >
-          <IconSymbol name="slider.horizontal.3" size={24} color="#999" />
-        </TouchableOpacity>
+          {/* Sort & Clear Buttons */}
+          <View style={styles.sortControls}>
+            {/* Open the modal */}
+            <TouchableOpacity
+              style={styles.sortButton}
+              onPress={() => setSortModalVisible(true)}
+            >
+              <IconSymbol name="slider.horizontal.3" size={24} color="#333" />
+            </TouchableOpacity>
+
+            {/* Always show Clear button, but disable if no sort is active */}
+            {!isClearDisabled && (
+              <TouchableOpacity
+                style={styles.clearSortButton}
+                onPress={clearFilter}
+                disabled={isClearDisabled}
+              >
+                <IconSymbol name="xmark.circle" size={24} color="#333" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
       </View>
 
       {/* Tickets List */}
@@ -276,23 +276,22 @@ const TicketsScreen = () => {
         {isLoading ? (
           <Text>Loading tickets...</Text>
         ) : displayedTickets.length > 0 ? (
-          displayedTickets.map((ticket, index) => (
-            <View
-              key={ticket.id}
-              style={[
-                styles.ticketContainer,
-                { backgroundColor: index % 2 === 0 ? '#eaeaea' : '#fff' },
-              ]}
-            >
+          displayedTickets.map((ticket, index) => {
+            const containerStyle = index % 2 === 0 ? '#ECECEC' : '#FFFFFF'
+            const timeColor = index % 2 === 0 ? '#0D47A1' : '#1976D2'
+
+            return (
               <TicketCard
                 ticket={ticket}
                 onPress={() => {
                   setProjectId(ticket.id)
                   router.push('/TicketDetailsScreen')
                 }}
+                backgroundColor={containerStyle}
+                timeColor={timeColor}
               />
-            </View>
-          ))
+            )
+          })
         ) : (
           <Text style={styles.noTicketsText}>
             No tickets match your criteria.
@@ -300,7 +299,7 @@ const TicketsScreen = () => {
         )}
       </Animated.ScrollView>
 
-      {/* Floating Button to create a new ticket */}
+      {/* Floating "Create Ticket" Button */}
       <Animated.View
         style={[styles.floatingButtonContainer, { opacity: floatingOpacity }]}
       >
@@ -334,8 +333,7 @@ const styles = StyleSheet.create({
   },
   searchBarContainer: {
     alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    marginBottom: 12,
     width: '100%',
   },
   searchBar: {
@@ -353,20 +351,19 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#333',
   },
-  topRowContainer: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 16,
+    marginBottom: 10,
   },
   datePicker: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F2F3F5',
     borderRadius: 25,
     paddingHorizontal: 15,
     paddingVertical: 8,
-    alignItems: 'center',
     flex: 1,
     marginRight: 10,
   },
@@ -375,23 +372,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
+  sortControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sortButton: {
     backgroundColor: '#F2F3F5',
     borderRadius: 25,
     padding: 8,
   },
+  clearSortButton: {
+    marginLeft: 6,
+    backgroundColor: '#F2F3F5',
+    borderRadius: 25,
+    padding: 6,
+  },
+  clearDisabled: {
+    opacity: 0.6, // visually indicate the button is disabled
+  },
   scrollViewContent: {
     paddingBottom: 100,
   },
+  // Ticket containers
   ticketContainer: {
-    height: 200,
-    padding: 2,
     marginBottom: 8,
+  },
+  evenTicketContainer: {
+    backgroundColor: '#FAFAFA',
+  },
+  oddTicketContainer: {
+    backgroundColor: 'red',
   },
   noTicketsText: {
     textAlign: 'center',
     marginTop: 20,
     color: '#666',
+    fontSize: 16,
   },
   floatingButtonContainer: {
     position: 'absolute',
@@ -405,6 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     padding: 16,
   },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -422,15 +439,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
+    borderRadius: 4,
   },
-  optionText: { fontSize: 16 },
+  optionText: {
+    fontSize: 16,
+    color: '#333',
+  },
   selectedOption: {
-    backgroundColor: '#E6F4EA', // light green tint
-    borderRadius: 5,
+    backgroundColor: '#E6F4EA', // Light green tint
   },
   selectedOptionText: {
     fontWeight: '600',
-    color: '#2B7E2C', // darker green
+    color: '#2B7E2C', // A bit darker green
   },
   closeButton: {
     backgroundColor: '#F39C12',
