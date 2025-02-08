@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   SafeAreaView,
   ScrollView,
@@ -17,7 +17,6 @@ import * as AuthSession from 'expo-auth-session'
 import { sendInvoiceToQuickBooks } from '@/utils/sendInvoice'
 import useAuthStore from '@/store/useAuthStore'
 import useProjectStore from '@/store/useProjectStore'
-import { se } from 'date-fns/locale'
 
 // Define your QuickBooks app's redirect URI
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
@@ -29,13 +28,24 @@ const discovery = {
 const ViewInvoiceScreen = () => {
   const { projectId } = useProjectStore()
   const { clientId, accessToken } = useAuthStore()
+
+  // Basic invoice states
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(new Date())
+
+  // The line items loaded from Firestore
+  // (quantity, unitPrice, description, itemId, etc.)
   const [lineItems, setLineItems] = useState([])
+
+  // **NEW**: Local overrides state { [itemId]: number }
+  // If the user enters a custom amount, we store it here.
+  const [overrides, setOverrides] = useState({})
+
   const [isSending, setIsSending] = useState(false)
 
+  // OAuth for QuickBooks
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId,
@@ -53,6 +63,7 @@ const ViewInvoiceScreen = () => {
     }
   }, [response])
 
+  // -------------- Send Invoice to QuickBooks --------------
   const handleSendInvoice = async () => {
     setIsSending(true)
     if (!accessToken) {
@@ -61,34 +72,46 @@ const ViewInvoiceScreen = () => {
       return
     }
 
+    // Build final line items with override or computed total
+    const finalLineItems = lineItems.map(item => {
+      const computed =
+        (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+      const override = overrides[item.id]
+      const finalAmount = override !== undefined ? override : computed
+
+      return {
+        description: item.description,
+        quantity: item.quantity,
+        // Use "finalAmount" to send to QB
+        amount: finalAmount,
+        itemId: item.itemId,
+        unitPrice: item.unitPrice,
+      }
+    })
+
     const invoiceData = {
       customerEmail: customerEmail,
       customerId: '3', // Replace with actual QuickBooks Customer ID
       customerName: customerName,
       invoiceDate: invoiceDate.toISOString().split('T')[0], // Format YYYY-MM-DD
-      lineItems: lineItems.map(item => ({
-        description: item.description,
-        quantity: item.quantity,
-        amount: item.amount,
-        itemId: item.itemId,
-        unitPrice: item.unitPrice,
-        total: item.total,
-      })),
+      lineItems: finalLineItems,
     }
+
     console.log('invoiceData', invoiceData)
+
     const result = await sendInvoiceToQuickBooks(
       invoiceData,
       accessToken,
       clientId
     )
-
     if (result) {
       console.log('Invoice successfully sent:', result)
       setIsSending(false)
       router.back()
     }
   }
-  // Fetch invoice data from Firestore
+
+  // -------------- Fetch Invoice Data from Firestore --------------
   useEffect(() => {
     const fetchInvoiceData = async () => {
       try {
@@ -103,18 +126,24 @@ const ViewInvoiceScreen = () => {
             data.invoiceDate ? new Date(data.invoiceDate) : new Date()
           )
 
-          // Format line items
+          // Format line items: example from data.remediationData?.rooms
+          // Flatten the measurements across all rooms
           if (data.remediationData?.rooms) {
-            const formattedLineItems = data.remediationData.rooms.flatMap(
-              room =>
-                room.measurements?.map(measurement => ({
-                  description: measurement.description,
+            const flattenedItems = []
+            data.remediationData.rooms.forEach(room => {
+              room.measurements?.forEach(measurement => {
+                // We assume "itemId", "quantity", "unitPrice", "description"
+                // might be on the measurement.
+                flattenedItems.push({
+                  id: measurement.id || `${room.id}-${Math.random()}`,
+                  description: measurement.description || 'No desc',
                   quantity: measurement.quantity || 0,
-                  amount: measurement.total || 0,
-                  itemId: measurement.itemId,
-                })) || []
-            )
-            setLineItems(formattedLineItems)
+                  unitPrice: measurement.unitPrice || 0,
+                  itemId: measurement.itemId || '',
+                })
+              })
+            })
+            setLineItems(flattenedItems)
           }
         } else {
           Alert.alert('Error', 'No invoice data found.')
@@ -126,36 +155,33 @@ const ViewInvoiceScreen = () => {
         setLoading(false)
       }
     }
+
     fetchInvoiceData()
   }, [projectId])
 
-  // Handle amount update
-  const handleUpdateAmount = (id, value) => {
-    setLineItems(prevItems =>
-      prevItems.map(item =>
-        item.id === id ? { ...item, amount: Number(value) || 0 } : item
-      )
-    )
+  // -------------- Save to Firestore (Optional) --------------
+  const handleSaveChanges = async () => {
+    // If you want to save user-changed amounts to Firestore (though you said you do NOT want to),
+    // you could do so here.
+    // Right now, we'll just show a message or do minimal logic.
+    Alert.alert('Note', 'Currently not saving total overrides to Firestore.')
   }
 
-  // Compute total cost
-  const totalCost = lineItems.reduce(
-    (total, item) => total + item.quantity * item.unitPrice,
-    0
-  )
+  // -------------- Compute Overall Total --------------
+  const totalCost = lineItems.reduce((sum, item) => {
+    const computed =
+      (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+    const override = overrides[item.id]
+    const finalAmount = override !== undefined ? override : computed
+    return sum + finalAmount
+  }, 0)
 
-  // Save updates to Firestore
-  const handleSaveChanges = async () => {
-    try {
-      const docRef = doc(firestore, 'tickets', projectId)
-      await updateDoc(docRef, {
-        remediationData: { rooms: [{ measurements: lineItems }] },
-      })
-      Alert.alert('Success', 'Invoice updated successfully!')
-    } catch (error) {
-      console.error('Error updating invoice:', error)
-      Alert.alert('Error', 'Failed to update invoice.')
-    }
+  // -------------- Handle user override changes --------------
+  const handleOverrideChange = (lineItemId, newValue) => {
+    setOverrides(prev => ({
+      ...prev,
+      [lineItemId]: parseFloat(newValue) || 0,
+    }))
   }
 
   if (loading) {
@@ -166,6 +192,7 @@ const ViewInvoiceScreen = () => {
     )
   }
 
+  // -------------- Return UI --------------
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -185,27 +212,32 @@ const ViewInvoiceScreen = () => {
 
         {/* Line Items */}
         <Text style={styles.sectionTitle}>Services & Costs</Text>
-        {lineItems.map(item => (
-          <View key={item.id} style={styles.lineItem}>
-            <Text style={styles.label}>Item Description</Text>
-            <Text style={styles.textValue}>
-              {item.description}
-              {item.itemId}
-            </Text>
+        {lineItems.map(item => {
+          const computedTotal =
+            (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+          // If user overrode it, use that:
+          const override = overrides[item.id]
+          const finalAmount = override !== undefined ? override : computedTotal
 
-            <Text style={styles.label}>Quantity</Text>
-            <Text style={styles.textValue}>{item.quantity}</Text>
+          return (
+            <View key={item.id} style={styles.lineItem}>
+              <Text style={styles.label}>Item Description</Text>
+              <Text style={styles.textValue}>{item.description}</Text>
 
-            <Text style={styles.label}>Item Amount</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              // Convert numeric amount to string for display:
-              value={Number(item.quantity) * Number(item.unitPrice)}
-              onChangeText={text => handleUpdateAmount(item.id, text)}
-            />
-          </View>
-        ))}
+              <Text style={styles.label}>Quantity</Text>
+              <Text style={styles.textValue}>{String(item.quantity)}</Text>
+
+              <Text style={styles.label}>Item Amount</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                // Display finalAmount (computed or override)
+                value={String(finalAmount.toFixed(2))}
+                onChangeText={text => handleOverrideChange(item.id, text)}
+              />
+            </View>
+          )
+        })}
 
         {/* Total */}
         <View style={styles.totalContainer}>
@@ -224,10 +256,9 @@ const ViewInvoiceScreen = () => {
             <Text style={styles.buttonText}>Save Invoice To QB</Text>
           )}
         </TouchableOpacity>
+
         <TouchableOpacity
-          onPress={() => {
-            promptAsync()
-          }}
+          onPress={() => promptAsync()}
           style={styles.sendButton}
         >
           <Text style={styles.buttonText}>Get Auth Token</Text>

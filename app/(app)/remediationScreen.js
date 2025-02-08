@@ -48,6 +48,7 @@ const RemediationScreen = ({ route }) => {
   const [itemSearchQuery, setItemSearchQuery] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
   const [loadingItemsModal, setLoadingItemsModal] = useState(false)
+  const [selectedItemId, setSelectedItemId] = useState(null)
 
   // -------------------- Room / Measurement Functions --------------------
   // Add a new room.
@@ -74,7 +75,6 @@ const RemediationScreen = ({ route }) => {
       description: '', // To be set via item selection
       quantity: 0,
       itemId: '',
-      total: 0,
     }
     setRooms(prev =>
       prev.map(room =>
@@ -230,7 +230,6 @@ const RemediationScreen = ({ route }) => {
                 description: item.name,
                 itemId: item.id,
                 unitPrice: item.unitPrice,
-                total: item.unitPrice * item.quantity,
               }
             : m
         )
@@ -451,9 +450,9 @@ const RemediationScreen = ({ route }) => {
                       <ActivityIndicator size="small" color="#2980B9" />
                     ) : (
                       <Picker
-                        selectedValue={selectedItem}
-                        onValueChange={(itemValue, itemIndex) =>
-                          setSelectedItem(itemValue)
+                        selectedValue={selectedItemId}
+                        onValueChange={(itemId, itemIndex) =>
+                          setSelectedItemId(itemId)
                         }
                       >
                         {allItems
@@ -466,7 +465,7 @@ const RemediationScreen = ({ route }) => {
                             <Picker.Item
                               key={item.id}
                               label={`${item.name} - $${item.unitPrice}`}
-                              value={item}
+                              value={item.id}
                             />
                           ))}
                       </Picker>
@@ -474,8 +473,11 @@ const RemediationScreen = ({ route }) => {
                     <View style={styles.modalButtonsRow}>
                       <TouchableOpacity
                         onPress={() => {
-                          if (selectedItem) {
-                            handleSelectItem(selectedItem)
+                          const item = allItems.find(
+                            i => i.id === selectedItemId
+                          )
+                          if (item) {
+                            handleSelectItem(item)
                           } else {
                             Alert.alert(
                               'Select an item',
