@@ -227,7 +227,7 @@ const RemediationScreen = ({ route }) => {
           m.id === currentMeasurementId
             ? {
                 ...m,
-                description: item.name,
+                description: item.description,
                 itemId: item.id,
                 unitPrice: item.unitPrice,
               }

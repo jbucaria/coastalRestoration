@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { router } from 'expo-router'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import * as AuthSession from 'expo-auth-session'
 import { sendInvoiceToQuickBooks } from '@/utils/sendInvoice'
@@ -20,7 +20,6 @@ import useProjectStore from '@/store/useProjectStore'
 
 // Define your QuickBooks app's redirect URI
 const redirectUri = 'https://coastalrestorationservice.com/oauth/callback'
-
 const discovery = {
   authorizationEndpoint: 'https://appcenter.intuit.com/connect/oauth2',
 }
@@ -29,30 +28,28 @@ const ViewInvoiceScreen = () => {
   const { projectId } = useProjectStore()
   const { clientId, accessToken } = useAuthStore()
 
-  // Basic invoice states
+  // Invoice basic states
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [invoiceDate, setInvoiceDate] = useState(new Date())
 
-  // The line items loaded from Firestore
-  // (quantity, unitPrice, description, itemId, etc.)
-  const [lineItems, setLineItems] = useState([])
+  // Instead of flattening line items, we now group them by room.
+  const [groupedLineItems, setGroupedLineItems] = useState([])
 
-  // **NEW**: Local overrides state { [itemId]: number }
-  // If the user enters a custom amount, we store it here.
+  // Local overrides (if user edits the amount); keys are measurement IDs.
   const [overrides, setOverrides] = useState({})
 
   const [isSending, setIsSending] = useState(false)
 
-  // OAuth for QuickBooks
+  // OAuth request for QuickBooks
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
       clientId,
       scopes: ['com.intuit.quickbooks.accounting'],
-      redirectUri, // Use the HTTPS redirect URI for QuickBooks
+      redirectUri,
       responseType: 'code',
-      state: projectId, // Pass projectId as state
+      state: projectId,
     },
     discovery
   )
@@ -63,7 +60,71 @@ const ViewInvoiceScreen = () => {
     }
   }, [response])
 
-  // -------------- Send Invoice to QuickBooks --------------
+  // Fetch invoice data from Firestore and group by room
+  useEffect(() => {
+    const fetchInvoiceData = async () => {
+      try {
+        const docRef = doc(firestore, 'tickets', projectId)
+        const docSnap = await getDoc(docRef)
+
+        if (docSnap.exists()) {
+          const data = docSnap.data()
+          setCustomerName(data.customerName || 'Unknown')
+          setCustomerEmail(data.customerEmail || 'No Email Provided')
+          setInvoiceDate(
+            data.invoiceDate ? new Date(data.invoiceDate) : new Date()
+          )
+
+          if (data.remediationData?.rooms) {
+            // Group measurements by room
+            const grouped = data.remediationData.rooms.map(room => ({
+              roomName: room.name || 'Room',
+              measurements:
+                room.measurements?.map(measurement => ({
+                  id: measurement.id || `${room.id}-${Math.random()}`,
+                  description: measurement.description || 'No description',
+                  quantity: measurement.quantity || 0,
+                  unitPrice: measurement.unitPrice || 0,
+                  itemId: measurement.itemId || '',
+                })) || [],
+            }))
+            setGroupedLineItems(grouped)
+          }
+        } else {
+          Alert.alert('Error', 'No invoice data found.')
+        }
+      } catch (error) {
+        console.error('Error fetching invoice data:', error)
+        Alert.alert('Error', 'Failed to load data. Please try again.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchInvoiceData()
+  }, [projectId])
+
+  // Compute overall total by summing each room's measurements
+  const totalCost = groupedLineItems.reduce((roomSum, room) => {
+    const roomTotal = room.measurements.reduce((itemSum, item) => {
+      const computed =
+        (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+      const override = overrides[item.id]
+      const finalAmount = override !== undefined ? override : computed
+      return itemSum + finalAmount
+    }, 0)
+    return roomSum + roomTotal
+  }, 0)
+
+  // When user changes an override in a TextInput
+  const handleOverrideChange = (lineItemId, newValue) => {
+    setOverrides(prev => ({
+      ...prev,
+      [lineItemId]: parseFloat(newValue) || 0,
+    }))
+  }
+
+  // When sending the invoice, build final line items from the grouped data.
   const handleSendInvoice = async () => {
     setIsSending(true)
     if (!accessToken) {
@@ -72,28 +133,31 @@ const ViewInvoiceScreen = () => {
       return
     }
 
-    // Build final line items with override or computed total
-    const finalLineItems = lineItems.map(item => {
-      const computed =
-        (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
-      const override = overrides[item.id]
-      const finalAmount = override !== undefined ? override : computed
+    const finalLineItems = []
+    groupedLineItems.forEach(room => {
+      room.measurements.forEach(item => {
+        const computed =
+          (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+        const override = overrides[item.id]
+        const finalAmount = override !== undefined ? override : computed
 
-      return {
-        description: item.description,
-        quantity: item.quantity,
-        // Use "finalAmount" to send to QB
-        amount: finalAmount,
-        itemId: item.itemId,
-        unitPrice: item.unitPrice,
-      }
+        // Include room information if desired (here, we add a custom field "room")
+        finalLineItems.push({
+          description: item.description,
+          quantity: item.quantity,
+          amount: finalAmount,
+          itemId: item.itemId,
+          unitPrice: item.unitPrice,
+          room: room.roomName,
+        })
+      })
     })
 
     const invoiceData = {
       customerEmail: customerEmail,
-      customerId: '3', // Replace with actual QuickBooks Customer ID
+      customerId: '3', // Replace with the actual QuickBooks Customer ID as needed
       customerName: customerName,
-      invoiceDate: invoiceDate.toISOString().split('T')[0], // Format YYYY-MM-DD
+      invoiceDate: invoiceDate.toISOString().split('T')[0], // YYYY-MM-DD format
       lineItems: finalLineItems,
     }
 
@@ -111,77 +175,9 @@ const ViewInvoiceScreen = () => {
     }
   }
 
-  // -------------- Fetch Invoice Data from Firestore --------------
-  useEffect(() => {
-    const fetchInvoiceData = async () => {
-      try {
-        const docRef = doc(firestore, 'tickets', projectId)
-        const docSnap = await getDoc(docRef)
-
-        if (docSnap.exists()) {
-          const data = docSnap.data()
-          setCustomerName(data.customerName || 'Unknown')
-          setCustomerEmail(data.customerEmail || 'No Email Provided')
-          setInvoiceDate(
-            data.invoiceDate ? new Date(data.invoiceDate) : new Date()
-          )
-
-          // Format line items: example from data.remediationData?.rooms
-          // Flatten the measurements across all rooms
-          if (data.remediationData?.rooms) {
-            const flattenedItems = []
-            data.remediationData.rooms.forEach(room => {
-              room.measurements?.forEach(measurement => {
-                // We assume "itemId", "quantity", "unitPrice", "description"
-                // might be on the measurement.
-                flattenedItems.push({
-                  id: measurement.id || `${room.id}-${Math.random()}`,
-                  description: measurement.description || 'No desc',
-                  quantity: measurement.quantity || 0,
-                  unitPrice: measurement.unitPrice || 0,
-                  itemId: measurement.itemId || '',
-                })
-              })
-            })
-            setLineItems(flattenedItems)
-          }
-        } else {
-          Alert.alert('Error', 'No invoice data found.')
-        }
-      } catch (error) {
-        console.error('Error fetching invoice data:', error)
-        Alert.alert('Error', 'Failed to load data. Please try again.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchInvoiceData()
-  }, [projectId])
-
-  // -------------- Save to Firestore (Optional) --------------
+  // Optional: Save changes button (currently just alerts)
   const handleSaveChanges = async () => {
-    // If you want to save user-changed amounts to Firestore (though you said you do NOT want to),
-    // you could do so here.
-    // Right now, we'll just show a message or do minimal logic.
     Alert.alert('Note', 'Currently not saving total overrides to Firestore.')
-  }
-
-  // -------------- Compute Overall Total --------------
-  const totalCost = lineItems.reduce((sum, item) => {
-    const computed =
-      (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
-    const override = overrides[item.id]
-    const finalAmount = override !== undefined ? override : computed
-    return sum + finalAmount
-  }, 0)
-
-  // -------------- Handle user override changes --------------
-  const handleOverrideChange = (lineItemId, newValue) => {
-    setOverrides(prev => ({
-      ...prev,
-      [lineItemId]: parseFloat(newValue) || 0,
-    }))
   }
 
   if (loading) {
@@ -192,7 +188,6 @@ const ViewInvoiceScreen = () => {
     )
   }
 
-  // -------------- Return UI --------------
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -210,36 +205,51 @@ const ViewInvoiceScreen = () => {
           <Text style={styles.textValue}>{invoiceDate.toDateString()}</Text>
         </View>
 
-        {/* Line Items */}
+        {/* Grouped Line Items by Room */}
         <Text style={styles.sectionTitle}>Services & Costs</Text>
-        {lineItems.map(item => {
-          const computedTotal =
-            (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
-          // If user overrode it, use that:
-          const override = overrides[item.id]
-          const finalAmount = override !== undefined ? override : computedTotal
+        {groupedLineItems.length > 0 ? (
+          groupedLineItems.map(room => (
+            <View key={room.roomName} style={styles.roomGroup}>
+              <Text style={styles.roomHeader}>{room.roomName}</Text>
+              {room.measurements.map(item => {
+                const computedTotal =
+                  (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+                const override = overrides[item.id]
+                const finalAmount =
+                  override !== undefined ? override : computedTotal
 
-          return (
-            <View key={item.id} style={styles.lineItem}>
-              <Text style={styles.label}>Item Description</Text>
-              <Text style={styles.textValue}>{item.description}</Text>
+                return (
+                  <View key={item.id} style={styles.lineItem}>
+                    <Text style={styles.label}>Item Description</Text>
+                    <Text style={styles.textValue}>{item.description}</Text>
 
-              <Text style={styles.label}>Quantity</Text>
-              <Text style={styles.textValue}>{String(item.quantity)}</Text>
+                    <Text style={styles.label}>Quantity</Text>
+                    <Text style={styles.textValue}>
+                      {String(item.quantity)}
+                    </Text>
 
-              <Text style={styles.label}>Item Amount</Text>
-              <TextInput
-                style={styles.input}
-                keyboardType="numeric"
-                // Display finalAmount (computed or override)
-                value={String(finalAmount.toFixed(2))}
-                onChangeText={text => handleOverrideChange(item.id, text)}
-              />
+                    <Text style={styles.label}>Unit Price</Text>
+                    <Text style={styles.textValue}>
+                      ${Number(item.unitPrice).toFixed(2)}
+                    </Text>
+
+                    <Text style={styles.label}>Item Amount</Text>
+                    <TextInput
+                      style={styles.input}
+                      keyboardType="numeric"
+                      value={String(finalAmount.toFixed(2))}
+                      onChangeText={text => handleOverrideChange(item.id, text)}
+                    />
+                  </View>
+                )
+              })}
             </View>
-          )
-        })}
+          ))
+        ) : (
+          <Text style={styles.noItemsText}>No invoice line items found.</Text>
+        )}
 
-        {/* Total */}
+        {/* Overall Total */}
         <View style={styles.totalContainer}>
           <Text style={styles.totalText}>Total: ${totalCost.toFixed(2)}</Text>
         </View>
@@ -322,6 +332,26 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
     marginBottom: 10,
   },
+  roomGroup: {
+    marginBottom: 20,
+    padding: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  roomHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingBottom: 4,
+  },
   lineItem: {
     backgroundColor: '#FFF',
     borderRadius: 8,
@@ -368,5 +398,11 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  noItemsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#666',
+    fontSize: 16,
   },
 })

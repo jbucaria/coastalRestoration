@@ -32,23 +32,26 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
     AllowOnlineACHPayment: true,
     Line: invoiceData.lineItems.map(item => ({
       DetailType: 'SalesItemLineDetail',
+      // The Amount is the final line total (computed or overridden)
       Amount: item.amount,
+      // Optionally, you can leave Description empty or set it if needed
       Description: item.description,
       SalesItemLineDetail: {
         ItemRef: {
           value: item.itemId,
-          name: 'Services',
         },
-        UnitPrice: item.amount,
-        Qty: 1,
+        // Use the actual unitPrice and quantity
+        UnitPrice: item.unitPrice,
+        Qty: item.quantity,
       },
     })),
     TxnDate: invoiceData.invoiceDate,
     CurrencyRef: {
       value: 'USD',
     },
+    // Sum the amounts from each line item for the overall total
     TotalAmt: invoiceData.lineItems.reduce(
-      (total, item) => total + item.quantity * item.unitPrice,
+      (total, item) => total + item.amount,
       0
     ),
   }
@@ -88,12 +91,11 @@ const sendInvoiceToQuickBooks = async (invoiceData, accessToken) => {
       console.log('✅ Invoice Created:', responseData)
       return responseData
     } else {
-      // Ensure property names (lowercase) match QuickBooks error structure
+      // Use QuickBooks error details if available
       const errorDetails = responseData.fault?.error || []
       let errorMessage = `QuickBooks API Error: ${response.status} ${response.statusText}`
 
       if (errorDetails.length > 0) {
-        // Use 'message' (lowercase) instead of 'Message'
         errorMessage += `\nDetails: ${
           errorDetails[0]?.message || 'Unknown Error'
         }`
