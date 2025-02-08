@@ -11,20 +11,138 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
+  Modal,
 } from 'react-native'
 import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { exportCSVReport } from '@/utils/createCSVReport'
 import useProjectStore from '@/store/useProjectStore'
 
+/**
+ * PhotoModal Component
+ * Displays an enlarged image in a modal view.
+ */
+const PhotoModal = ({ visible, photo, onClose }) => {
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (visible && photo) {
+      setIsLoading(true)
+      Image.getSize(
+        photo,
+        (width, height) => {
+          setIsLoading(false)
+        },
+        error => {
+          console.error('Error getting image size:', error)
+          setIsLoading(false)
+        }
+      )
+    }
+  }, [visible, photo])
+
+  return (
+    <Modal
+      animationType="fade"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={photoModalStyles.modalBackground}>
+        <TouchableOpacity
+          style={photoModalStyles.modalTouchable}
+          onPress={onClose}
+          activeOpacity={1}
+        >
+          <View style={photoModalStyles.modalContent}>
+            {isLoading && (
+              <ActivityIndicator
+                size="large"
+                color="#0000ff"
+                style={photoModalStyles.loadingIndicator}
+              />
+            )}
+            {photo ? (
+              <Image
+                source={{ uri: photo }}
+                style={[
+                  photoModalStyles.fullPhoto,
+                  { width: 300, height: 400 },
+                ]}
+                resizeMode="contain"
+              />
+            ) : (
+              <Text style={photoModalStyles.photoLoadingText}>
+                No Photo Available
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={photoModalStyles.closeButton}
+          onPress={onClose}
+        >
+          <Text style={photoModalStyles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  )
+}
+
+const photoModalStyles = StyleSheet.create({
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+  modalTouchable: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '90%',
+    height: '90%',
+  },
+  fullPhoto: {
+    flex: 1,
+  },
+  photoLoadingText: {
+    color: 'white',
+    fontSize: 18,
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    zIndex: 1,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+})
+
 export default function ViewRemediationScreen() {
   const { projectId } = useProjectStore()
-
   const router = useRouter()
   const [remediationData, setRemediationData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [customerName, setCustomerName] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
+
+  // State for Photo Modal
+  const [selectedPhoto, setSelectedPhoto] = useState(null)
+  const [photoModalVisible, setPhotoModalVisible] = useState(false)
 
   // Fetch remediation data when the component mounts.
   useEffect(() => {
@@ -34,7 +152,8 @@ export default function ViewRemediationScreen() {
         const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
           const data = docSnap.data()
-          setRemediationData(data.remediationData || null)
+          // Ensure remediationData is not null and has a rooms array.
+          setRemediationData(data.remediationData || { rooms: [] })
           setCustomerName(data.customerName || 'Unknown')
           setCustomerEmail(data.customerEmail || 'No Email Provided')
         } else {
@@ -58,7 +177,11 @@ export default function ViewRemediationScreen() {
     )
   }
 
-  if (!remediationData) {
+  if (
+    !remediationData ||
+    !remediationData.rooms ||
+    remediationData.rooms.length === 0
+  ) {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.errorText}>No remediation data available.</Text>
@@ -74,29 +197,56 @@ export default function ViewRemediationScreen() {
       >
         <Text style={styles.title}>Remediation Report</Text>
 
-        {remediationData.rooms &&
-          remediationData.rooms.map(room => (
-            <View key={room.id} style={styles.roomContainer}>
-              <Text style={styles.roomTitle}>{room.name}</Text>
+        {remediationData.rooms.map((room, roomIndex) => {
+          if (!room) return null
+          return (
+            <View key={room.id || roomIndex} style={styles.roomContainer}>
+              <Text style={styles.roomTitle}>
+                {room.name || 'Unnamed Room'}
+              </Text>
               {room.measurements &&
-                room.measurements.map(measurement => (
-                  <View key={measurement.id} style={styles.measurementRow}>
-                    <Text style={styles.measurementText}>
-                      {measurement.description}: {measurement.quantity}
-                    </Text>
-                  </View>
-                ))}
-              {room.photos && room.photos.length > 0 && (
-                <ScrollView horizontal style={styles.photoRow}>
-                  {room.photos.map(uri => (
-                    <View key={uri} style={styles.photoItem}>
-                      <Image source={{ uri }} style={styles.photoImage} />
+                room.measurements.map((measurement, measIndex) => {
+                  if (!measurement) return null
+                  return (
+                    <View
+                      key={measurement.id || measIndex}
+                      style={styles.measurementRow}
+                    >
+                      <Text style={styles.measurementText}>
+                        {measurement.description || ''}:{' '}
+                        {measurement.quantity || 0}
+                      </Text>
                     </View>
-                  ))}
-                </ScrollView>
-              )}
+                  )
+                })}
+              {room.photos &&
+                Array.isArray(room.photos) &&
+                room.photos.length > 0 && (
+                  <ScrollView horizontal style={styles.photoRow}>
+                    {room.photos.map((photo, index) => {
+                      // Check that photo is an object with a downloadURL property.
+                      if (!photo || !photo.downloadURL) return null
+                      return (
+                        <TouchableOpacity
+                          key={(photo.storagePath || index) + index}
+                          onPress={() => {
+                            setSelectedPhoto(photo.downloadURL)
+                            setPhotoModalVisible(true)
+                          }}
+                          style={styles.photoItem}
+                        >
+                          <Image
+                            source={{ uri: photo.downloadURL }}
+                            style={styles.photoImage}
+                          />
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </ScrollView>
+                )}
             </View>
-          ))}
+          )
+        })}
 
         {/* Create CSV Report Button */}
         <TouchableOpacity
@@ -127,6 +277,15 @@ export default function ViewRemediationScreen() {
           <Text style={styles.exportButtonText}>Create Invoice</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Photo Modal */}
+      {photoModalVisible && (
+        <PhotoModal
+          visible={photoModalVisible}
+          photo={selectedPhoto}
+          onClose={() => setPhotoModalVisible(false)}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -186,6 +345,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 6,
+  },
+  addPhotoButton: {
+    marginTop: 8,
+    backgroundColor: '#2980B9',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  addPhotoButtonText: {
+    color: '#FFF',
+    fontWeight: '600',
   },
   exportButton: {
     marginTop: 20,
