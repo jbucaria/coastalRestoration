@@ -1,6 +1,6 @@
 // ViewRemediationScreen.js
 import React, { useEffect, useState } from 'react'
-import { useRouter, router } from 'expo-router'
+import { useRouter } from 'expo-router'
 import {
   SafeAreaView,
   ScrollView,
@@ -11,151 +11,35 @@ import {
   ActivityIndicator,
   Alert,
   TouchableOpacity,
-  Modal,
 } from 'react-native'
 import { doc, getDoc } from 'firebase/firestore'
 import { firestore } from '@/firebaseConfig'
 import { exportCSVReport } from '@/utils/createCSVReport'
+import { PhotoModal } from '@/components/PhotoModal'
 import useProjectStore from '@/store/useProjectStore'
-
-/**
- * PhotoModal Component
- * Displays an enlarged image in a modal view.
- */
-const PhotoModal = ({ visible, photo, onClose }) => {
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    if (visible && photo) {
-      setIsLoading(true)
-      Image.getSize(
-        photo,
-        (width, height) => {
-          setIsLoading(false)
-        },
-        error => {
-          console.error('Error getting image size:', error)
-          setIsLoading(false)
-        }
-      )
-    }
-  }, [visible, photo])
-
-  return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={photoModalStyles.modalBackground}>
-        <TouchableOpacity
-          style={photoModalStyles.modalTouchable}
-          onPress={onClose}
-          activeOpacity={1}
-        >
-          <View style={photoModalStyles.modalContent}>
-            {isLoading && (
-              <ActivityIndicator
-                size="large"
-                color="#0000ff"
-                style={photoModalStyles.loadingIndicator}
-              />
-            )}
-            {photo ? (
-              <Image
-                source={{ uri: photo }}
-                style={[
-                  photoModalStyles.fullPhoto,
-                  { width: 300, height: 400 },
-                ]}
-                resizeMode="contain"
-              />
-            ) : (
-              <Text style={photoModalStyles.photoLoadingText}>
-                No Photo Available
-              </Text>
-            )}
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={photoModalStyles.closeButton}
-          onPress={onClose}
-        >
-          <Text style={photoModalStyles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  )
-}
-
-const photoModalStyles = StyleSheet.create({
-  modalBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.9)',
-  },
-  modalTouchable: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '90%',
-    height: '90%',
-  },
-  fullPhoto: {
-    flex: 1,
-  },
-  photoLoadingText: {
-    color: 'white',
-    fontSize: 18,
-  },
-  loadingIndicator: {
-    position: 'absolute',
-    zIndex: 1,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    padding: 10,
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-})
 
 export default function ViewRemediationScreen() {
   const { projectId } = useProjectStore()
   const router = useRouter()
+
   const [remediationData, setRemediationData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [customerName, setCustomerName] = useState('')
-  const [customerEmail, setCustomerEmail] = useState('')
 
-  // State for Photo Modal
+  // Photo Modal State
   const [selectedPhoto, setSelectedPhoto] = useState(null)
   const [photoModalVisible, setPhotoModalVisible] = useState(false)
 
-  // Fetch remediation data when the component mounts.
+  // Fetch remediation data when component mounts
   useEffect(() => {
     const fetchData = async () => {
       try {
         const docRef = doc(firestore, 'tickets', projectId)
         const docSnap = await getDoc(docRef)
+
         if (docSnap.exists()) {
           const data = docSnap.data()
-          // Ensure remediationData is not null and has a rooms array.
+          // Ensure remediationData is not null and has a rooms array
           setRemediationData(data.remediationData || { rooms: [] })
-          setCustomerName(data.customerName || 'Unknown')
-          setCustomerEmail(data.customerEmail || 'No Email Provided')
         } else {
           Alert.alert('Error', 'No remediation data found.')
         }
@@ -166,6 +50,7 @@ export default function ViewRemediationScreen() {
         setLoading(false)
       }
     }
+
     fetchData()
   }, [projectId])
 
@@ -191,44 +76,57 @@ export default function ViewRemediationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        key={projectId}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Remediation Report</Text>
 
+        {/* Map over rooms */}
         {remediationData.rooms.map((room, roomIndex) => {
           if (!room) return null
+
+          // Provide a stable key using room.id if available, else fallback
+          const roomKey = room.id || `room-${roomIndex}`
+
           return (
-            <View key={room.id || roomIndex} style={styles.roomContainer}>
+            <View key={roomKey} style={styles.roomContainer}>
+              {/* Room Name */}
               <Text style={styles.roomTitle}>
                 {room.name || 'Unnamed Room'}
               </Text>
+
+              {/* Map over measurements */}
               {room.measurements &&
                 room.measurements.map((measurement, measIndex) => {
                   if (!measurement) return null
+
+                  // Unique key for measurement
+                  const measurementKey = measurement.id || `meas-${measIndex}`
+                  const desc = measurement.name || ''
+                  const qty = measurement.quantity || 0
+
                   return (
-                    <View
-                      key={measurement.id || measIndex}
-                      style={styles.measurementRow}
-                    >
+                    <View key={measurementKey} style={styles.measurementRow}>
                       <Text style={styles.measurementText}>
-                        {measurement.description || ''}:{' '}
-                        {measurement.quantity || 0}
+                        {desc}: {qty}
                       </Text>
                     </View>
                   )
                 })}
+
+              {/* Photos */}
               {room.photos &&
                 Array.isArray(room.photos) &&
                 room.photos.length > 0 && (
                   <ScrollView horizontal style={styles.photoRow}>
                     {room.photos.map((photo, index) => {
-                      // Check that photo is an object with a downloadURL property.
+                      // Provide a fallback if photo is missing or invalid
                       if (!photo || !photo.downloadURL) return null
+
+                      // Unique key for photo (use storagePath if available)
+                      const photoKey = photo.storagePath || `photo-${index}`
+
                       return (
                         <TouchableOpacity
-                          key={(photo.storagePath || index) + index}
+                          key={photoKey}
                           onPress={() => {
                             setSelectedPhoto(photo.downloadURL)
                             setPhotoModalVisible(true)
@@ -255,6 +153,7 @@ export default function ViewRemediationScreen() {
         >
           <Text style={styles.exportButtonText}>Create CSV Report</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => {
             router.push({
@@ -266,6 +165,7 @@ export default function ViewRemediationScreen() {
         >
           <Text style={styles.exportButtonText}>Edit</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => {
             router.push({
@@ -345,18 +245,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 6,
-  },
-  addPhotoButton: {
-    marginTop: 8,
-    backgroundColor: '#2980B9',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  addPhotoButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
   },
   exportButton: {
     marginTop: 20,

@@ -86,6 +86,7 @@ const ViewInvoiceScreen = () => {
                   quantity: measurement.quantity || 0,
                   unitPrice: measurement.unitPrice || 0,
                   itemId: measurement.itemId || '',
+                  name: measurement.name || ' item',
                 })) || [],
             }))
             setGroupedLineItems(grouped)
@@ -149,6 +150,7 @@ const ViewInvoiceScreen = () => {
           itemId: item.itemId,
           unitPrice: item.unitPrice,
           room: room.roomName,
+          name: item.name,
         })
       })
     })
@@ -221,7 +223,7 @@ const ViewInvoiceScreen = () => {
                 return (
                   <View key={item.id} style={styles.lineItem}>
                     <Text style={styles.label}>Item Description</Text>
-                    <Text style={styles.textValue}>{item.description}</Text>
+                    <Text style={styles.textValue}>{item.name}</Text>
 
                     <Text style={styles.label}>Quantity</Text>
                     <Text style={styles.textValue}>

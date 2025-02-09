@@ -46,12 +46,11 @@ const RemediationScreen = ({ route }) => {
   const [currentMeasurementId, setCurrentMeasurementId] = useState(null)
   const [allItems, setAllItems] = useState([])
   const [itemSearchQuery, setItemSearchQuery] = useState('')
-  const [selectedItem, setSelectedItem] = useState(null)
   const [loadingItemsModal, setLoadingItemsModal] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(null)
 
   // -------------------- Room / Measurement Functions --------------------
-  // Add a new room.
+  // Add a new room
   const handleAddRoom = (roomName = '') => {
     const newRoom = {
       id: uuidv4(),
@@ -62,7 +61,7 @@ const RemediationScreen = ({ route }) => {
     setRooms([...rooms, newRoom])
   }
 
-  // Delete a room.
+  // Delete a room
   const handleDeleteRoom = roomId => {
     setRooms(rooms.filter(room => room.id !== roomId))
   }
@@ -72,9 +71,11 @@ const RemediationScreen = ({ route }) => {
     const newMeasurementId = uuidv4()
     const newMeasurement = {
       id: newMeasurementId,
-      description: '', // To be set via item selection
+      name: '', // <--- If you want to also store name initially
+      description: '', // we'll set via handleSelectItem or user input
       quantity: 0,
       itemId: '',
+      unitPrice: 0,
     }
     setRooms(prev =>
       prev.map(room =>
@@ -103,7 +104,7 @@ const RemediationScreen = ({ route }) => {
     }
   }
 
-  // Update measurement field.
+  // Update measurement field
   const handleMeasurementChange = (roomId, measurementId, field, value) => {
     setRooms(prev =>
       prev.map(room => {
@@ -116,7 +117,7 @@ const RemediationScreen = ({ route }) => {
     )
   }
 
-  // Delete a measurement.
+  // Delete a measurement
   const handleDeleteMeasurement = (roomId, measurementId) => {
     setRooms(prev =>
       prev.map(room => {
@@ -180,12 +181,15 @@ const RemediationScreen = ({ route }) => {
     setRooms(prev =>
       prev.map(room => {
         if (room.id !== roomId) return room
-        return { ...room, photos: room.photos.filter(uri => uri !== photoUri) }
+        return {
+          ...room,
+          photos: room.photos.filter(p => p.storagePath !== photoUri),
+        }
       })
     )
   }
 
-  // Save remediation data to Firestore.
+  // Save remediation data to Firestore
   const handleSaveRemediationData = async () => {
     try {
       const remediationData = {
@@ -204,6 +208,8 @@ const RemediationScreen = ({ route }) => {
       Alert.alert('Error', 'Failed to save data. Please try again.')
     }
   }
+
+  // Fetch items from Firestore for the items modal
   const fetchItemsFromFirestore = async () => {
     try {
       const querySnapshot = await getDocs(collection(firestore, 'items'))
@@ -218,30 +224,32 @@ const RemediationScreen = ({ route }) => {
     }
   }
 
-  // When an item is selected from the modal Picker, update the measurement.
+  // When an item is selected from the modal Picker, update the measurement with item data
   const handleSelectItem = item => {
     setRooms(prevRooms =>
       prevRooms.map(room => {
         if (room.id !== currentRoomId) return room
-        const updatedMeasurements = room.measurements.map(m =>
-          m.id === currentMeasurementId
-            ? {
-                ...m,
-                description: item.description,
-                itemId: item.id,
-                unitPrice: item.unitPrice,
-              }
-            : m
-        )
+        const updatedMeasurements = room.measurements.map(m => {
+          if (m.id === currentMeasurementId) {
+            return {
+              ...m,
+              // Store both name and description if you want to differentiate them
+              name: item.name, // <--- ensure we set "name"
+              description: item.description,
+              itemId: item.id,
+              unitPrice: item.unitPrice,
+            }
+          }
+          return m
+        })
         return { ...room, measurements: updatedMeasurements }
       })
     )
-    // Reset modal state.
+    // Reset modal state
     setShowItemsModal(false)
     setItemSearchQuery('')
     setCurrentRoomId(null)
     setCurrentMeasurementId(null)
-    setSelectedItem(null)
   }
 
   // -------------------- Date & Time Functions --------------------
@@ -267,8 +275,7 @@ const RemediationScreen = ({ route }) => {
     return newDate
   }
 
-  // -------------------- Navigation and Helpers --------------------
-
+  // Navigation / Helpers
   const resetForm = () => {
     setRooms([])
   }
@@ -311,6 +318,7 @@ const RemediationScreen = ({ route }) => {
             {/* List of Rooms */}
             {rooms.map(room => (
               <View key={room.id} style={styles.roomContainer}>
+                {/* Room Header */}
                 <View style={styles.roomHeader}>
                   <Text style={styles.roomTitle}>{room.name}</Text>
                   <TouchableOpacity onPress={() => handleDeleteRoom(room.id)}>
@@ -321,10 +329,11 @@ const RemediationScreen = ({ route }) => {
                 {/* List of Measurements */}
                 {room.measurements.map(measurement => (
                   <View key={measurement.id} style={styles.measurementRow}>
+                    {/* Measurement Description */}
                     <TextInput
                       style={[styles.measurementInput, { flex: 1 }]}
                       placeholder="Description (select item)"
-                      value={measurement.description}
+                      value={measurement.name}
                       onChangeText={val =>
                         handleMeasurementChange(
                           room.id,
@@ -334,6 +343,7 @@ const RemediationScreen = ({ route }) => {
                         )
                       }
                     />
+                    {/* Measurement Quantity */}
                     <TextInput
                       style={[
                         styles.measurementInput,
@@ -343,7 +353,7 @@ const RemediationScreen = ({ route }) => {
                       value={measurement.quantity.toString()}
                       keyboardType="numeric"
                       onChangeText={val => {
-                        const numericValue = parseFloat(val) || 0 // Convert to number, default to 0 if invalid
+                        const numericValue = parseFloat(val) || 0
                         handleMeasurementChange(
                           room.id,
                           measurement.id,
@@ -352,6 +362,7 @@ const RemediationScreen = ({ route }) => {
                         )
                       }}
                     />
+                    {/* Delete Measurement Button */}
                     <TouchableOpacity
                       onPress={() =>
                         handleDeleteMeasurement(room.id, measurement.id)
@@ -360,7 +371,7 @@ const RemediationScreen = ({ route }) => {
                     >
                       <Text style={styles.deleteMeasurementButtonText}>X</Text>
                     </TouchableOpacity>
-                    {/* Button to open modal to edit/select item */}
+                    {/* Open Item Selection Modal */}
                     <TouchableOpacity
                       onPress={() =>
                         handleEditMeasurement(room.id, measurement.id)
@@ -408,6 +419,7 @@ const RemediationScreen = ({ route }) => {
                   </ScrollView>
                 )}
 
+                {/* Add Photo Button */}
                 <TouchableOpacity
                   onPress={() => handleAddPhoto(room.id, projectId)}
                   style={styles.addPhotoButton}
@@ -429,7 +441,7 @@ const RemediationScreen = ({ route }) => {
               </TouchableOpacity>
             )}
 
-            {/* ---------------- Items Search Modal ---------------- */}
+            {/* Items Search Modal */}
             {showItemsModal && (
               <Modal
                 visible={showItemsModal}
@@ -457,7 +469,7 @@ const RemediationScreen = ({ route }) => {
                       >
                         {allItems
                           .filter(item =>
-                            item.name
+                            (item.name || '')
                               .toLowerCase()
                               .includes(itemSearchQuery.toLowerCase())
                           )

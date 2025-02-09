@@ -250,7 +250,7 @@ const TicketsScreen = () => {
               <IconSymbol name="slider.horizontal.3" size={24} color="#333" />
             </TouchableOpacity>
 
-            {/* Always show Clear button, but disable if no sort is active */}
+            {/* Show the Clear button only if we have an active sortOption */}
             {!isClearDisabled && (
               <TouchableOpacity
                 style={styles.clearSortButton}
@@ -277,19 +277,26 @@ const TicketsScreen = () => {
           <Text>Loading tickets...</Text>
         ) : displayedTickets.length > 0 ? (
           displayedTickets.map((ticket, index) => {
+            // We create a unique key for each ticket
+            // Prefer ticket.id if it's guaranteed unique
+            const ticketKey = ticket.id || `ticket-${index}`
+
+            // Determine background/time color for each row
             const containerStyle = index % 2 === 0 ? '#ECECEC' : '#FFFFFF'
             const timeColor = index % 2 === 0 ? '#0D47A1' : '#1976D2'
 
             return (
-              <TicketCard
-                ticket={ticket}
-                onPress={() => {
-                  setProjectId(ticket.id)
-                  router.push('/TicketDetailsScreen')
-                }}
-                backgroundColor={containerStyle}
-                timeColor={timeColor}
-              />
+              <View key={ticketKey} style={{ marginBottom: 8 }}>
+                <TicketCard
+                  ticket={ticket}
+                  onPress={() => {
+                    setProjectId(ticket.id)
+                    router.push('/TicketDetailsScreen')
+                  }}
+                  backgroundColor={containerStyle}
+                  timeColor={timeColor}
+                />
+              </View>
             )
           })
         ) : (
@@ -387,21 +394,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     padding: 6,
   },
-  clearDisabled: {
-    opacity: 0.6, // visually indicate the button is disabled
-  },
   scrollViewContent: {
     paddingBottom: 100,
-  },
-  // Ticket containers
-  ticketContainer: {
-    marginBottom: 8,
-  },
-  evenTicketContainer: {
-    backgroundColor: '#FAFAFA',
-  },
-  oddTicketContainer: {
-    backgroundColor: 'red',
   },
   noTicketsText: {
     textAlign: 'center',
