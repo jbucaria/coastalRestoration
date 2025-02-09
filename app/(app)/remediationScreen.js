@@ -23,7 +23,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore, storage } from '@/firebaseConfig'
-import { HeaderComponent } from '@/components/HeaderComponent'
+import { HeaderWithOptions } from '@/components/HeaderWithOptions'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
 /** Predefined room types */
@@ -254,7 +254,7 @@ const RemediationScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Top Bar (inspired by X/Twitter) */}
-      <HeaderComponent title="Remediation" onBack={() => router.back()} />
+      <HeaderWithOptions title="Remediation" onBack={() => router.back()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

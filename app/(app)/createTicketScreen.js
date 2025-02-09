@@ -21,12 +21,12 @@ import 'react-native-get-random-values'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import * as ImagePicker from 'expo-image-picker'
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete'
-import { IconSymbol } from '@/components/ui/IconSymbol'
-import { FloatingBackButton } from '@/components/FloatingBackButton'
-import { handleCreateTicket } from '@/utils/generateTicket'
-import { useUserStore } from '@/store/useUserStore'
 import { firestore } from '@/firebaseConfig'
 import { collection, getDocs } from 'firebase/firestore'
+import { IconSymbol } from '@/components/ui/IconSymbol'
+import { handleCreateTicket } from '@/utils/generateTicket'
+import { useUserStore } from '@/store/useUserStore'
+import { HeaderWithOptions } from '@/components/HeaderWithOptions'
 
 const initialTicketStatus = {
   street: '123 Main St',
@@ -35,7 +35,7 @@ const initialTicketStatus = {
   state: 'FL',
   zip: '33602',
   date: '',
-  // Builder fields:
+  // Builder fields
   customer: '', // might be an internal id
   customerName: '', // builder's display name
   customerNumber: '', // builder's phone number
@@ -292,7 +292,11 @@ const CreateTicketScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FloatingBackButton color="#007bff" />
+      <HeaderWithOptions
+        title="Create Ticket"
+        onBack={() => router.back()}
+        onOptions={() => setOptionsModalVisible(true)}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -304,18 +308,6 @@ const CreateTicketScreen = () => {
             contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Title */}
-            <Text style={styles.title}>Create New Ticket</Text>
-            {/* Back Button */}
-            <View style={styles.floatingContainer}>
-              <TouchableOpacity
-                onPress={handleBack}
-                style={styles.floatingBackButton}
-              >
-                <IconSymbol name="arrow-back" size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-
             {/* Date and Time Section */}
             <View style={styles.dateTimeSection}>
               <View style={styles.datePickerContainer}>

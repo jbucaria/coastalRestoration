@@ -21,10 +21,11 @@ import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
+import { IconSymbol } from '@/components/ui/IconSymbol'
 import { deleteTicket } from '@/utils/deleteTicket'
-import { ETAButton } from '@/components/EtaButton'
-import { HeaderComponent } from '@/components/HeaderComponent'
 import useProjectStore from '@/store/useProjectStore'
+import { ETAButton } from '@/components/EtaButton'
+import { HeaderWithOptions } from '@/components/HeaderWithOptions'
 
 const TicketDetailsScreen = () => {
   const router = useRouter()
@@ -33,17 +34,14 @@ const TicketDetailsScreen = () => {
   const [eta, setEta] = useState(null)
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
-  const [optionsModalVisible, setOptionsModalVisible] = useState(false)
 
-  // Animated header value
-  const scrollY = useRef(new Animated.Value(0)).current
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, -100],
-    extrapolate: 'clamp',
-  })
+  // const scrollY = useRef(new Animated.Value(0)).current
+  // const headerTranslateY = scrollY.interpolate({
+  //   inputRange: [0, 100],
+  //   outputRange: [0, -100],
+  //   extrapolate: 'clamp',
+  // })
 
-  // Subscribe to ticket data
   useEffect(() => {
     if (!projectId) return
 
@@ -65,7 +63,6 @@ const TicketDetailsScreen = () => {
     return () => unsubscribe()
   }, [projectId])
 
-  // Get travel time from address
   useEffect(() => {
     if (ticket?.address) {
       getTravelTime(ticket.address)
@@ -88,36 +85,32 @@ const TicketDetailsScreen = () => {
     )
   }
 
-  // ----- Ticket Option Functions -----
-  const openGoogleMapsWithETA = async address => {
-    try {
-      const url = Platform.select({
-        ios: `comgooglemaps://?q=${encodeURIComponent(address)}`,
-        android: `geo:0,0?q=${encodeURIComponent(address)}`,
-      })
-      if (Platform.OS === 'ios') {
-        const supported = await Linking.canOpenURL('comgooglemaps://')
-        if (supported) {
-          await Linking.openURL(url)
-        } else {
-          await Linking.openURL(
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              address
-            )}`
-          )
-        }
-      } else {
-        await Linking.openURL(url)
-      }
-    } catch (error) {
-      console.error('Error opening maps with ETA:', error)
-      Alert.alert('Error', 'Failed to open navigation.')
+  const handleInspection = () => {
+    if (!ticket) {
+      Alert.alert('Error', 'No ticket selected for inspection.')
+      return
     }
+    const route = ticket.inspectionComplete
+      ? '/ViewReport'
+      : '/InspectionScreen'
+    router.push({ pathname: route, params: { projectId: ticket.projectId } })
   }
 
-  const handleDeleteTicket = () => {
-    deleteTicket(projectId, () => {
-      router.push('/(tabs)')
+  const handleRemediation = () => {
+    if (!ticket) {
+      Alert.alert('Error', 'No ticket selected for remediation.')
+      return
+    }
+    const route = ticket.remediationComplete
+      ? '/ViewRemediationScreen'
+      : '/RemediationScreen'
+    router.push({ pathname: route, params: { projectId: ticket.projectId } })
+  }
+
+  const openNotes = () => {
+    router.push({
+      pathname: '/TicketNotesScreen',
+      params: { projectId: ticket.id },
     })
   }
 
@@ -160,37 +153,14 @@ const TicketDetailsScreen = () => {
     ])
   }
 
-  const handleInspection = () => {
-    if (!ticket) {
-      Alert.alert('Error', 'No ticket selected for inspection.')
-      return
-    }
-    const route = ticket.inspectionComplete
-      ? '/ViewReport'
-      : '/InspectionScreen'
-    router.push({ pathname: route, params: { projectId: ticket.projectId } })
-  }
-
-  const handleRemediation = () => {
-    if (!ticket) {
-      Alert.alert('Error', 'No ticket selected for remediation.')
-      return
-    }
-    const route = ticket.remediationComplete
-      ? '/ViewRemediationScreen'
-      : '/RemediationScreen'
-    router.push({ pathname: route, params: { projectId: ticket.projectId } })
-  }
-
-  const openNotes = () => {
-    router.push({
-      pathname: '/TicketNotesScreen',
-      params: { projectId: ticket.id },
-    })
-  }
-
   const handlePhotoPress = uri => setSelectedPhoto(uri)
   const closePhoto = () => setSelectedPhoto(null)
+
+  const handleDeleteTicket = () => {
+    deleteTicket(projectId, () => {
+      router.push('/(tabs)')
+    })
+  }
 
   const handleSiteComplete = async () => {
     const newStatus = !ticket.siteComplete
@@ -222,97 +192,72 @@ const TicketDetailsScreen = () => {
     )
   }
 
+  // Define options for the header modal – note the delete option is now included.
+  const options = [
+    {
+      label: 'Delete Ticket',
+      onPress: () => {
+        handleDeleteTicket()
+      },
+    },
+    {
+      label: ticket.siteComplete ? 'Mark Incomplete' : 'Mark Complete',
+      onPress: async () => {
+        const newStatus = !ticket.siteComplete
+        const actionText = newStatus ? 'complete' : 'incomplete'
+        Alert.alert(
+          'Confirm',
+          `Are you sure you want to mark this site as ${actionText}?`,
+          [
+            {
+              text: 'Yes',
+              onPress: async () => {
+                try {
+                  const projectRef = doc(firestore, 'tickets', ticket.id)
+                  await updateDoc(projectRef, { siteComplete: newStatus })
+                  Alert.alert('Success', `Site marked as ${actionText}.`)
+                  router.push('/(tabs)')
+                } catch (error) {
+                  console.error(`Error marking site as ${actionText}:`, error)
+                  Alert.alert(
+                    'Error',
+                    `Failed to mark the site as ${actionText}.`
+                  )
+                }
+              },
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => router.push('/(tabs)'),
+            },
+          ]
+        )
+      },
+    },
+    {
+      label: ticket.inspectionComplete ? 'View Inspection' : 'Inspection',
+      onPress: () => handleInspection(),
+    },
+    {
+      label: ticket.remediationComplete ? 'View Remediation' : 'Remediation',
+      onPress: () => handleRemediation(),
+    },
+    {
+      label: ticket.messageCount ? 'View Notes' : 'Add Note',
+      onPress: () => openNotes(),
+    },
+  ]
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Use the separate HeaderComponent */}
-      <HeaderComponent
+      <HeaderWithOptions
         title="Ticket Details"
         onBack={() => router.back()}
-        onOptions={() => setOptionsModalVisible(true)}
+        onOptions={() => {}}
         translateY={headerTranslateY}
+        options={options}
       />
-
-      {/* Options Modal (Popover-style) */}
-      <Modal
-        visible={optionsModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOptionsModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setOptionsModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.optionsModal}>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  handleInspection()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.inspectionComplete
-                    ? 'View Inspection'
-                    : 'Complete Inspection'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  handleRemediation()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.remediationComplete
-                    ? 'View Remediation'
-                    : 'Complete Remediation'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  openNotes()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.messageCount ? 'View Notes' : 'Add Note'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  handleSiteComplete()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.siteComplete ? 'Mark Incomplete' : 'Mark Complete'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  handleDeleteTicket()
-                }}
-              >
-                <Text style={styles.optionText}>Delete Ticket</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.optionItem, styles.optionCancel]}
-                onPress={() => setOptionsModalVisible(false)}
-              >
-                <Text style={[styles.optionText, styles.optionCancelText]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Main Animated ScrollView */}
       <Animated.ScrollView
         contentContainerStyle={styles.scrollContent}
         onScroll={Animated.event(
@@ -321,7 +266,6 @@ const TicketDetailsScreen = () => {
         )}
         scrollEventThrottle={16}
       >
-        {/* Address Card */}
         <View style={styles.card}>
           <Text style={styles.addressText}>
             {ticket.street}, {ticket.city}, {ticket.state} {ticket.zip}
@@ -332,10 +276,8 @@ const TicketDetailsScreen = () => {
             status={eta === 'N/A' ? 'delayed' : 'normal'}
           />
         </View>
-
-        {/* Contact Info Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contact</Text>
+          <Text style={styles.cardTitle}>Contact Info</Text>
           <View style={styles.contactSection}>
             <Text style={styles.contactLabel}>Builder</Text>
             <Text style={[styles.contactValue, styles.infoLine]}>
@@ -367,10 +309,8 @@ const TicketDetailsScreen = () => {
             </Text>
           </View>
         </View>
-
-        {/* Inspector & Reason Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Service </Text>
+          <Text style={styles.cardTitle}>Inspector & Reason</Text>
           <View style={styles.inspectorSection}>
             <Text style={styles.inspectorLabel}>Inspector:</Text>
             <Text style={[styles.inspectorValue, styles.infoLine]}>
@@ -384,15 +324,11 @@ const TicketDetailsScreen = () => {
             </Text>
           </View>
         </View>
-
-        {/* Equipment Modal */}
         <EquipmentModal
           visible={isEquipmentModalVisible}
           onClose={() => setIsEquipmentModalVisible(false)}
           projectId={ticket.id}
         />
-
-        {/* Photos Card */}
         {ticket.ticketPhotos && ticket.ticketPhotos.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Photos</Text>
@@ -408,8 +344,6 @@ const TicketDetailsScreen = () => {
             </ScrollView>
           </View>
         )}
-
-        {/* Status Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Status</Text>
           <View style={styles.infoRow}>
@@ -430,8 +364,6 @@ const TicketDetailsScreen = () => {
           </View>
         </View>
       </Animated.ScrollView>
-
-      {/* Photo Modal */}
       <PhotoModal
         visible={selectedPhoto !== null}
         photo={selectedPhoto}
@@ -443,78 +375,73 @@ const TicketDetailsScreen = () => {
 
 export default TicketDetailsScreen
 
-// ------------------- STYLES -------------------
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  // ---------- Animated Header (used in HeaderComponent) ----------
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1DA1F2',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  headerButton: {
-    marginRight: 10,
-  },
-  topBarTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-    textAlign: 'center',
-  },
-  // ---------- Scrollable Content ----------
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 60,
-  },
-  // ---------- Card Styles ----------
-  card: {
-    backgroundColor: '#F5F8FA',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E1E8ED',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#14171A',
-    marginBottom: 8,
-    flex: 1,
-    textAlign: 'center',
-  },
   addressText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#14171A',
-    textAlign: 'center',
     marginBottom: 8,
-  },
-  etaContainer: {
-    alignSelf: 'center',
-    backgroundColor: '#17BF63',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  etaLabel: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
     textAlign: 'center',
   },
-  etaValue: {
-    color: '#FFF',
+  backButton: {
+    marginRight: 10,
+  },
+  card: {
+    backgroundColor: '#F5F8FA',
+    borderColor: '#E1E8ED',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 10,
+    padding: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    textAlign: 'center',
+    marginBottom: 8,
+    color: '#14171A',
   },
-  // ---------- Info Row & Labels ----------
+  clearSortButton: {
+    backgroundColor: '#F2F3F5',
+    borderRadius: 25,
+    marginLeft: 6,
+    padding: 6,
+  },
+  container: {
+    backgroundColor: 'white',
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  datePicker: {
+    alignItems: 'center',
+    backgroundColor: '#F2F3F5',
+    borderRadius: 25,
+    flex: 1,
+    flexDirection: 'row',
+    marginRight: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  dateText: {
+    color: '#333',
+    fontSize: 14,
+    marginLeft: 10,
+  },
+  floatingButton: {
+    backgroundColor: '#1DA1F2',
+    borderRadius: 24,
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+  },
+  floatingButtonContainer: {
+    bottom: 110,
+    position: 'absolute',
+    right: 24,
+  },
+  infoLine: {
+    lineHeight: 20,
+  },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -525,191 +452,62 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#14171A',
   },
-  infoValue: {
-    fontSize: 14,
-    color: '#14171A',
-    lineHeight: 20, // Increased line spacing
-  },
   link: {
     color: '#1DA1F2',
     textDecorationLine: 'underline',
   },
-  // ---------- Contact Info ----------
-  contactSection: {
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E1E8ED',
-  },
-  contactLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#14171A',
-    marginBottom: 4,
-  },
-  contactValue: {
-    fontSize: 14,
-    color: '#14171A',
-    marginBottom: 2,
-    lineHeight: 20, // Increased line spacing
-  },
-  // ---------- Inspector & Reason ----------
-  inspectorSection: {
-    marginBottom: 8,
-  },
-  inspectorLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#14171A',
-    marginBottom: 4,
-  },
-  inspectorValue: {
-    fontSize: 14,
-    color: '#14171A',
-    lineHeight: 20, // Increased line spacing
-  },
-  // ---------- Photos ----------
-  photo: {
-    width: 70,
-    height: 70,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E1E8ED',
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  // ---------- Options Modal Styles ----------
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)', // Slight darkening of background
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: 60, // Positioned below header
-    paddingRight: 16,
-  },
-  optionsModal: {
-    width: 240, // Increased width for more space
-    backgroundColor: '#FFFFFF', // Same as screen background
-    borderRadius: 8,
-    paddingVertical: 8,
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    // Elevation for Android
-    elevation: 5,
-  },
-  optionItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1, // Bottom border for each option
-    borderBottomColor: '#E1E8ED',
-  },
-  optionText: {
-    fontSize: 15,
-    color: '#14171A',
-  },
-  optionCancel: {
-    borderBottomWidth: 0,
-  },
-  optionCancelText: {
-    fontWeight: '700',
-    color: '#E0245E',
-  },
-  // ---------- Floating "Add Room" Button ----------
-  floatingAddRoomButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
-    backgroundColor: '#1DA1F2',
-    borderRadius: 30,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    elevation: 5,
-  },
-  floatingAddRoomButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  // ---------- Modal (Add Room & Items) Styles ----------
-  addRoomModalContainer: {
-    width: '80%',
-    backgroundColor: '#FFF',
-    borderRadius: 6,
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
+  noTicketsText: {
+    color: '#666',
+    fontSize: 16,
+    marginTop: 20,
     textAlign: 'center',
-    color: '#14171A',
   },
-  itemSearchInput: {
-    backgroundColor: '#F5F8FA',
-    borderRadius: 4,
-    padding: 8,
-    fontSize: 14,
-    color: '#14171A',
+  safeArea: {
+    backgroundColor: 'white',
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  searchBar: {
+    alignItems: 'center',
+    backgroundColor: '#F2F3F5',
+    borderRadius: 25,
+    flexDirection: 'row',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    width: '100%',
+  },
+  searchBarContainer: {
+    alignItems: 'center',
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E1E8ED',
+    width: '100%',
   },
-  modalButtonsRow: {
+  searchInput: {
+    color: '#333',
+    fontSize: 16,
+    flex: 1,
+    marginLeft: 10,
+  },
+  sortButton: {
+    backgroundColor: '#F2F3F5',
+    borderRadius: 25,
+    padding: 8,
+  },
+  sortControls: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  topRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginBottom: 10,
   },
-  modalConfirmButton: {
-    backgroundColor: '#17BF63',
-    borderRadius: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  modalConfirmButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  modalCloseButton: {
-    backgroundColor: '#ECECEC',
-    borderRadius: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  modalCloseButtonText: {
-    color: '#14171A',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  // ---------- Room Type Options (Add Room Modal) ----------
-  roomOptionsRow: {
-    flexDirection: 'row',
-    marginVertical: 8,
-  },
-  roomTypeOption: {
-    backgroundColor: '#F5F8FA',
-    borderRadius: 20,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: '#E1E8ED',
-  },
-  roomTypeOptionSelected: {
-    backgroundColor: '#1DA1F2',
-    borderColor: '#1DA1F2',
-  },
-  roomTypeOptionText: {
-    fontSize: 14,
-    color: '#14171A',
-  },
-  modalSubtitle: {
-    fontWeight: '600',
-    marginVertical: 8,
-    color: '#14171A',
-    textAlign: 'center',
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 60,
   },
 })

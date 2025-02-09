@@ -17,6 +17,7 @@ import { firestore } from '@/firebaseConfig'
 import { router } from 'expo-router'
 import { TicketCard } from '@/components/TicketCard'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import { FloatingTicketButton } from '@/components/FloatingButton'
 import useProjectStore from '@/store/useProjectStore'
 
 /**

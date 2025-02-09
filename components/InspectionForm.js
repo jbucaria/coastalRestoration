@@ -30,7 +30,6 @@ import { IconSymbol } from '@/components/ui/IconSymbol'
 import { rephraseText } from '@/utils/rephraseText'
 import { ThemedText } from '@/components/ThemedText'
 import { handleGenerateReport } from '@/utils/generateReport'
-import { FloatingBackButton } from '@/components/FloatingBackButton'
 import { EquipmentModal } from './EquipmentModal'
 
 const InspectionForm = ({ project, setProject, projectId }) => {
@@ -303,7 +302,6 @@ const InspectionForm = ({ project, setProject, projectId }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FloatingBackButton color="#007bff" />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
