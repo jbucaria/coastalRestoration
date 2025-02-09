@@ -21,10 +21,10 @@ import { firestore } from '@/firebaseConfig'
 import { getTravelTime } from '@/utils/getTravelTime'
 import { EquipmentModal } from '@/components/EquipmentModal'
 import { PhotoModal } from '@/components/PhotoModal'
-import { IconSymbol } from '@/components/ui/IconSymbol'
 import { deleteTicket } from '@/utils/deleteTicket'
-import useProjectStore from '@/store/useProjectStore'
 import { ETAButton } from '@/components/EtaButton'
+import { HeaderComponent } from '@/components/HeaderComponent'
+import useProjectStore from '@/store/useProjectStore'
 
 const TicketDetailsScreen = () => {
   const router = useRouter()
@@ -39,7 +39,7 @@ const TicketDetailsScreen = () => {
   const scrollY = useRef(new Animated.Value(0)).current
   const headerTranslateY = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [0, -100], // Adjust based on header height
+    outputRange: [0, -100],
     extrapolate: 'clamp',
   })
 
@@ -224,27 +224,13 @@ const TicketDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Animated Header */}
-      <Animated.View
-        style={[
-          styles.topBar,
-          { transform: [{ translateY: headerTranslateY }] },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerButton}
-        >
-          <IconSymbol name="arrow.backward" color="black" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Ticket Details</Text>
-        <TouchableOpacity
-          onPress={() => setOptionsModalVisible(true)}
-          style={styles.headerButton}
-        >
-          <IconSymbol name="ellipsis" color="black" size={24} />
-        </TouchableOpacity>
-      </Animated.View>
+      {/* Use the separate HeaderComponent */}
+      <HeaderComponent
+        title="Ticket Details"
+        onBack={() => router.back()}
+        onOptions={() => setOptionsModalVisible(true)}
+        translateY={headerTranslateY}
+      />
 
       {/* Options Modal (Popover-style) */}
       <Modal
@@ -260,10 +246,38 @@ const TicketDetailsScreen = () => {
                 style={styles.optionItem}
                 onPress={() => {
                   setOptionsModalVisible(false)
-                  handleDeleteTicket()
+                  handleInspection()
                 }}
               >
-                <Text style={styles.optionText}>Delete Ticket</Text>
+                <Text style={styles.optionText}>
+                  {ticket.inspectionComplete
+                    ? 'View Inspection'
+                    : 'Complete Inspection'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={() => {
+                  setOptionsModalVisible(false)
+                  handleRemediation()
+                }}
+              >
+                <Text style={styles.optionText}>
+                  {ticket.remediationComplete
+                    ? 'View Remediation'
+                    : 'Complete Remediation'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={() => {
+                  setOptionsModalVisible(false)
+                  openNotes()
+                }}
+              >
+                <Text style={styles.optionText}>
+                  {ticket.messageCount ? 'View Notes' : 'Add Note'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.optionItem}
@@ -280,36 +294,10 @@ const TicketDetailsScreen = () => {
                 style={styles.optionItem}
                 onPress={() => {
                   setOptionsModalVisible(false)
-                  handleInspection()
+                  handleDeleteTicket()
                 }}
               >
-                <Text style={styles.optionText}>
-                  {ticket.inspectionComplete ? 'View Inspection' : 'Inspection'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  handleRemediation()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.remediationComplete
-                    ? 'View Remediation'
-                    : 'Remediation'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.optionItem}
-                onPress={() => {
-                  setOptionsModalVisible(false)
-                  openNotes()
-                }}
-              >
-                <Text style={styles.optionText}>
-                  {ticket.messageCount ? 'View Notes' : 'Add Note'}
-                </Text>
+                <Text style={styles.optionText}>Delete Ticket</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.optionItem, styles.optionCancel]}
@@ -347,18 +335,20 @@ const TicketDetailsScreen = () => {
 
         {/* Contact Info Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contact Info</Text>
+          <Text style={styles.cardTitle}>Contact</Text>
           <View style={styles.contactSection}>
             <Text style={styles.contactLabel}>Builder</Text>
-            <Text style={styles.contactValue}>{ticket.customer || 'N/A'}</Text>
-            <Text style={styles.contactValue}>
+            <Text style={[styles.contactValue, styles.infoLine]}>
+              {ticket.customer || 'N/A'}
+            </Text>
+            <Text style={[styles.contactValue, styles.infoLine]}>
               {ticket.customerName || 'N/A'}
             </Text>
-            <Text style={styles.contactValue}>
+            <Text style={[styles.contactValue, styles.infoLine]}>
               {ticket.customerEmail || 'N/A'}
             </Text>
             <Text
-              style={[styles.contactValue, styles.link]}
+              style={[styles.contactValue, styles.link, styles.infoLine]}
               onPress={() => handleCall(ticket.customerNumber)}
             >
               {ticket.customerNumber || 'N/A'}
@@ -366,11 +356,11 @@ const TicketDetailsScreen = () => {
           </View>
           <View style={styles.contactSection}>
             <Text style={styles.contactLabel}>Homeowner</Text>
-            <Text style={styles.contactValue}>
+            <Text style={[styles.contactValue, styles.infoLine]}>
               {ticket.homeOwnerName || 'N/A'}
             </Text>
             <Text
-              style={[styles.contactValue, styles.link]}
+              style={[styles.contactValue, styles.link, styles.infoLine]}
               onPress={() => handleCall(ticket.homeOwnerNumber)}
             >
               {ticket.homeOwnerNumber || 'N/A'}
@@ -380,16 +370,18 @@ const TicketDetailsScreen = () => {
 
         {/* Inspector & Reason Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inspector & Reason</Text>
+          <Text style={styles.cardTitle}>Service </Text>
           <View style={styles.inspectorSection}>
             <Text style={styles.inspectorLabel}>Inspector:</Text>
-            <Text style={styles.inspectorValue}>
+            <Text style={[styles.inspectorValue, styles.infoLine]}>
               {ticket.inspectorName || 'N/A'}
             </Text>
           </View>
           <View style={styles.inspectorSection}>
             <Text style={styles.inspectorLabel}>Reason for Visit:</Text>
-            <Text style={styles.inspectorValue}>{ticket.reason || 'N/A'}</Text>
+            <Text style={[styles.inspectorValue, styles.infoLine]}>
+              {ticket.reason || 'N/A'}
+            </Text>
           </View>
         </View>
 
@@ -457,27 +449,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  // ---------- Animated Header ----------
+  // ---------- Animated Header (used in HeaderComponent) ----------
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-
+    backgroundColor: '#1DA1F2',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   headerButton: {
     marginRight: 10,
   },
-  headerButtonText: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   topBarTitle: {
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: 'black',
+    color: '#FFF',
     textAlign: 'center',
   },
   // ---------- Scrollable Content ----------
@@ -495,10 +482,12 @@ const styles = StyleSheet.create({
     borderColor: '#E1E8ED',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#14171A',
     marginBottom: 8,
+    flex: 1,
+    textAlign: 'center',
   },
   addressText: {
     fontSize: 16,
@@ -539,6 +528,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     color: '#14171A',
+    lineHeight: 20, // Increased line spacing
   },
   link: {
     color: '#1DA1F2',
@@ -561,6 +551,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#14171A',
     marginBottom: 2,
+    lineHeight: 20, // Increased line spacing
   },
   // ---------- Inspector & Reason ----------
   inspectorSection: {
@@ -575,6 +566,7 @@ const styles = StyleSheet.create({
   inspectorValue: {
     fontSize: 14,
     color: '#14171A',
+    lineHeight: 20, // Increased line spacing
   },
   // ---------- Photos ----------
   photo: {
@@ -615,11 +607,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E1E8ED',
   },
   optionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#14171A',
   },
   optionCancel: {
-    borderBottomWidth: 0, // No border for cancel button if desired
+    borderBottomWidth: 0,
   },
   optionCancelText: {
     fontWeight: '700',

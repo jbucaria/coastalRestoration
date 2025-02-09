@@ -23,6 +23,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore, storage } from '@/firebaseConfig'
+import { HeaderComponent } from '@/components/HeaderComponent'
+import { IconSymbol } from '@/components/ui/IconSymbol'
 
 /** Predefined room types */
 const ROOM_OPTIONS = ['Bedroom', 'Kitchen', 'Garage', 'Living Room', 'Bathroom']
@@ -252,15 +254,7 @@ const RemediationScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Top Bar (inspired by X/Twitter) */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Text style={styles.backButtonText}>{'<'} Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.topBarTitle}>Remediation</Text>
-      </View>
+      <HeaderComponent title="Remediation" onBack={() => router.back()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -387,7 +381,8 @@ const RemediationScreen = () => {
         style={styles.floatingAddRoomButton}
         onPress={openAddRoomModal}
       >
-        <Text style={styles.floatingAddRoomButtonText}>+ Room</Text>
+        <IconSymbol name="plus" size={24} color="white" />
+        <Text style={styles.floatingAddRoomButtonText}>Room</Text>
       </TouchableOpacity>
 
       {/* Items Modal */}
@@ -710,14 +705,11 @@ const styles = StyleSheet.create({
   },
   // ---------- Floating "Add Room" Button ----------
   floatingAddRoomButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#1DA1F2',
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    elevation: 4,
+    padding: 16,
   },
   floatingAddRoomButtonText: {
     color: '#fff',

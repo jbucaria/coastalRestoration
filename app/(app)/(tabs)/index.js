@@ -314,7 +314,8 @@ const TicketsScreen = () => {
           onPress={() => router.push('/CreateTicketScreen')}
           style={styles.floatingButton}
         >
-          <IconSymbol name="plus" size={30} color="white" />
+          <IconSymbol name="plus" size={24} color="white" />
+          <Text style={{ color: 'white', marginLeft: 8 }}>Ticket</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -411,10 +412,11 @@ const styles = StyleSheet.create({
   floatingButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F39C12',
-    borderRadius: 30,
+    backgroundColor: '#1DA1F2',
+    borderRadius: 24,
     padding: 16,
   },
+
   // Modal Styles
   modalOverlay: {
     flex: 1,
