@@ -34,6 +34,7 @@ const TicketDetailsScreen = () => {
   const [eta, setEta] = useState(null)
   const [isEquipmentModalVisible, setIsEquipmentModalVisible] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState(null)
+  const scrollY = useRef(new Animated.Value(0)).current
 
   // const scrollY = useRef(new Animated.Value(0)).current
   // const headerTranslateY = scrollY.interpolate({
@@ -255,7 +256,7 @@ const TicketDetailsScreen = () => {
         title="Ticket Details"
         onBack={() => router.back()}
         onOptions={() => {}}
-        translateY={headerTranslateY}
+        // translateY={headerTranslateY}
         options={options}
       />
       <Animated.ScrollView

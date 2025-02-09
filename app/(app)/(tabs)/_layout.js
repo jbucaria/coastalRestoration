@@ -1,38 +1,36 @@
 import { Tabs } from 'expo-router'
 import React from 'react'
-import { Platform } from 'react-native'
-
+import { Platform, StyleSheet } from 'react-native'
+import { HapticTab } from '@/components/ui/HapticTab'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import TabBarBackground from '@/components/ui/TabBarBackground'
+import { BlurView } from 'expo-blur'
 import { Colors } from '@/constants/Colors'
 import { useColorScheme } from '@/hooks/useColorScheme'
 
 export default function TabLayout() {
   const colorScheme = useColorScheme()
+  const BlurTabBarBackground = () => (
+    <BlurView
+      tint="light" // Options: 'light' | 'dark' | 'systemChromeMaterial'
+      intensity={50} // Adjust blur intensity
+      style={StyleSheet.absoluteFill}
+    />
+  )
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false, // Keep this if you don't want headers for tabs
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: {
-          backgroundColor: 'rgba(44, 62, 80, 0.8)', // Dark blue with transparency
-          borderTopWidth: 0, // Removes the default border
-          elevation: 0, // Removes shadow on Android
-          position: 'absolute', // Position at the bottom for both platforms
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: Platform.OS === 'ios' ? 83 : 56, // iOS tab bar height, adjust for Android
-        },
-        tabBarLabelStyle: {
-          // Match the styling of the home header bar
-          fontWeight: 'bold',
-          fontSize: 12,
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-        },
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarBackground: BlurTabBarBackground,
+        tabBarStyle: Platform.select({
+          ios: {
+            // Use a transparent background on iOS to show the blur effect
+            position: 'absolute',
+          },
+          default: {},
+        }),
       }}
     >
       <Tabs.Screen
