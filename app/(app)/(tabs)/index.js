@@ -282,7 +282,7 @@ const TicketsScreen = () => {
             const ticketKey = ticket.id || `ticket-${index}`
 
             // Determine background/time color for each row
-            const containerStyle = index % 2 === 0 ? '#ECECEC' : '#FFFFFF'
+            const containerStyle = index % 2 === 0 ? '#F5F8FA' : '#FFFFFF'
             const timeColor = index % 2 === 0 ? '#0D47A1' : '#1976D2'
 
             return (

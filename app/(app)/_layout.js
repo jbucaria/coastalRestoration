@@ -42,6 +42,12 @@ const _layout = () => {
         }}
       />
       <Stack.Screen
+        name="RemediationScreen"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="EditReportScreen"
         options={{
           headerStyle: {

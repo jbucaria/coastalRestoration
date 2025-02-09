@@ -69,8 +69,8 @@ const CreateTicketScreen = () => {
   const [newTicket, setNewTicket] = useState(initialTicketStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [startTime, setStartTime] = useState(new Date(2023, 0, 1, 10, 0))
-  const [endTime, setEndTime] = useState(new Date(2023, 0, 1, 12, 0))
+  const [startTime, setStartTime] = useState(new Date())
+  const [endTime, setEndTime] = useState(new Date())
   const [showStartTimePicker, setShowStartTimePicker] = useState(false)
   const [showEndTimePicker, setShowEndTimePicker] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -204,7 +204,6 @@ const CreateTicketScreen = () => {
   }
 
   const handleBack = () => {
-    resetForm()
     router.back()
   }
 
