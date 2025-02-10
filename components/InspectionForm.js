@@ -23,12 +23,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import * as FileSystem from 'expo-file-system'
 import { doc, updateDoc } from 'firebase/firestore'
-
 import { firestore } from '@/firebaseConfig'
-import { ThemedView } from '@/components/ui/ThemedView'
+import { ThemedView, ThemedText } from '@/components/ui/ThemedComponents'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { rephraseText } from '@/utils/rephraseText'
-import { ThemedText } from '@/components/ui/ThemedText'
+
 import { handleGenerateReport } from '@/utils/generateReport'
 import { EquipmentModal } from './EquipmentModal'
 

@@ -24,8 +24,7 @@ import {
 import * as ImagePicker from 'expo-image-picker'
 import { doc, updateDoc, getDoc } from 'firebase/firestore'
 import { firestore, storage } from '@/firebaseConfig'
-
-import { ThemedText } from '@/components/ui/ThemedText'
+import { ThemedView, ThemedText } from '@/components/ui/ThemedComponents'
 import { useThemeColor } from '@/hooks/useThemeColor'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
