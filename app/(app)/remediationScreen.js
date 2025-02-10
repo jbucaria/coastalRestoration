@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   SafeAreaView,
   ScrollView,
@@ -15,6 +15,7 @@ import {
   Keyboard,
   Platform,
   Image,
+  Animated,
 } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
@@ -24,7 +25,7 @@ import { doc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { firestore, storage } from '@/firebaseConfig'
 import { HeaderWithOptions } from '@/components/HeaderWithOptions'
-import { IconSymbol } from '@/components/ui/IconSymbol'
+import { FloatingButton } from '@/components/FloatingButton'
 
 /** Predefined room types */
 const ROOM_OPTIONS = ['Bedroom', 'Kitchen', 'Garage', 'Living Room', 'Bathroom']
@@ -49,6 +50,13 @@ const RemediationScreen = () => {
   const [showAddRoomModal, setShowAddRoomModal] = useState(false)
   const [selectedRoomType, setSelectedRoomType] = useState('')
   const [customRoomName, setCustomRoomName] = useState('')
+
+  const scrollY = useRef(new Animated.Value(0)).current
+  const floatingOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  })
 
   // -------------------- Add Room Logic --------------------
   const openAddRoomModal = () => {
@@ -376,14 +384,14 @@ const RemediationScreen = () => {
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      {/* Floating "Add Room" Button */}
-      <TouchableOpacity
-        style={styles.floatingAddRoomButton}
-        onPress={openAddRoomModal}
-      >
-        <IconSymbol name="plus" size={24} color="white" />
-        <Text style={styles.floatingAddRoomButtonText}>Room</Text>
-      </TouchableOpacity>
+      {/* Floating Button */}
+      <View style={{ position: 'absolute', right: 25, bottom: 50 }}>
+        <FloatingButton
+          onPress={openAddRoomModal}
+          title="Room"
+          animatedOpacity={floatingOpacity}
+        />
+      </View>
 
       {/* Items Modal */}
       {showItemsModal && (
@@ -558,6 +566,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
+
   // ---------- Room Card ----------
   roomCard: {
     backgroundColor: '#F5F8FA', // Slightly off-white (similar to Twitter's timeline background)

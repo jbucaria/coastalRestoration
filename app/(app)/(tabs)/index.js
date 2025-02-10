@@ -17,20 +17,9 @@ import { firestore } from '@/firebaseConfig'
 import { router } from 'expo-router'
 import { TicketCard } from '@/components/TicketCard'
 import { IconSymbol } from '@/components/ui/IconSymbol'
-import { FloatingTicketButton } from '@/components/FloatingButton'
+import { FloatingButton } from '@/components/FloatingButton'
 import useProjectStore from '@/store/useProjectStore'
 
-/**
- * SortModal
- *
- * Lets the user pick:
- *  - 'remediationRequired'
- *  - 'equipmentOnSite'
- *  - null (show all)
- *
- * Provides visual feedback by highlighting the selected option
- * and showing a checkmark next to it.
- */
 const SortModal = ({ visible, onClose, sortOption, setSortOption }) => {
   // Helper to render a sort option with selection feedback
   const renderOption = (optionValue, label) => {
@@ -92,7 +81,6 @@ const TicketsScreen = () => {
   const [isSortModalVisible, setSortModalVisible] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
 
-  // For animated floating button
   const scrollY = useRef(new Animated.Value(0)).current
   const floatingOpacity = scrollY.interpolate({
     inputRange: [0, 100],
@@ -100,9 +88,6 @@ const TicketsScreen = () => {
     extrapolate: 'clamp',
   })
 
-  /**
-   * Firestore subscription: fetch all tickets sorted by startTime asc
-   */
   useEffect(() => {
     const baseQuery = query(
       collection(firestore, 'tickets'),
@@ -307,18 +292,14 @@ const TicketsScreen = () => {
         )}
       </Animated.ScrollView>
 
-      {/* Floating "Create Ticket" Button */}
-      <Animated.View
-        style={[styles.floatingButtonContainer, { opacity: floatingOpacity }]}
-      >
-        <TouchableOpacity
+      {/* Floating Button */}
+      <View style={{ position: 'absolute', right: 24, bottom: 110 }}>
+        <FloatingButton
           onPress={() => router.push('/CreateTicketScreen')}
-          style={styles.floatingButton}
-        >
-          <IconSymbol name="plus" size={24} color="white" />
-          <Text style={{ color: 'white', marginLeft: 8 }}>Ticket</Text>
-        </TouchableOpacity>
-      </Animated.View>
+          title="Ticket"
+          animatedOpacity={floatingOpacity}
+        />
+      </View>
 
       {/* Sort Modal */}
       <SortModal
@@ -404,18 +385,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: '#666',
     fontSize: 16,
-  },
-  floatingButtonContainer: {
-    position: 'absolute',
-    right: 24,
-    bottom: 110,
-  },
-  floatingButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1DA1F2',
-    borderRadius: 24,
-    padding: 16,
   },
 
   // Modal Styles

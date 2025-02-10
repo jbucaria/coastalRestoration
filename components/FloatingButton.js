@@ -1,13 +1,13 @@
 import React from 'react'
-import { Animated, TouchableOpacity, Text, StyleSheet } from 'react-native'
+import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 
-const FloatingButton = ({ onPress, opacity, title }) => {
+const FloatingButton = ({ onPress, title, animatedOpacity }) => {
   return (
-    <Animated.View style={[styles.container, { opacity }]}>
+    <Animated.View style={[styles.container, { opacity: animatedOpacity }]}>
       <TouchableOpacity onPress={onPress} style={styles.button}>
-        <IconSymbol name="plus" size={24} color="white" />
-        <Text style={styles.buttonText}>{title}</Text>
+        <IconSymbol name="plus" size={24} color="#fff" />
+        <Text style={styles.title}>{title}</Text>
       </TouchableOpacity>
     </Animated.View>
   )
@@ -15,21 +15,27 @@ const FloatingButton = ({ onPress, opacity, title }) => {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
+    // This container wraps the button and applies the animated opacity
   },
   button: {
+    backgroundColor: '#1DA1F2', // Change to your desired color
+    borderRadius: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1DA1F2',
-    borderRadius: 24,
-    padding: 16,
+    // You can add shadow or elevation here if needed
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 5,
   },
-  buttonText: {
-    color: 'white',
-    marginLeft: 8,
+  title: {
+    color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 })
 
