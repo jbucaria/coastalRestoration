@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router'
 import React from 'react'
 import { Platform, StyleSheet } from 'react-native'
-import { HapticTab } from '@/components/ui/HapticTab'
+import HapticTab from '@/components/ui/HapticTab'
 import { IconSymbol } from '@/components/ui/IconSymbol'
 import { BlurView } from 'expo-blur'
 import { Colors } from '@/constants/Colors'
@@ -22,7 +22,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarButton: props => <HapticTab {...props} />,
         tabBarBackground: BlurTabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
