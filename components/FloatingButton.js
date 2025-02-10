@@ -1,11 +1,19 @@
 import React from 'react'
 import { TouchableOpacity, Text, StyleSheet, Animated } from 'react-native'
 import { IconSymbol } from '@/components/ui/IconSymbol'
+import * as Haptics from 'expo-haptics'
 
 const FloatingButton = ({ onPress, title, animatedOpacity }) => {
+  const handlePressIn = event => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid)
+  }
   return (
     <Animated.View style={[styles.container, { opacity: animatedOpacity }]}>
-      <TouchableOpacity onPress={onPress} style={styles.button}>
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPress={onPress}
+        style={styles.button}
+      >
         <IconSymbol name="plus" size={24} color="#fff" />
         <Text style={styles.title}>{title}</Text>
       </TouchableOpacity>
